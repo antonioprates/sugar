@@ -69,6 +69,7 @@ config*.h
 config*.mak
 config.texi
 conftest*
+!conftest.c
 tags
 TAGS
 tcc.1
