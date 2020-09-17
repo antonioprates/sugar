@@ -1,5 +1,5 @@
 /*
- *  ARMv4 code generator for TCC
+ *  ARMv4 code generator for SUGAR
  *
  *  Copyright (c) 2003 Daniel Glöckner
  *  Copyright (c) 2012 Thomas Preud'homme
@@ -23,19 +23,19 @@
 
 #ifdef TARGET_DEFS_ONLY
 
-#if defined(TCC_ARM_EABI) && !defined(TCC_ARM_VFP)
-#error "Currently TinyCC only supports float computation with VFP instructions"
+#if defined(SUGAR_ARM_EABI) && !defined(SUGAR_ARM_VFP)
+#error "Currently SugarC only supports float computation with VFP instructions"
 #endif
 
 /* number of available registers */
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 #define NB_REGS            13
 #else
 #define NB_REGS             9
 #endif
 
-#ifndef TCC_CPU_VERSION
-# define TCC_CPU_VERSION 5
+#ifndef SUGAR_CPU_VERSION
+# define SUGAR_CPU_VERSION 5
 #endif
 
 /* a register can belong to several classes. The classes must be
@@ -52,7 +52,7 @@
 #define RC_F1      0x0100
 #define RC_F2      0x0200
 #define RC_F3      0x0400
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 #define RC_F4      0x0800
 #define RC_F5      0x1000
 #define RC_F6      0x2000
@@ -73,7 +73,7 @@ enum {
     TREG_F1,
     TREG_F2,
     TREG_F3,
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
     TREG_F4,
     TREG_F5,
     TREG_F6,
@@ -83,7 +83,7 @@ enum {
     TREG_LR,
 };
 
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 #define T2CPR(t) (((t) & VT_BTYPE) != VT_FLOAT ? 0x100 : 0)
 #endif
 
@@ -92,7 +92,7 @@ enum {
 #define REG_IRE2 TREG_R1 /* second word return register (for long long) */
 #define REG_FRET TREG_F0 /* float return register */
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
 #define TOK___divdi3 TOK___aeabi_ldivmod
 #define TOK___moddi3 TOK___aeabi_ldivmod
 #define TOK___udivdi3 TOK___aeabi_uldivmod
@@ -110,7 +110,7 @@ enum {
 #define PTR_SIZE 4
 
 /* long double size and alignment, in bytes */
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 #define LDOUBLE_SIZE  8
 #endif
 
@@ -118,7 +118,7 @@ enum {
 #define LDOUBLE_SIZE  8
 #endif
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
 #define LDOUBLE_ALIGN 8
 #else
 #define LDOUBLE_ALIGN 4
@@ -133,7 +133,7 @@ enum {
 #else /* ! TARGET_DEFS_ONLY */
 /******************************************************/
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 
 enum float_abi float_abi;
 
@@ -147,7 +147,7 @@ ST_DATA const int reg_classes[NB_REGS] = {
     /* f1 */ RC_FLOAT | RC_F1,
     /* f2 */ RC_FLOAT | RC_F2,
     /* f3 */ RC_FLOAT | RC_F3,
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
  /* d4/s8 */ RC_FLOAT | RC_F4,
 /* d5/s10 */ RC_FLOAT | RC_F5,
 /* d6/s12 */ RC_FLOAT | RC_F6,
@@ -158,15 +158,15 @@ ST_DATA const int reg_classes[NB_REGS] = {
 static int func_sub_sp_offset, last_itod_magic;
 static int leaffunc;
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 static addr_t func_bound_offset;
 static unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 #endif
 
-#if defined(TCC_ARM_EABI) && defined(TCC_ARM_VFP)
+#if defined(SUGAR_ARM_EABI) && defined(SUGAR_ARM_VFP)
 static CType float_type, double_type, func_float_type, func_double_type;
-ST_FUNC void arm_init(struct TCCState *s)
+ST_FUNC void arm_init(struct SUGARState *s)
 {
     float_type.t = VT_FLOAT;
     double_type.t = VT_DOUBLE;
@@ -176,7 +176,7 @@ ST_FUNC void arm_init(struct TCCState *s)
     func_double_type.ref = sym_push(SYM_FIELD, &double_type, FUNC_CDECL, FUNC_OLD);
 
     float_abi = s->float_abi;
-#ifndef TCC_ARM_HARDFLOAT
+#ifndef SUGAR_ARM_HARDFLOAT
 # warning "soft float ABI currently not supported: default to softfp"
 #endif
 }
@@ -184,15 +184,15 @@ ST_FUNC void arm_init(struct TCCState *s)
 #define func_float_type func_old_type
 #define func_double_type func_old_type
 #define func_ldouble_type func_old_type
-ST_FUNC void arm_init(struct TCCState *s)
+ST_FUNC void arm_init(struct SUGARState *s)
 {
 #if 0
-#if !defined (TCC_ARM_VFP)
-    tcc_warning("Support for FPA is deprecated and will be removed in next"
+#if !defined (SUGAR_ARM_VFP)
+    sugar_warning("Support for FPA is deprecated and will be removed in next"
                 " release");
 #endif
-#if !defined (TCC_ARM_EABI)
-    tcc_warning("Support for OABI is deprecated and will be removed in next"
+#if !defined (SUGAR_ARM_EABI)
+    sugar_warning("Support for OABI is deprecated and will be removed in next"
                 " release");
 #endif
 #endif
@@ -203,20 +203,20 @@ ST_FUNC void arm_init(struct TCCState *s)
 
 static int two2mask(int a,int b) {
   if (!CHECK_R(a) || !CHECK_R(b))
-    tcc_error("compiler error! registers %i,%i is not valid",a,b);
+    sugar_error("compiler error! registers %i,%i is not valid",a,b);
   return (reg_classes[a]|reg_classes[b])&~(RC_INT|RC_FLOAT);
 }
 
 static int regmask(int r) {
   if (!CHECK_R(r))
-    tcc_error("compiler error! register %i is not valid",r);
+    sugar_error("compiler error! register %i is not valid",r);
   return reg_classes[r]&~(RC_INT|RC_FLOAT);
 }
 
 /******************************************************/
 
-#if defined(TCC_ARM_EABI) && !defined(CONFIG_TCC_ELFINTERP)
-const char *default_elfinterp(struct TCCState *s)
+#if defined(SUGAR_ARM_EABI) && !defined(CONFIG_SUGAR_ELFINTERP)
+const char *default_elfinterp(struct SUGARState *s)
 {
     if (s->float_abi == ARM_HARD_FLOAT)
         return "/lib/ld-linux-armhf.so.3";
@@ -233,7 +233,7 @@ void o(uint32_t i)
     return;
   ind1 = ind + 4;
   if (!cur_text_section)
-    tcc_error("compiler error! This happens f.ex. if the compiler\n"
+    sugar_error("compiler error! This happens f.ex. if the compiler\n"
          "can't evaluate constant expressions outside of a function.");
   if (ind1 > cur_text_section->data_allocated)
     section_realloc(cur_text_section, ind1);
@@ -362,7 +362,7 @@ uint32_t encbranch(int pos, int addr, int fail)
   addr/=4;
   if(addr>=0x1000000 || addr<-0x1000000) {
     if(fail)
-      tcc_error("FIXME: function bigger than 32MB");
+      sugar_error("FIXME: function bigger than 32MB");
     return 0;
   }
   return 0x0A000000|(addr&0xffffff);
@@ -395,18 +395,18 @@ void gsym_addr(int t, int a)
   }
 }
 
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 static uint32_t vfpr(int r)
 {
   if(r<TREG_F0 || r>TREG_F7)
-    tcc_error("compiler error! register %i is no vfp register",r);
+    sugar_error("compiler error! register %i is no vfp register",r);
   return r - TREG_F0;
 }
 #else
 static uint32_t fpr(int r)
 {
   if(r<TREG_F0 || r>TREG_F3)
-    tcc_error("compiler error! register %i is no fpa register",r);
+    sugar_error("compiler error! register %i is no fpa register",r);
   return r - TREG_F0;
 }
 #endif
@@ -418,7 +418,7 @@ static uint32_t intr(int r)
   if(r >= TREG_R0 && r <= TREG_R3)
     return r - TREG_R0;
   if (!(r >= TREG_SP && r <= TREG_LR))
-    tcc_error("compiler error! register %i is no int register",r);
+    sugar_error("compiler error! register %i is no int register",r);
   return r + (13 - TREG_SP);
 }
 
@@ -478,7 +478,7 @@ static uint32_t mapcc(int cc)
     case TOK_GT:
       return 0xC0000000; /* GT */
   }
-  tcc_error("unexpected condition code");
+  sugar_error("unexpected condition code");
   return 0xE0000000; /* AL */
 }
 
@@ -511,7 +511,7 @@ static int negcc(int cc)
     case TOK_GT:
       return TOK_LE;
   }
-  tcc_error("unexpected condition code");
+  sugar_error("unexpected condition code");
   return TOK_NE;
 }
 
@@ -561,7 +561,7 @@ void load(int r, SValue *sv)
     if(v == VT_LOCAL) {
       if(is_float(ft)) {
 	calcaddr(&base,&fc,&sign,1020,2);
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
         op=0xED100A00; /* flds */
         if(!sign)
           op|=0x800000;
@@ -643,7 +643,7 @@ void load(int r, SValue *sv)
       return;
     } else if (v < VT_CONST) {
       if(is_float(ft))
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
         o(0xEEB00A40|(vfpr(r)<<12)|vfpr(v)|T2CPR(ft)); /* fcpyX */
 #else
 	o(0xEE008180|(fpr(r)<<12)|fpr(v));
@@ -653,7 +653,7 @@ void load(int r, SValue *sv)
       return;
     }
   }
-  tcc_error("load unimplemented!");
+  sugar_error("load unimplemented!");
 }
 
 /* store register 'r' in lvalue 'v' */
@@ -694,7 +694,7 @@ void store(int r, SValue *sv)
     if(v == VT_LOCAL) {
        if(is_float(ft)) {
 	calcaddr(&base,&fc,&sign,1020,2);
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
         op=0xED000A00; /* fsts */
         if(!sign)
           op|=0x800000;
@@ -735,7 +735,7 @@ void store(int r, SValue *sv)
       return;
     }
   }
-  tcc_error("store unimplemented");
+  sugar_error("store unimplemented");
 }
 
 static void gadd_sp(int val)
@@ -771,7 +771,7 @@ static void gcall_or_jmp(int is_jmp)
 	}
   } else {
     /* otherwise, indirect call */
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
     vtop->r &= ~VT_MUSTBOUND;
 #endif
     r = gv(RC_INT);
@@ -781,7 +781,7 @@ static void gcall_or_jmp(int is_jmp)
   }
 }
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 
 static void gen_bounds_call(int v)
 {
@@ -931,7 +931,7 @@ int floats_in_core_regs(SValue *sval)
     case TOK___floatundidf:
     case TOK___fixunssfdi:
     case TOK___fixunsdfdi:
-#ifndef TCC_ARM_VFP
+#ifndef SUGAR_ARM_VFP
     case TOK___fixunsxfdi:
 #endif
     case TOK___floatdisf:
@@ -948,7 +948,7 @@ int floats_in_core_regs(SValue *sval)
 /* Return the number of registers needed to return the struct, or 0 if
    returning via struct pointer. */
 ST_FUNC int gfunc_sret(CType *vt, int variadic, CType *ret, int *ret_align, int *regsize) {
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
     int size, align;
     size = type_size(vt, &align);
     if (float_abi == ARM_HARD_FLOAT && !variadic &&
@@ -1024,7 +1024,7 @@ static void add_param_plan(struct plan* plan, int cls, int start, int end, SValu
 
    Returns the amount of stack space needed for parameter passing
 
-   Note: this function allocated an array in plan->pplans with tcc_malloc. It
+   Note: this function allocated an array in plan->pplans with sugar_malloc. It
    is the responsibility of the caller to free this array once used (ie not
    before copy_params). */
 static int assign_regs(int nb_args, int float_abi, struct plan *plan, int *todo)
@@ -1175,7 +1175,7 @@ again:
             }
           } else {
             if (is_float(pplan->sval->type.t)) {
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
               r = vfpr(gv(RC_FLOAT)) << 12;
               if ((pplan->sval->type.t & VT_BTYPE) == VT_FLOAT)
                 size = 4;
@@ -1245,7 +1245,7 @@ again:
   }
 
   /* second pass to restore registers that were saved on stack by accident.
-     Maybe redundant after the "lvalue_save" patch in tccgen.c:gv() */
+     Maybe redundant after the "lvalue_save" patch in sugargen.c:gv() */
   if (++pass < 2)
     goto again;
 
@@ -1283,16 +1283,16 @@ void gfunc_call(int nb_args)
   int def_float_abi = float_abi;
   int todo;
   struct plan plan;
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   int variadic;
 #endif
 
-#ifdef CONFIG_TCC_BCHECK
-  if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+  if (sugar_state->do_bounds_check)
     gbound_args(nb_args);
 #endif
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   if (float_abi == ARM_HARD_FLOAT) {
     variadic = (vtop[-nb_args].type.ref->f.func_type == FUNC_ELLIPSIS);
     if (variadic || floats_in_core_regs(&vtop[-nb_args]))
@@ -1308,11 +1308,11 @@ void gfunc_call(int nb_args)
 
   memset(&plan, 0, sizeof plan);
   if (nb_args)
-    plan.pplans = tcc_malloc(nb_args * sizeof(*plan.pplans));
+    plan.pplans = sugar_malloc(nb_args * sizeof(*plan.pplans));
 
   args_size = assign_regs(nb_args, float_abi, &plan, &todo);
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   if (args_size & 7) { /* Stack must be 8 byte aligned at fct call for EABI */
     args_size = (args_size + 7) & ~7;
     o(0xE24DD004); /* sub sp, sp, #4 */
@@ -1320,14 +1320,14 @@ void gfunc_call(int nb_args)
 #endif
 
   nb_args += copy_params(nb_args, &plan, todo);
-  tcc_free(plan.pplans);
+  sugar_free(plan.pplans);
 
   /* Move fct SValue on top as required by gcall_or_jmp */
   vrotb(nb_args + 1);
   gcall_or_jmp(0);
   if (args_size)
       gadd_sp(args_size); /* pop all parameters passed on the stack */
-#if defined(TCC_ARM_EABI) && defined(TCC_ARM_VFP)
+#if defined(SUGAR_ARM_EABI) && defined(SUGAR_ARM_VFP)
   if(float_abi == ARM_SOFTFP_FLOAT && is_float(vtop->type.ref->type.t)) {
     if((vtop->type.ref->type.t & VT_BTYPE) == VT_FLOAT) {
       o(0xEE000A10); /*vmov s0, r0 */
@@ -1351,7 +1351,7 @@ void gfunc_prolog(Sym *func_sym)
   int addr, pn, sn; /* pn=core, sn=stack */
   CType ret_type;
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   struct avail_regs avregs = {{0}};
 #endif
 
@@ -1367,7 +1367,7 @@ void gfunc_prolog(Sym *func_sym)
   }
   for(sym2 = sym->next; sym2 && (n < 4 || nf < 16); sym2 = sym2->next) {
     size = type_size(&sym2->type, &align);
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
     if (float_abi == ARM_HARD_FLOAT && !func_var &&
         (is_float(sym2->type.t) || is_hgen_float_aggr(&sym2->type))) {
       int tmpnf = assign_vfpreg(&avregs, align, size);
@@ -1384,7 +1384,7 @@ void gfunc_prolog(Sym *func_sym)
   if (n) {
     if(n>4)
       n=4;
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
     n=(n+1)&-2;
 #endif
     o(0xE92D0000|((1<<n)-1)); /* save r0-r4 on stack if needed */
@@ -1400,7 +1400,7 @@ void gfunc_prolog(Sym *func_sym)
   func_sub_sp_offset = ind;
   o(0xE1A00000); /* nop, leave space for stack adjustment in epilog */
 
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   if (float_abi == ARM_HARD_FLOAT) {
     func_vc += nf * 4;
     memset(&avregs, 0, sizeof avregs);
@@ -1413,7 +1413,7 @@ void gfunc_prolog(Sym *func_sym)
     size = type_size(type, &align);
     size = (size + 3) >> 2;
     align = (align + 3) & ~3;
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
     if (float_abi == ARM_HARD_FLOAT && !func_var && (is_float(sym->type.t)
         || is_hgen_float_aggr(&sym->type))) {
       int fpn = assign_vfpreg(&avregs, align, size << 2);
@@ -1424,7 +1424,7 @@ void gfunc_prolog(Sym *func_sym)
     } else
 #endif
     if (pn < 4) {
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
         pn = (pn + (align-1)/4) & -(align/4);
 #endif
       addr = (nf + pn) * 4;
@@ -1432,7 +1432,7 @@ void gfunc_prolog(Sym *func_sym)
       if (!sn && pn > 4)
         sn = (pn - 4);
     } else {
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
 from_stack:
         sn = (sn + (align-1)/4) & -(align/4);
 #endif
@@ -1445,8 +1445,8 @@ from_stack:
   last_itod_magic=0;
   leaffunc = 1;
   loc = 0;
-#ifdef CONFIG_TCC_BCHECK
-  if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+  if (sugar_state->do_bounds_check)
     gen_bounds_prolog();
 #endif
 }
@@ -1457,13 +1457,13 @@ void gfunc_epilog(void)
   uint32_t x;
   int diff;
 
-#ifdef CONFIG_TCC_BCHECK
-  if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+  if (sugar_state->do_bounds_check)
     gen_bounds_epilog();
 #endif
   /* Copy float return value to core register if base standard is used and
      float computation is made with VFP */
-#if defined(TCC_ARM_EABI) && defined(TCC_ARM_VFP)
+#if defined(SUGAR_ARM_EABI) && defined(SUGAR_ARM_VFP)
   if ((float_abi == ARM_SOFTFP_FLOAT || func_var) && is_float(func_vt.t)) {
     if((func_vt.t & VT_BTYPE) == VT_FLOAT)
       o(0xEE100A10); /* fmrs r0, s0 */
@@ -1475,7 +1475,7 @@ void gfunc_epilog(void)
 #endif
   o(0xE89BA800); /* restore fp, sp, pc */
   diff = (-loc + 3) & -4;
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
   if(!leaffunc)
     diff = ((diff + 11) & -8) - 4;
 #endif
@@ -1498,7 +1498,7 @@ void gfunc_epilog(void)
 ST_FUNC void gen_fill_nops(int bytes)
 {
     if ((bytes & 3))
-      tcc_error("alignment of code section not multiple of 4");
+      sugar_error("alignment of code section not multiple of 4");
     while (bytes > 0) {
 	o(0xE1A00000);
 	bytes -= 4;
@@ -1625,7 +1625,7 @@ void gen_opi(int op)
       c=3;
       break;
     case '%':
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
       func=TOK___aeabi_idivmod;
       retreg=REG_IRE2;
 #else
@@ -1634,7 +1634,7 @@ void gen_opi(int op)
       c=3;
       break;
     case TOK_UMOD:
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
       func=TOK___aeabi_uidivmod;
       retreg=REG_IRE2;
 #else
@@ -1724,11 +1724,11 @@ done:
       vtop->r = retreg;
       break;
     default:
-      tcc_error("gen_opi %i unimplemented!",op);
+      sugar_error("gen_opi %i unimplemented!",op);
   }
 }
 
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
 static int is_zero(int i)
 {
   if((vtop[i].r & (VT_VALMASK | VT_LVAL | VT_SYM)) != VT_CONST)
@@ -1778,7 +1778,7 @@ void gen_opf(int op)
       break;
     default:
       if(op < TOK_ULT || op > TOK_GT) {
-        tcc_error("unknown fp op %x!",op);
+        sugar_error("unknown fp op %x!",op);
         return;
       }
       if(is_zero(-1)) {
@@ -1998,7 +1998,7 @@ void gen_opf(int op)
 	  case TOK_UGE:
 	  case TOK_ULE:
 	  case TOK_UGT:
-            tcc_error("unsigned comparison on floats?");
+            sugar_error("unsigned comparison on floats?");
 	    break;
 	  case TOK_LT:
             op=TOK_Nset;
@@ -2048,7 +2048,7 @@ void gen_opf(int op)
         vset_VT_CMP(op);
         ++vtop;
       } else {
-        tcc_error("unknown fp op %x!",op);
+        sugar_error("unknown fp op %x!",op);
 	return;
       }
   }
@@ -2074,11 +2074,11 @@ ST_FUNC void gen_cvt_itof(int t)
   int bt;
   bt=vtop->type.t & VT_BTYPE;
   if(bt == VT_INT || bt == VT_SHORT || bt == VT_BYTE) {
-#ifndef TCC_ARM_VFP
+#ifndef SUGAR_ARM_VFP
     uint32_t dsize = 0;
 #endif
     r=intr(gv(RC_INT));
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
     r2=vfpr(vtop->r=get_reg(RC_FLOAT));
     o(0xEE000A10|(r<<12)|(r2<<16)); /* fmsr */
     r2|=r2<<12;
@@ -2145,7 +2145,7 @@ ST_FUNC void gen_cvt_itof(int t)
       return;
     }
   }
-  tcc_error("unimplemented gen_cvt_itof %x!",vtop->type.t);
+  sugar_error("unimplemented gen_cvt_itof %x!",vtop->type.t);
 }
 
 /* convert fp to int 't' type */
@@ -2157,7 +2157,7 @@ void gen_cvt_ftoi(int t)
   t&=VT_BTYPE;
   r2=vtop->type.t & VT_BTYPE;
   if(t==VT_INT) {
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
     r=vfpr(gv(RC_FLOAT));
     u=u?0:0x10000;
     o(0xEEBC0AC0|(r<<12)|r|T2CPR(r2)|u); /* ftoXizY */
@@ -2205,13 +2205,13 @@ void gen_cvt_ftoi(int t)
     vtop->r = REG_IRET;
     return;
   }
-  tcc_error("unimplemented gen_cvt_ftoi!");
+  sugar_error("unimplemented gen_cvt_ftoi!");
 }
 
 /* convert from one floating point type to another */
 void gen_cvt_ftof(int t)
 {
-#ifdef TCC_ARM_VFP
+#ifdef SUGAR_ARM_VFP
   if(((vtop->type.t & VT_BTYPE) == VT_FLOAT) != ((t & VT_BTYPE) == VT_FLOAT)) {
     uint32_t r = vfpr(gv(RC_FLOAT));
     o(0xEEB70AC0|(r<<12)|r|T2CPR(vtop->type.t));
@@ -2250,13 +2250,13 @@ ST_FUNC void gen_vla_sp_restore(int addr) {
 /* Subtract from the stack pointer, and push the resulting value onto the stack */
 ST_FUNC void gen_vla_alloc(CType *type, int align) {
     int r;
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check)
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check)
         vpushv(vtop);
 #endif
     r = intr(gv(RC_INT));
     o(0xE04D0000|(r<<12)|r); /* sub r, sp, r */
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
     if (align < 8)
         align = 8;
 #else
@@ -2264,11 +2264,11 @@ ST_FUNC void gen_vla_alloc(CType *type, int align) {
         align = 4;
 #endif
     if (align & (align - 1))
-        tcc_error("alignment is not a power of 2: %i", align);
+        sugar_error("alignment is not a power of 2: %i", align);
     o(stuff_const(0xE3C0D000|(r<<16), align - 1)); /* bic sp, r, #align-1 */
     vpop();
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check) {
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check) {
         vpushi(0);
         vtop->r = TREG_R0;
         o(0xe1a0000d | (vtop->r << 12)); // mov r0,sp

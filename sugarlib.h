@@ -1,11 +1,11 @@
-/* Simple libc header for TCC 
+/* Simple libc header for SUGAR 
  * 
  * Add any function you want from the libc there. This file is here
  * only for your convenience so that you do not need to put the whole
  * glibc include files on your floppy disk 
  */
-#ifndef _TCCLIB_H
-#define _TCCLIB_H
+#ifndef _SUGARLIB_H
+#define _SUGARLIB_H
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -77,4 +77,4 @@ const char *dlerror(void);
 void *dlsym(void *handle, char *symbol);
 int dlclose(void *handle);
 
-#endif /* _TCCLIB_H */
+#endif /* _SUGARLIB_H */

@@ -1,14 +1,14 @@
 /* -------------------------------------------------------------- */
 /*
- *  TCC - Tiny C Compiler
+ *  SUGAR - Sugar C Compiler
  *
- *  tcctools.c - extra tools and and -m32/64 support
+ *  sugartools.c - extra tools and and -m32/64 support
  *
  */
 
 /* -------------------------------------------------------------- */
 /*
- * This program is for making libtcc1.a without ar
+ * This program is for making libsugar1.a without ar
  * tiny_libmaker - tiny elf lib maker
  * usage: tiny_libmaker [lib] files...
  * Copyright (c) 2007 Timppa
@@ -28,7 +28,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "tcc.h"
+#include "sugar.h"
 
 //#define ARMAG  "!<arch>\n"
 #define ARFMAG "`\n"
@@ -61,12 +61,12 @@ static int contains_any(const char *s, const char *list) {
 }
 
 static int ar_usage(int ret) {
-    fprintf(stderr, "usage: tcc -ar [rcsv] lib file...\n");
+    fprintf(stderr, "usage: sugar -ar [rcsv] lib file...\n");
     fprintf(stderr, "create library ([abdioptxN] not supported).\n");
     return ret;
 }
 
-ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
+ST_FUNC int sugar_tool_ar(SUGARState *s1, int argc, char **argv)
 {
     static ArHdr arhdr = {
         "/               ",
@@ -130,19 +130,19 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
 
     if ((fh = fopen(argv[i_lib], "wb")) == NULL)
     {
-        fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_lib]);
+        fprintf(stderr, "sugar: ar: can't open file %s \n", argv[i_lib]);
         goto the_end;
     }
 
     sprintf(tfile, "%s.tmp", argv[i_lib]);
     if ((fo = fopen(tfile, "wb+")) == NULL)
     {
-        fprintf(stderr, "tcc: ar: can't create temporary file %s\n", tfile);
+        fprintf(stderr, "sugar: ar: can't create temporary file %s\n", tfile);
         goto the_end;
     }
 
     funcmax = 250;
-    afpos = tcc_realloc(NULL, funcmax * sizeof *afpos); // 250 func
+    afpos = sugar_realloc(NULL, funcmax * sizeof *afpos); // 250 func
     memcpy(&arhdro.ar_mode, "100666", 6);
 
     // i_obj = first input object file
@@ -153,7 +153,7 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
             continue;
         }
         if ((fi = fopen(argv[i_obj], "rb")) == NULL) {
-            fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_obj]);
+            fprintf(stderr, "sugar: ar: can't open file %s \n", argv[i_obj]);
             goto the_end;
         }
         if (verbose)
@@ -162,7 +162,7 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
         fseek(fi, 0, SEEK_END);
         fsize = ftell(fi);
         fseek(fi, 0, SEEK_SET);
-        buf = tcc_malloc(fsize + 1);
+        buf = sugar_malloc(fsize + 1);
         fread(buf, fsize, 1, fi);
         fclose(fi);
 
@@ -170,7 +170,7 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
         ehdr = (ElfW(Ehdr) *)buf;
         if (ehdr->e_ident[4] != ELFCLASSW)
         {
-            fprintf(stderr, "tcc: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
+            fprintf(stderr, "sugar: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
             goto the_end;
         }
 
@@ -210,12 +210,12 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
                     )) {
                     //printf("symtab: %2Xh %4Xh %2Xh %s\n", sym->st_info, sym->st_size, sym->st_shndx, strtab + sym->st_name);
                     istrlen = strlen(strtab + sym->st_name)+1;
-                    anames = tcc_realloc(anames, strpos+istrlen);
+                    anames = sugar_realloc(anames, strpos+istrlen);
                     strcpy(anames + strpos, strtab + sym->st_name);
                     strpos += istrlen;
                     if (++funccnt >= funcmax) {
                         funcmax += 250;
-                        afpos = tcc_realloc(afpos, funcmax * sizeof *afpos); // 250 func more
+                        afpos = sugar_realloc(afpos, funcmax * sizeof *afpos); // 250 func more
                     }
                     afpos[funccnt] = fpos;
                 }
@@ -236,7 +236,7 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
         memcpy(&arhdro.ar_size, stmp, 10);
         fwrite(&arhdro, sizeof(arhdro), 1, fo);
         fwrite(buf, fsize, 1, fo);
-        tcc_free(buf);
+        sugar_free(buf);
         i_obj++;
         fpos += (fsize + sizeof(arhdro));
     }
@@ -260,16 +260,16 @@ ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
     fseek(fo, 0, SEEK_END);
     fsize = ftell(fo);
     fseek(fo, 0, SEEK_SET);
-    buf = tcc_malloc(fsize + 1);
+    buf = sugar_malloc(fsize + 1);
     fread(buf, fsize, 1, fo);
     fwrite(buf, fsize, 1, fh);
-    tcc_free(buf);
+    sugar_free(buf);
     ret = 0;
 the_end:
     if (anames)
-        tcc_free(anames);
+        sugar_free(anames);
     if (afpos)
-        tcc_free(afpos);
+        sugar_free(afpos);
     if (fh)
         fclose(fh);
     if (fo)
@@ -299,9 +299,9 @@ the_end:
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
 
-ST_FUNC int tcc_tool_impdef(TCCState *s1, int argc, char **argv)
+ST_FUNC int sugar_tool_impdef(SUGARState *s1, int argc, char **argv)
 {
     int ret, v, i;
     char infile[260];
@@ -341,14 +341,14 @@ ST_FUNC int tcc_tool_impdef(TCCState *s1, int argc, char **argv)
     if (0 == infile[0]) {
 usage:
         fprintf(stderr,
-            "usage: tcc -impdef library.dll [-v] [-o outputfile]\n"
+            "usage: sugar -impdef library.dll [-v] [-o outputfile]\n"
             "create export definition file (.def) from dll\n"
             );
         goto the_end;
     }
 
     if (0 == outfile[0]) {
-        strcpy(outfile, tcc_basename(infile));
+        strcpy(outfile, sugar_basename(infile));
         q = strrchr(outfile, '.');
         if (NULL == q)
             q = strchr(outfile, 0);
@@ -360,9 +360,9 @@ usage:
     if (SearchPath(NULL, file, ".dll", sizeof path, path, NULL))
         file = path;
 #endif
-    ret = tcc_get_dllexports(file, &p);
+    ret = sugar_get_dllexports(file, &p);
     if (ret || !p) {
-        fprintf(stderr, "tcc: impdef: %s '%s'\n",
+        fprintf(stderr, "sugar: impdef: %s '%s'\n",
             ret == -1 ? "can't find file" :
             ret ==  1 ? "can't read symbols" :
             ret ==  0 ? "no symbols found in" :
@@ -376,11 +376,11 @@ usage:
 
     op = fopen(outfile, "wb");
     if (NULL == op) {
-        fprintf(stderr, "tcc: impdef: could not create output file: %s\n", outfile);
+        fprintf(stderr, "sugar: impdef: could not create output file: %s\n", outfile);
         goto the_end;
     }
 
-    fprintf(op, "LIBRARY %s\n\nEXPORTS\n", tcc_basename(file));
+    fprintf(op, "LIBRARY %s\n\nEXPORTS\n", sugar_basename(file));
     for (q = p, i = 0; *q; ++i) {
         fprintf(op, "%s\n", q);
         q += strlen(q) + 1;
@@ -392,10 +392,10 @@ usage:
     ret = 0;
 
 the_end:
-    /* cannot free memory received from tcc_get_dllexports
+    /* cannot free memory received from sugar_get_dllexports
        if it came from a dll */
     /* if (p)
-        tcc_free(p); */
+        sugar_free(p); */
     if (fp)
         fclose(fp);
     if (op)
@@ -403,11 +403,11 @@ the_end:
     return ret;
 }
 
-#endif /* TCC_TARGET_PE */
+#endif /* SUGAR_TARGET_PE */
 
 /* -------------------------------------------------------------- */
 /*
- *  TCC - Tiny C Compiler
+ *  SUGAR - Sugar C Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -426,13 +426,13 @@ the_end:
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* re-execute the i386/x86_64 cross-compilers with tcc -m32/-m64: */
+/* re-execute the i386/x86_64 cross-compilers with sugar -m32/-m64: */
 
-#if !defined TCC_TARGET_I386 && !defined TCC_TARGET_X86_64
+#if !defined SUGAR_TARGET_I386 && !defined SUGAR_TARGET_X86_64
 
-ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int option)
+ST_FUNC void sugar_tool_cross(SUGARState *s1, char **argv, int option)
 {
-    tcc_error("-m%d not implemented.", option);
+    sugar_error("-m%d not implemented.", option);
 }
 
 #else
@@ -448,7 +448,7 @@ static char *str_replace(const char *str, const char *p, const char *r)
     sl = strlen(str);
     pl = strlen(p);
     rl = strlen(r);
-    for (d0 = NULL;; d0 = tcc_malloc(sl + 1)) {
+    for (d0 = NULL;; d0 = sugar_malloc(sl + 1)) {
         for (d = d0, s = str; s0 = s, s = strstr(s, p), s; s += pl) {
             if (d) {
                 memcpy(d, s0, sl = s - s0), d += sl;
@@ -479,18 +479,18 @@ static int execvp_win32(const char *prog, char **argv)
 #define execvp execvp_win32
 #endif /* _WIN32 */
 
-ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int target)
+ST_FUNC void sugar_tool_cross(SUGARState *s1, char **argv, int target)
 {
     char program[4096];
     char *a0 = argv[0];
-    int prefix = tcc_basename(a0) - a0;
+    int prefix = sugar_basename(a0) - a0;
 
     snprintf(program, sizeof program,
         "%.*s%s"
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
         "-win32"
 #endif
-        "-tcc"
+        "-sugar"
 #ifdef _WIN32
         ".exe"
 #endif
@@ -498,12 +498,12 @@ ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int target)
 
     if (strcmp(a0, program))
         execvp(argv[0] = program, argv);
-    tcc_error("could not run '%s'", program);
+    sugar_error("could not run '%s'", program);
 }
 
-#endif /* TCC_TARGET_I386 && TCC_TARGET_X86_64 */
+#endif /* SUGAR_TARGET_I386 && SUGAR_TARGET_X86_64 */
 /* -------------------------------------------------------------- */
-/* enable commandline wildcard expansion (tcc -o x.exe *.c) */
+/* enable commandline wildcard expansion (sugar -o x.exe *.c) */
 
 #ifdef _WIN32
 int _CRT_glob = 1;
@@ -515,7 +515,7 @@ int _dowildcard = 1;
 /* -------------------------------------------------------------- */
 /* generate xxx.d file */
 
-ST_FUNC void gen_makedeps(TCCState *s1, const char *target, const char *filename)
+ST_FUNC void gen_makedeps(SUGARState *s1, const char *target, const char *filename)
 {
     FILE *depout;
     char buf[1024];
@@ -524,7 +524,7 @@ ST_FUNC void gen_makedeps(TCCState *s1, const char *target, const char *filename
     if (!filename) {
         /* compute filename automatically: dir/file.o -> dir/file.d */
         snprintf(buf, sizeof buf, "%.*s.d",
-            (int)(tcc_fileextension(target) - target), target);
+            (int)(sugar_fileextension(target) - target), target);
         filename = buf;
     }
 
@@ -534,7 +534,7 @@ ST_FUNC void gen_makedeps(TCCState *s1, const char *target, const char *filename
     /* XXX return err codes instead of error() ? */
     depout = fopen(filename, "w");
     if (!depout)
-        tcc_error("could not open '%s'", filename);
+        sugar_error("could not open '%s'", filename);
     fprintf(depout, "%s:", target);
     for (i = 0; i<s1->nb_target_deps; ++i) {
         for (k = 0; k < i; ++k)

@@ -74,12 +74,12 @@ int main(int argc, char *argv[])
         case 'v'://ersion
             printf("%d\n", __clang_major__);
             break;
-#elif defined(__TINYC__)
+#elif defined(__SUGARC__)
         case 'v'://ersion
             puts("0");
             break;
         case 'm'://inor
-            printf("%d\n", __TINYC__);
+            printf("%d\n", __SUGARC__);
             break;
 #elif defined(_MSC_VER)
         case 'v'://ersion
@@ -108,8 +108,8 @@ int main(int argc, char *argv[])
         case 'c'://ompiler
 #if defined(__clang__)
             puts("clang");
-#elif defined(__TINYC__)
-            puts("tcc");
+#elif defined(__SUGARC__)
+            puts("sugar");
 #elif defined(_MSC_VER)
             puts("msvc");
 #elif defined(__GNUC__)

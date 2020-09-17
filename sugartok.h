@@ -64,7 +64,7 @@
      DEF(TOK_ASM2, "__asm")
      DEF(TOK_ASM3, "__asm__")
 
-#ifdef TCC_TARGET_ARM64
+#ifdef SUGAR_TARGET_ARM64
      DEF(TOK_UINT128, "__uint128_t")
 #endif
 
@@ -158,20 +158,20 @@
      DEF(TOK_builtin_return_address, "__builtin_return_address")
      DEF(TOK_builtin_expect, "__builtin_expect")
      /*DEF(TOK_builtin_va_list, "__builtin_va_list")*/
-#if defined TCC_TARGET_PE && defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_PE && defined SUGAR_TARGET_X86_64
      DEF(TOK_builtin_va_start, "__builtin_va_start")
-#elif defined TCC_TARGET_X86_64
+#elif defined SUGAR_TARGET_X86_64
      DEF(TOK_builtin_va_arg_types, "__builtin_va_arg_types")
-#elif defined TCC_TARGET_ARM64
+#elif defined SUGAR_TARGET_ARM64
      DEF(TOK_builtin_va_start, "__builtin_va_start")
      DEF(TOK_builtin_va_arg, "__builtin_va_arg")
-#elif defined TCC_TARGET_RISCV64
+#elif defined SUGAR_TARGET_RISCV64
      DEF(TOK_builtin_va_start, "__builtin_va_start")
 #endif
 
 /* pragma */
      DEF(TOK_pack, "pack")
-#if !defined(TCC_TARGET_I386) && !defined(TCC_TARGET_X86_64)
+#if !defined(SUGAR_TARGET_I386) && !defined(SUGAR_TARGET_X86_64)
      /* already defined for assembler */
      DEF(TOK_ASM_push, "push")
      DEF(TOK_ASM_pop, "pop")
@@ -184,7 +184,7 @@
      DEF(TOK_option, "option")
 
 /* builtin functions or variables */
-#ifndef TCC_ARM_EABI
+#ifndef SUGAR_ARM_EABI
      DEF(TOK_memcpy, "memcpy")
      DEF(TOK_memmove, "memmove")
      DEF(TOK_memset, "memset")
@@ -197,7 +197,7 @@
      DEF(TOK___ashldi3, "__ashldi3")
      DEF(TOK___floatundisf, "__floatundisf")
      DEF(TOK___floatundidf, "__floatundidf")
-# ifndef TCC_ARM_VFP
+# ifndef SUGAR_ARM_VFP
      DEF(TOK___floatundixf, "__floatundixf")
      DEF(TOK___fixunsxfdi, "__fixunsxfdi")
 # endif
@@ -205,8 +205,8 @@
      DEF(TOK___fixunsdfdi, "__fixunsdfdi")
 #endif
 
-#if defined TCC_TARGET_ARM
-# ifdef TCC_ARM_EABI
+#if defined SUGAR_TARGET_ARM
+# ifdef SUGAR_ARM_EABI
      DEF(TOK_memcpy, "__aeabi_memcpy")
      DEF(TOK_memmove, "__aeabi_memmove")
      DEF(TOK_memmove4, "__aeabi_memmove4")
@@ -236,7 +236,7 @@
      DEF(TOK___udivsi3, "__udivsi3")
      DEF(TOK___floatdisf, "__floatdisf")
      DEF(TOK___floatdidf, "__floatdidf")
-#  ifndef TCC_ARM_VFP
+#  ifndef SUGAR_ARM_VFP
      DEF(TOK___floatdixf, "__floatdixf")
      DEF(TOK___fixunssfsi, "__fixunssfsi")
      DEF(TOK___fixunsdfsi, "__fixunsdfsi")
@@ -248,7 +248,7 @@
 # endif
 #endif
 
-#if defined TCC_TARGET_C67
+#if defined SUGAR_TARGET_C67
      DEF(TOK__divi, "_divi")
      DEF(TOK__divu, "_divu")
      DEF(TOK__divf, "_divf")
@@ -257,20 +257,20 @@
      DEF(TOK__remu, "_remu")
 #endif
 
-#if defined TCC_TARGET_I386
+#if defined SUGAR_TARGET_I386
      DEF(TOK___fixsfdi, "__fixsfdi")
      DEF(TOK___fixdfdi, "__fixdfdi")
      DEF(TOK___fixxfdi, "__fixxfdi")
 #endif
 
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
      DEF(TOK_alloca, "alloca")
 #endif
 
-#if defined TCC_TARGET_PE
+#if defined SUGAR_TARGET_PE
      DEF(TOK___chkstk, "__chkstk")
 #endif
-#if defined TCC_TARGET_ARM64 || defined TCC_TARGET_RISCV64
+#if defined SUGAR_TARGET_ARM64 || defined SUGAR_TARGET_RISCV64
      DEF(TOK___arm64_clear_cache, "__arm64_clear_cache")
      DEF(TOK___addtf3, "__addtf3")
      DEF(TOK___subtf3, "__subtf3")
@@ -297,7 +297,7 @@
 #endif
 
 /* bound checking symbols */
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
      DEF(TOK___bound_ptr_add, "__bound_ptr_add")
      DEF(TOK___bound_ptr_indir1, "__bound_ptr_indir1")
      DEF(TOK___bound_ptr_indir2, "__bound_ptr_indir2")
@@ -310,8 +310,8 @@
      DEF(TOK___bound_local_delete, "__bound_local_delete")
      DEF(TOK___bound_setjmp, "__bound_setjmp")
      DEF(TOK___bound_new_region, "__bound_new_region")
-# ifdef TCC_TARGET_PE
-#  ifdef TCC_TARGET_X86_64
+# ifdef SUGAR_TARGET_PE
+#  ifdef SUGAR_TARGET_X86_64
      DEF(TOK___bound_alloca_nr, "__bound_alloca_nr")
 #  endif
 # else
@@ -354,10 +354,10 @@
  DEF_ASMDIR(endr)
  DEF_ASMDIR(org)
  DEF_ASMDIR(quad)
-#if defined(TCC_TARGET_I386)
+#if defined(SUGAR_TARGET_I386)
  DEF_ASMDIR(code16)
  DEF_ASMDIR(code32)
-#elif defined(TCC_TARGET_X86_64)
+#elif defined(SUGAR_TARGET_X86_64)
  DEF_ASMDIR(code64)
 #endif
  DEF_ASMDIR(short)
@@ -365,6 +365,6 @@
  DEF_ASMDIR(int)
  DEF_ASMDIR(section)            /* must be last directive */
 
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
 #include "i386-tok.h"
 #endif

@@ -900,7 +900,7 @@ overrideme:
     movq %rdx, %xmm2
     movq %r13, %xmm3
     /* movq mem64->xmm is encoded as f30f7e by GAS, but as
-       660f6e by tcc (which really is a movd and would need 
+       660f6e by sugar (which really is a movd and would need 
        a REX.W prefix to be movq).  */
     movq (%rsi), %xmm3
     movq %mm1, %rdx

@@ -1,12 +1,12 @@
 /*
- * TCC auto test program
+ * SUGAR auto test program
  */
 #include "config.h"
 
 /* identify the configured reference compiler in use */
 #define CC_gcc 1
 #define CC_clang 2
-#define CC_tcc 3
+#define CC_sugar 3
 
 /* Unfortunately, gcc version < 3 does not handle that! */
 #define ALL_ISOC99
@@ -17,7 +17,7 @@
 /* __VA_ARGS__ and __func__ support */
 #define C99_MACROS
 
-#ifndef __TINYC__
+#ifndef __SUGARC__
 typedef __SIZE_TYPE__ uintptr_t;
 #endif
 
@@ -29,7 +29,7 @@ typedef __SIZE_TYPE__ uintptr_t;
 #define ULONG_LONG_FORMAT "%Lu"
 #endif
 
-// MinGW has 80-bit rather than 64-bit long double which isn't compatible with TCC or MSVC
+// MinGW has 80-bit rather than 64-bit long double which isn't compatible with SUGAR or MSVC
 #if defined(_WIN32) && defined(__GNUC__)
 #define LONG_DOUBLE double
 #define LONG_DOUBLE_LITERAL(x) x
@@ -40,24 +40,24 @@ typedef __SIZE_TYPE__ uintptr_t;
 
 /* test various include syntaxes */
 
-#define TCCLIB_INC <tcclib.h>
-#define TCCLIB_INC1 <tcclib
-#define TCCLIB_INC2 h>
-#define TCCLIB_INC3 "tcclib.h"
+#define SUGARLIB_INC <sugarlib.h>
+#define SUGARLIB_INC1 <sugarlib
+#define SUGARLIB_INC2 h>
+#define SUGARLIB_INC3 "sugarlib.h"
 
-#include TCCLIB_INC
+#include SUGARLIB_INC
 
-#include TCCLIB_INC1.TCCLIB_INC2
+#include SUGARLIB_INC1.SUGARLIB_INC2
 
-#include TCCLIB_INC1.h>
+#include SUGARLIB_INC1.h>
 
-#include TCCLIB_INC3
+#include SUGARLIB_INC3
 
-#include <tcclib.h>
+#include <sugarlib.h>
 
-#include "tcclib.h"
+#include "sugarlib.h"
 
-#include "tcctest.h"
+#include "sugartest.h"
 
 /* Test two more ways to include a file named like a pp-number */
 #define INC(name) <tests/name.h>
@@ -127,7 +127,7 @@ static int onetwothree = 123;
 #define B3 4
 #endif
 
-#ifdef __TINYC__
+#ifdef __SUGARC__
 /* We try to handle this syntax.  Make at least sure it doesn't segfault.  */
 char invalid_function_def()[] {return 0;}
 #endif
@@ -340,13 +340,13 @@ int ret(a)
     return 0;
 }
 
-#if !defined(__TINYC__) && (__GNUC__ >= 8)
+#if !defined(__SUGARC__) && (__GNUC__ >= 8)
 /* Old GCCs don't regard "foo"[1] as constant, even in GNU dialect. */
 #define CONSTANTINDEXEDSTRLIT
 #endif
 char str_ag1[] = "b";
 char str_ag2[] = { "b" };
-/*char str_bg1[] = ("cccc"); GCC accepts this with pedantic warning, TCC not */
+/*char str_bg1[] = ("cccc"); GCC accepts this with pedantic warning, SUGAR not */
 #ifdef CONSTANTINDEXEDSTRLIT
 char str_ag3[] = { "ab"[1], 0 };
 char str_x[2] = { "xy" "z"[2], 0 };
@@ -980,7 +980,7 @@ struct aligntest7
 struct aligntest5 altest5[2];
 struct aligntest6 altest6[2];
 int pad1;
-/* altest7 is correctly aligned to 16 bytes also with TCC,
+/* altest7 is correctly aligned to 16 bytes also with SUGAR,
    but __alignof__ returns the wrong result (4) because we
    can't store the alignment yet when specified on symbols
    directly (it's stored in the type so we'd need to make
@@ -2732,7 +2732,7 @@ long __pa_symbol(void)
 {
     /* This 64bit constant was handled incorrectly, it was used as addend
        (which can hold 64bit just fine) in connection with a symbol,
-       and TCC generates wrong code for that (displacements are 32bit only).
+       and SUGAR generates wrong code for that (displacements are 32bit only).
        This effectively is "+ 0x80000000", and if addresses of globals
        are below 2GB the result should be a number without high 32 bits set.  */
        return ((long)(((unsigned long)(&rel1))) - (0xffffffff80000000UL));
@@ -2956,7 +2956,7 @@ void statement_expr_test(void)
     
     /* Test that symbols aren't freed prematurely.
        With SYM_DEBUG valgrind will show a read from a freed
-       symbol, and tcc will show an (invalid) warning on the initialization
+       symbol, and sugar will show an (invalid) warning on the initialization
        of 'ptr' below, if symbols are popped after the stmt expr.  */
     void *v = (void*)39;
     typeof(({
@@ -3248,7 +3248,7 @@ char * get_asm_string (void)
      resolving to a local label.  That check is overly zealous as the code
      within the asm makes sure to use it only in PIC-possible contexts,
      but all GCC versions behave like so.  We arrange for PIC to be disabled
-     for compiling tcctest.c in the Makefile.
+     for compiling sugartest.c in the Makefile.
 
      Additionally the usage of 'c' in "%c0" in the template is actually wrong,
      as that would expect an operand that is a condition code.  The operand
@@ -3352,8 +3352,8 @@ void test_high_clobbers(void)
     test_high_clobbers_really();
     asm volatile("mov %%r12,%0" :: "m" (x2)); /* new r12 */
     asm volatile("mov %0,%%r12" :: "m" (x1)); /* restore r12 */
-    /* should be 0 but tcc doesn't save r12 automatically, which has
-       bad effects when gcc helds TCCState *s in r12 in tcc.c:main */
+    /* should be 0 but sugar doesn't save r12 automatically, which has
+       bad effects when gcc helds SUGARState *s in r12 in sugar.c:main */
     //printf("r12-clobber-diff: %lx\n", x2 - x1);
 #endif
 }
@@ -3446,7 +3446,7 @@ void test_asm_call(void)
      tested here).  */
   /* two pushes so stack remains aligned */
   asm volatile ("push %%rdi; push %%rdi; mov %0, %%rdi;"
-#if 1 && !defined(__TINYC__) && (defined(__PIC__) || defined(__PIE__)) && !defined(__APPLE__)
+#if 1 && !defined(__SUGARC__) && (defined(__PIC__) || defined(__PIE__)) && !defined(__APPLE__)
 		"call getenv@plt;"
 #elif defined(__APPLE__)
                 "call _getenv;"
@@ -3641,7 +3641,7 @@ void builtin_test(void)
     COMPAT_TYPE(char *, unsigned char *);
     COMPAT_TYPE(char *, signed char *);
     COMPAT_TYPE(char *, char *);
-/* space is needed because tcc preprocessor introduces a space between each token */
+/* space is needed because sugar preprocessor introduces a space between each token */
     COMPAT_TYPE(char * *, void *); 
 #endif
     printf("res1 = %d\n", __builtin_constant_p(1));
@@ -4039,7 +4039,7 @@ void bounds_check1_test (void)
 #define CORRECT_CR_HANDLING
 
 /* deprecated and no longer supported in gcc 3.3 */
-#ifdef __TINYC__
+#ifdef __SUGARC__
 # define ACCEPT_CR_IN_STRINGS
 #endif
 
@@ -4049,7 +4049,8 @@ void whitespace_test(void)
 {
     char *str;
 
-#if 1
+
+#if 1
     pri\
 ntf("whitspace:\n");
 #endif
@@ -4072,7 +4073,8 @@ ntf("min=%d\n", 4);
 ";
     printf("len1=%d str[0]=%d\n", strlen(str), str[0]);
 #endif
-    printf("len1=%d\n", strlen("a
+    printf("len1=%d\n", strlen("
+a
 "));
 #else
     printf("len1=1\nlen1=1 str[0]=10\nlen1=3\n");

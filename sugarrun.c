@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler - Support for -run switch
+ *  SUGAR - Sugar C Compiler - Support for -run switch
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -18,15 +18,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "tcc.h"
+#include "sugar.h"
 
 /* only native compiler supports -run */
-#ifdef TCC_IS_NATIVE
+#ifdef SUGAR_IS_NATIVE
 
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
 typedef struct rt_context
 {
-    /* --> tccelf.c:tcc_add_btstub wants those below in that order: */
+    /* --> sugarelf.c:sugar_add_btstub wants those below in that order: */
     Stab_Sym *stab_sym, *stab_sym_end;
     char *stab_str;
     ElfW(Sym) *esym_start, *esym_end;
@@ -46,36 +46,36 @@ static rt_context g_rtctxt;
 static void set_exception_handler(void);
 static int _rt_error(void *fp, void *ip, const char *fmt, va_list ap);
 static void rt_exit(int code);
-#endif /* CONFIG_TCC_BACKTRACE */
+#endif /* CONFIG_SUGAR_BACKTRACE */
 
 /* defined when included from lib/bt-exe.c */
-#ifndef CONFIG_TCC_BACKTRACE_ONLY
+#ifndef CONFIG_SUGAR_BACKTRACE_ONLY
 
 #ifndef _WIN32
 # include <sys/mman.h>
 #endif
 
-static void set_pages_executable(TCCState *s1, void *ptr, unsigned long length);
-static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff);
+static void set_pages_executable(SUGARState *s1, void *ptr, unsigned long length);
+static int sugar_relocate_ex(SUGARState *s1, void *ptr, addr_t ptr_diff);
 
 #ifdef _WIN64
-static void *win64_add_function_table(TCCState *s1);
+static void *win64_add_function_table(SUGARState *s1);
 static void win64_del_function_table(void *);
 #endif
 
 /* ------------------------------------------------------------- */
-/* Do all relocations (needed before using tcc_get_symbol())
+/* Do all relocations (needed before using sugar_get_symbol())
    Returns -1 on error. */
 
-LIBTCCAPI int tcc_relocate(TCCState *s1, void *ptr)
+LIBSUGARAPI int sugar_relocate(SUGARState *s1, void *ptr)
 {
     int size;
     addr_t ptr_diff = 0;
 
-    if (TCC_RELOCATE_AUTO != ptr)
-        return tcc_relocate_ex(s1, ptr, 0);
+    if (SUGAR_RELOCATE_AUTO != ptr)
+        return sugar_relocate_ex(s1, ptr, 0);
 
-    size = tcc_relocate_ex(s1, NULL, 0);
+    size = sugar_relocate_ex(s1, NULL, 0);
     if (size < 0)
         return -1;
 
@@ -83,7 +83,7 @@ LIBTCCAPI int tcc_relocate(TCCState *s1, void *ptr)
 {
     /* Using mmap instead of malloc */
     void *prx;
-    char tmpfname[] = "/tmp/.tccrunXXXXXX";
+    char tmpfname[] = "/tmp/.sugarrunXXXXXX";
     int fd = mkstemp(tmpfname);
     unlink(tmpfname);
     ftruncate(fd, size);
@@ -91,21 +91,21 @@ LIBTCCAPI int tcc_relocate(TCCState *s1, void *ptr)
     ptr = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     prx = mmap (NULL, size, PROT_READ|PROT_EXEC, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED || prx == MAP_FAILED)
-	tcc_error("tccrun: could not map memory");
+	sugar_error("sugarrun: could not map memory");
     dynarray_add(&s1->runtime_mem, &s1->nb_runtime_mem, (void*)(addr_t)size);
     dynarray_add(&s1->runtime_mem, &s1->nb_runtime_mem, prx);
     ptr_diff = (char*)prx - (char*)ptr;
     close(fd);
 }
 #else
-    ptr = tcc_malloc(size);
+    ptr = sugar_malloc(size);
 #endif
-    tcc_relocate_ex(s1, ptr, ptr_diff); /* no more errors expected */
+    sugar_relocate_ex(s1, ptr, ptr_diff); /* no more errors expected */
     dynarray_add(&s1->runtime_mem, &s1->nb_runtime_mem, ptr);
     return 0;
 }
 
-ST_FUNC void tcc_run_free(TCCState *s1)
+ST_FUNC void sugar_run_free(SUGARState *s1)
 {
     int i;
 
@@ -118,13 +118,13 @@ ST_FUNC void tcc_run_free(TCCState *s1)
 #ifdef _WIN64
         win64_del_function_table(*(void**)s1->runtime_mem[i]);
 #endif
-        tcc_free(s1->runtime_mem[i]);
+        sugar_free(s1->runtime_mem[i]);
 #endif
     }
-    tcc_free(s1->runtime_mem);
+    sugar_free(s1->runtime_mem);
 }
 
-static void run_cdtors(TCCState *s1, const char *start, const char *end,
+static void run_cdtors(SUGARState *s1, const char *start, const char *end,
                        int argc, char **argv, char **envp)
 {
     void **a = (void **)get_sym_addr(s1, start, 0, 0);
@@ -134,10 +134,10 @@ static void run_cdtors(TCCState *s1, const char *start, const char *end,
 }
 
 /* launch the compiled program with the given arguments */
-LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
+LIBSUGARAPI int sugar_run(SUGARState *s1, int argc, char **argv)
 {
     int (*prog_main)(int, char **, char **), ret;
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     rt_context *rc = &g_rtctxt;
 #endif
 # if defined(__APPLE__)
@@ -149,15 +149,15 @@ LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
     s1->runtime_main = s1->nostdlib ? "_start" : "main";
     if ((s1->dflag & 16) && (addr_t)-1 == get_sym_addr(s1, s1->runtime_main, 0, 1))
         return 0;
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     if (s1->do_debug)
-        tcc_add_symbol(s1, "exit", rt_exit);
+        sugar_add_symbol(s1, "exit", rt_exit);
 #endif
-    if (tcc_relocate(s1, TCC_RELOCATE_AUTO) < 0)
+    if (sugar_relocate(s1, SUGAR_RELOCATE_AUTO) < 0)
         return -1;
     prog_main = (void*)get_sym_addr(s1, s1->runtime_main, 1, 1);
 
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     memset(rc, 0, sizeof *rc);
     if (s1->do_debug) {
         void *p;
@@ -170,14 +170,14 @@ LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
 #if PTR_SIZE == 8
         rc->prog_base = text_section->sh_addr & 0xffffffff00000000ULL;
 #endif
-        rc->top_func = tcc_get_symbol(s1, "main");
+        rc->top_func = sugar_get_symbol(s1, "main");
         rc->num_callers = s1->rt_num_callers;
         rc->do_jmp = 1;
-        if ((p = tcc_get_symbol(s1, "__rt_error")))
+        if ((p = sugar_get_symbol(s1, "__rt_error")))
             *(void**)p = _rt_error;
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
         if (s1->do_bounds_check) {
-            if ((p = tcc_get_symbol(s1, "__bound_init")))
+            if ((p = sugar_get_symbol(s1, "__bound_init")))
                 ((void(*)(void*, int))p)(bounds_section->data, 1);
         }
 #endif
@@ -190,7 +190,7 @@ LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
     fflush(stderr);
     /* These aren't C symbols, so don't need leading underscore handling.  */
     run_cdtors(s1, "__init_array_start", "__init_array_end", argc, argv, envp);
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     if (!rc->do_jmp || !(ret = setjmp(rc->jmp_buf)))
 #endif
     {
@@ -202,7 +202,7 @@ LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
     return ret;
 }
 
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
 /* To avoid that x86 processors would reload cached instructions
    each time when data is written in the near, we need to make
    sure that code and data do not share the same 64 byte unit */
@@ -213,7 +213,7 @@ LIBTCCAPI int tcc_run(TCCState *s1, int argc, char **argv)
 
 /* relocate code. Return -1 on error, required size if ptr is NULL,
    otherwise copy code into buffer passed by the caller */
-static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff)
+static int sugar_relocate_ex(SUGARState *s1, void *ptr, addr_t ptr_diff)
 {
     Section *s;
     unsigned offset, length, align, max_align, i, k, f;
@@ -221,10 +221,10 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff)
 
     if (NULL == ptr) {
         s1->nb_errors = 0;
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
         pe_output_file(s1, NULL);
 #else
-        tcc_add_runtime(s1);
+        sugar_add_runtime(s1);
 	resolve_common_syms(s1);
         build_got_entries(s1);
 #endif
@@ -268,7 +268,7 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff)
     if (0 == mem)
         return offset + max_align;
 
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
     s1->pe_imagebase = mem;
 #endif
 
@@ -278,7 +278,7 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff)
         if (s->reloc)
             relocate_section(s1, s);
     }
-#if !defined(TCC_TARGET_PE) || defined(TCC_TARGET_MACHO)
+#if !defined(SUGAR_TARGET_PE) || defined(SUGAR_TARGET_MACHO)
     relocate_plt(s1);
 #endif
 
@@ -309,7 +309,7 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr, addr_t ptr_diff)
 /* ------------------------------------------------------------- */
 /* allow to run code in memory */
 
-static void set_pages_executable(TCCState *s1, void *ptr, unsigned long length)
+static void set_pages_executable(SUGARState *s1, void *ptr, unsigned long length)
 {
 #ifdef _WIN32
     unsigned long old_protect;
@@ -325,16 +325,16 @@ static void set_pages_executable(TCCState *s1, void *ptr, unsigned long length)
     end = (addr_t)ptr + length;
     end = (end + PAGESIZE - 1) & ~(PAGESIZE - 1);
     if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC))
-        tcc_error("mprotect failed: did you mean to configure --with-selinux?");
+        sugar_error("mprotect failed: did you mean to configure --with-selinux?");
 # endif
-# if defined TCC_TARGET_ARM || defined TCC_TARGET_ARM64
+# if defined SUGAR_TARGET_ARM || defined SUGAR_TARGET_ARM64
     __clear_cache(ptr, (char *)ptr + length);
 # endif
 #endif
 }
 
 #ifdef _WIN64
-static void *win64_add_function_table(TCCState *s1)
+static void *win64_add_function_table(SUGARState *s1)
 {
     void *p = NULL;
     if (s1->uw_pdata) {
@@ -356,9 +356,9 @@ static void win64_del_function_table(void *p)
     }
 }
 #endif
-#endif //ndef CONFIG_TCC_BACKTRACE_ONLY
+#endif //ndef CONFIG_SUGAR_BACKTRACE_ONLY
 /* ------------------------------------------------------------- */
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
 
 static int rt_vprintf(const char *fmt, va_list ap)
 {
@@ -533,7 +533,7 @@ static int _rt_error(void *fp, void *ip, const char *fmt, va_list ap)
     const char *a, *b, *msg;
 
     if (fp) {
-        /* we're called from tcc_backtrace. */
+        /* we're called from sugar_backtrace. */
         rc->fp = (addr_t)fp;
         rc->ip = (addr_t)ip;
         msg = "";
@@ -709,7 +709,7 @@ static void sig_error(int signum, siginfo_t *siginf, void *puc)
 static void set_exception_handler(void)
 {
     struct sigaction sigact;
-    /* install TCC signal handlers to print debug info on fatal
+    /* install SUGAR signal handlers to print debug info on fatal
        runtime errors */
     sigact.sa_flags = SA_SIGINFO | SA_RESETHAND;
 #if 0//def SIGSTKSZ // this causes signals not to work at all on some (older) linuxes
@@ -860,9 +860,9 @@ static int rt_get_caller_pc(addr_t *paddr, rt_context *rc, int level)
 }
 
 #endif
-#endif /* CONFIG_TCC_BACKTRACE */
+#endif /* CONFIG_SUGAR_BACKTRACE */
 /* ------------------------------------------------------------- */
-#ifdef CONFIG_TCC_STATIC
+#ifdef CONFIG_SUGAR_STATIC
 
 /* dummy function for profiling */
 ST_FUNC void *dlopen(const char *filename, int flag)
@@ -879,29 +879,29 @@ ST_FUNC const char *dlerror(void)
     return "error";
 }
 
-typedef struct TCCSyms {
+typedef struct SUGARSyms {
     char *str;
     void *ptr;
-} TCCSyms;
+} SUGARSyms;
 
 
 /* add the symbol you want here if no dynamic linking is done */
-static TCCSyms tcc_syms[] = {
-#if !defined(CONFIG_TCCBOOT)
-#define TCCSYM(a) { #a, &a, },
-    TCCSYM(printf)
-    TCCSYM(fprintf)
-    TCCSYM(fopen)
-    TCCSYM(fclose)
-#undef TCCSYM
+static SUGARSyms sugar_syms[] = {
+#if !defined(CONFIG_SUGARBOOT)
+#define SUGARSYM(a) { #a, &a, },
+    SUGARSYM(printf)
+    SUGARSYM(fprintf)
+    SUGARSYM(fopen)
+    SUGARSYM(fclose)
+#undef SUGARSYM
 #endif
     { NULL, NULL },
 };
 
 ST_FUNC void *dlsym(void *handle, const char *symbol)
 {
-    TCCSyms *p;
-    p = tcc_syms;
+    SUGARSyms *p;
+    p = sugar_syms;
     while (p->str != NULL) {
         if (!strcmp(p->str, symbol))
             return p->ptr;
@@ -910,6 +910,6 @@ ST_FUNC void *dlsym(void *handle, const char *symbol)
     return NULL;
 }
 
-#endif /* CONFIG_TCC_STATIC */
-#endif /* TCC_IS_NATIVE */
+#endif /* CONFIG_SUGAR_STATIC */
+#endif /* SUGAR_IS_NATIVE */
 /* ------------------------------------------------------------- */

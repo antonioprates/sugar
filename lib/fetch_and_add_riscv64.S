@@ -3,7 +3,7 @@
         .global fetch_and_add_riscv64
         .type   fetch_and_add_riscv64, %function
 fetch_and_add_riscv64:
-#ifdef __TINYC__
+#ifdef __SUGARC__
         .int   0x0f50000f
         .int   0x004b5202f
         .short 0x8082

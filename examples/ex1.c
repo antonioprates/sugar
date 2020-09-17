@@ -1,5 +1,5 @@
-#!/usr/local/bin/tcc -run
-#include <tcclib.h>
+#!/usr/local/bin/sugar -run
+#include <sugarlib.h>
 
 int main()
 {

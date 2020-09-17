@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  SUGAR - Sugar C Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _TCC_H
-#define _TCC_H
+#ifndef _SUGAR_H
+#define _SUGAR_H
 
 #define _GNU_SOURCE
 #define _DARWIN_C_SOURCE
@@ -39,7 +39,7 @@
 # define WIN32_LEAN_AND_MEAN 1
 # include <unistd.h>
 # include <sys/time.h>
-# ifndef CONFIG_TCC_STATIC
+# ifndef CONFIG_SUGAR_STATIC
 #  include <dlfcn.h>
 # endif
 /* XXX: need to define this to use them in non ISOC99 context */
@@ -64,9 +64,9 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #  define strtoll _strtoi64
 #  define strtoull _strtoui64
 # endif
-# ifdef LIBTCC_AS_DLL
-#  define LIBTCCAPI __declspec(dllexport)
-#  define PUB_FUNC LIBTCCAPI
+# ifdef LIBSUGAR_AS_DLL
+#  define LIBSUGARAPI __declspec(dllexport)
+#  define PUB_FUNC LIBSUGARAPI
 # endif
 # define inp next_inp /* inp is an intrinsic on msvc/mingw */
 # ifdef _MSC_VER
@@ -83,7 +83,7 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #   define __x86_64__ 1
 #  endif
 # endif
-# undef CONFIG_TCC_STATIC
+# undef CONFIG_SUGAR_STATIC
 #endif
 
 #ifndef O_BINARY
@@ -109,7 +109,7 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #endif
 
 /* gnu headers use to #define __attribute__ to empty for non-gcc compilers */
-#ifdef __TINYC__
+#ifdef __SUGARC__
 # undef __attribute__
 #endif
 
@@ -139,62 +139,62 @@ extern long double strtold (const char *__nptr, char **__endptr);
 /* #define ASM_DEBUG */
 
 /* target selection */
-/* #define TCC_TARGET_I386   *//* i386 code generator */
-/* #define TCC_TARGET_X86_64 *//* x86-64 code generator */
-/* #define TCC_TARGET_ARM    *//* ARMv4 code generator */
-/* #define TCC_TARGET_ARM64  *//* ARMv8 code generator */
-/* #define TCC_TARGET_C67    *//* TMS320C67xx code generator */
-/* #define TCC_TARGET_RISCV64 *//* risc-v code generator */
+/* #define SUGAR_TARGET_I386   *//* i386 code generator */
+/* #define SUGAR_TARGET_X86_64 *//* x86-64 code generator */
+/* #define SUGAR_TARGET_ARM    *//* ARMv4 code generator */
+/* #define SUGAR_TARGET_ARM64  *//* ARMv8 code generator */
+/* #define SUGAR_TARGET_C67    *//* TMS320C67xx code generator */
+/* #define SUGAR_TARGET_RISCV64 *//* risc-v code generator */
 
 /* default target is I386 */
-#if !defined(TCC_TARGET_I386) && !defined(TCC_TARGET_ARM) && \
-    !defined(TCC_TARGET_ARM64) && !defined(TCC_TARGET_C67) && \
-    !defined(TCC_TARGET_X86_64) && !defined(TCC_TARGET_RISCV64)
+#if !defined(SUGAR_TARGET_I386) && !defined(SUGAR_TARGET_ARM) && \
+    !defined(SUGAR_TARGET_ARM64) && !defined(SUGAR_TARGET_C67) && \
+    !defined(SUGAR_TARGET_X86_64) && !defined(SUGAR_TARGET_RISCV64)
 # if defined __x86_64__
-#  define TCC_TARGET_X86_64
+#  define SUGAR_TARGET_X86_64
 # elif defined __arm__
-#  define TCC_TARGET_ARM
-#  define TCC_ARM_EABI
-#  define TCC_ARM_VFP
-#  define TCC_ARM_HARDFLOAT
+#  define SUGAR_TARGET_ARM
+#  define SUGAR_ARM_EABI
+#  define SUGAR_ARM_VFP
+#  define SUGAR_ARM_HARDFLOAT
 # elif defined __aarch64__
-#  define TCC_TARGET_ARM64
+#  define SUGAR_TARGET_ARM64
 # elif defined __riscv
-#  define TCC_TARGET_RISCV64
+#  define SUGAR_TARGET_RISCV64
 # else
-#  define TCC_TARGET_I386
+#  define SUGAR_TARGET_I386
 # endif
 # ifdef _WIN32
-#  define TCC_TARGET_PE 1
+#  define SUGAR_TARGET_PE 1
 # endif
 #endif
 
 /* only native compiler supports -run */
-#if defined _WIN32 == defined TCC_TARGET_PE
-# if defined __i386__ && defined TCC_TARGET_I386
-#  define TCC_IS_NATIVE
-# elif defined __x86_64__ && defined TCC_TARGET_X86_64
-#  define TCC_IS_NATIVE
-# elif defined __arm__ && defined TCC_TARGET_ARM
-#  define TCC_IS_NATIVE
-# elif defined __aarch64__ && defined TCC_TARGET_ARM64
-#  define TCC_IS_NATIVE
-# elif defined __riscv && defined __LP64__ && defined TCC_TARGET_RISCV64
-#  define TCC_IS_NATIVE
+#if defined _WIN32 == defined SUGAR_TARGET_PE
+# if defined __i386__ && defined SUGAR_TARGET_I386
+#  define SUGAR_IS_NATIVE
+# elif defined __x86_64__ && defined SUGAR_TARGET_X86_64
+#  define SUGAR_IS_NATIVE
+# elif defined __arm__ && defined SUGAR_TARGET_ARM
+#  define SUGAR_IS_NATIVE
+# elif defined __aarch64__ && defined SUGAR_TARGET_ARM64
+#  define SUGAR_IS_NATIVE
+# elif defined __riscv && defined __LP64__ && defined SUGAR_TARGET_RISCV64
+#  define SUGAR_IS_NATIVE
 # endif
 #endif
 
-#if defined TCC_IS_NATIVE && !defined CONFIG_TCCBOOT
-# define CONFIG_TCC_BACKTRACE
-# if (defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64 || \
-      defined TCC_TARGET_ARM || defined TCC_TARGET_ARM64 || \
-      defined TCC_TARGET_RISCV64) \
-  && !defined TCC_UCLIBC && !defined TCC_MUSL
-# define CONFIG_TCC_BCHECK /* enable bound checking code */
+#if defined SUGAR_IS_NATIVE && !defined CONFIG_SUGARBOOT
+# define CONFIG_SUGAR_BACKTRACE
+# if (defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64 || \
+      defined SUGAR_TARGET_ARM || defined SUGAR_TARGET_ARM64 || \
+      defined SUGAR_TARGET_RISCV64) \
+  && !defined SUGAR_UCLIBC && !defined SUGAR_MUSL
+# define CONFIG_SUGAR_BCHECK /* enable bound checking code */
 # endif
 #endif
 
-#if defined TCC_TARGET_PE || defined TCC_TARGET_MACHO
+#if defined SUGAR_TARGET_PE || defined SUGAR_TARGET_MACHO
 # define ELF_OBJ_ONLY /* create elf .o but native executables */
 #endif
 
@@ -203,8 +203,8 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #ifndef CONFIG_SYSROOT
 # define CONFIG_SYSROOT ""
 #endif
-#ifndef CONFIG_TCCDIR
-# define CONFIG_TCCDIR "/usr/local/lib/tcc"
+#ifndef CONFIG_SUGARDIR
+# define CONFIG_SUGARDIR "/usr/local/lib/sugar"
 #endif
 #ifndef CONFIG_LDDIR
 # define CONFIG_LDDIR "lib"
@@ -218,22 +218,22 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #endif
 
 /* path to find crt1.o, crti.o and crtn.o */
-#ifndef CONFIG_TCC_CRTPREFIX
-# define CONFIG_TCC_CRTPREFIX USE_TRIPLET(CONFIG_SYSROOT "/usr/" CONFIG_LDDIR)
+#ifndef CONFIG_SUGAR_CRTPREFIX
+# define CONFIG_SUGAR_CRTPREFIX USE_TRIPLET(CONFIG_SYSROOT "/usr/" CONFIG_LDDIR)
 #endif
 
 #ifndef CONFIG_USR_INCLUDE
 # define CONFIG_USR_INCLUDE "/usr/include"
 #endif
 
-/* Below: {B} is substituted by CONFIG_TCCDIR (rsp. -B option) */
+/* Below: {B} is substituted by CONFIG_SUGARDIR (rsp. -B option) */
 
 /* system include paths */
-#ifndef CONFIG_TCC_SYSINCLUDEPATHS
-# if defined TCC_TARGET_PE || defined _WIN32
-#  define CONFIG_TCC_SYSINCLUDEPATHS "{B}/include"PATHSEP"{B}/include/winapi"
+#ifndef CONFIG_SUGAR_SYSINCLUDEPATHS
+# if defined SUGAR_TARGET_PE || defined _WIN32
+#  define CONFIG_SUGAR_SYSINCLUDEPATHS "{B}/include"PATHSEP"{B}/include/winapi"
 # else
-#  define CONFIG_TCC_SYSINCLUDEPATHS \
+#  define CONFIG_SUGAR_SYSINCLUDEPATHS \
         "{B}/include" \
     ":" ALSO_TRIPLET(CONFIG_SYSROOT "/usr/local/include") \
     ":" ALSO_TRIPLET(CONFIG_SYSROOT CONFIG_USR_INCLUDE)
@@ -241,11 +241,11 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #endif
 
 /* library search paths */
-#ifndef CONFIG_TCC_LIBPATHS
-# ifdef TCC_TARGET_PE
-#  define CONFIG_TCC_LIBPATHS "{B}/lib"
+#ifndef CONFIG_SUGAR_LIBPATHS
+# ifdef SUGAR_TARGET_PE
+#  define CONFIG_SUGAR_LIBPATHS "{B}/lib"
 # else
-#  define CONFIG_TCC_LIBPATHS \
+#  define CONFIG_SUGAR_LIBPATHS \
         ALSO_TRIPLET(CONFIG_SYSROOT "/usr/" CONFIG_LDDIR) \
     ":" ALSO_TRIPLET(CONFIG_SYSROOT "/" CONFIG_LDDIR) \
     ":" ALSO_TRIPLET(CONFIG_SYSROOT "/usr/local/" CONFIG_LDDIR)
@@ -253,78 +253,78 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #endif
 
 /* name of ELF interpreter */
-#ifndef CONFIG_TCC_ELFINTERP
+#ifndef CONFIG_SUGAR_ELFINTERP
 # if defined __FreeBSD__
-#  define CONFIG_TCC_ELFINTERP "/libexec/ld-elf.so.1"
+#  define CONFIG_SUGAR_ELFINTERP "/libexec/ld-elf.so.1"
 # elif defined __FreeBSD_kernel__
-#  if defined(TCC_TARGET_X86_64)
-#   define CONFIG_TCC_ELFINTERP "/lib/ld-kfreebsd-x86-64.so.1"
+#  if defined(SUGAR_TARGET_X86_64)
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld-kfreebsd-x86-64.so.1"
 #  else
-#   define CONFIG_TCC_ELFINTERP "/lib/ld.so.1"
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld.so.1"
 #  endif
 # elif defined __DragonFly__
-#  define CONFIG_TCC_ELFINTERP "/usr/libexec/ld-elf.so.2"
+#  define CONFIG_SUGAR_ELFINTERP "/usr/libexec/ld-elf.so.2"
 # elif defined __NetBSD__
-#  define CONFIG_TCC_ELFINTERP "/usr/libexec/ld.elf_so"
+#  define CONFIG_SUGAR_ELFINTERP "/usr/libexec/ld.elf_so"
 # elif defined __GNU__
-#  define CONFIG_TCC_ELFINTERP "/lib/ld.so"
-# elif defined(TCC_TARGET_PE)
-#  define CONFIG_TCC_ELFINTERP "-"
-# elif defined(TCC_UCLIBC)
-#  define CONFIG_TCC_ELFINTERP "/lib/ld-uClibc.so.0" /* is there a uClibc for x86_64 ? */
-# elif defined TCC_TARGET_ARM64
-#  if defined(TCC_MUSL)
-#   define CONFIG_TCC_ELFINTERP "/lib/ld-musl-aarch64.so.1"
+#  define CONFIG_SUGAR_ELFINTERP "/lib/ld.so"
+# elif defined(SUGAR_TARGET_PE)
+#  define CONFIG_SUGAR_ELFINTERP "-"
+# elif defined(SUGAR_UCLIBC)
+#  define CONFIG_SUGAR_ELFINTERP "/lib/ld-uClibc.so.0" /* is there a uClibc for x86_64 ? */
+# elif defined SUGAR_TARGET_ARM64
+#  if defined(SUGAR_MUSL)
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld-musl-aarch64.so.1"
 #  else
-#   define CONFIG_TCC_ELFINTERP "/lib/ld-linux-aarch64.so.1"
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld-linux-aarch64.so.1"
 #  endif
-# elif defined(TCC_TARGET_X86_64)
-#  if defined(TCC_MUSL)
-#   define CONFIG_TCC_ELFINTERP "/lib/ld-musl-x86_64.so.1"
+# elif defined(SUGAR_TARGET_X86_64)
+#  if defined(SUGAR_MUSL)
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld-musl-x86_64.so.1"
 #  else
-#   define CONFIG_TCC_ELFINTERP "/lib64/ld-linux-x86-64.so.2"
+#   define CONFIG_SUGAR_ELFINTERP "/lib64/ld-linux-x86-64.so.2"
 #  endif
-# elif defined(TCC_TARGET_RISCV64)
-#  define CONFIG_TCC_ELFINTERP "/lib/ld-linux-riscv64-lp64d.so.1"
-# elif !defined(TCC_ARM_EABI)
-#  if defined(TCC_MUSL)
-#   if defined(TCC_TARGET_I386)
-#     define CONFIG_TCC_ELFINTERP "/lib/ld-musl-i386.so.1"
+# elif defined(SUGAR_TARGET_RISCV64)
+#  define CONFIG_SUGAR_ELFINTERP "/lib/ld-linux-riscv64-lp64d.so.1"
+# elif !defined(SUGAR_ARM_EABI)
+#  if defined(SUGAR_MUSL)
+#   if defined(SUGAR_TARGET_I386)
+#     define CONFIG_SUGAR_ELFINTERP "/lib/ld-musl-i386.so.1"
 #    else
-#     define CONFIG_TCC_ELFINTERP "/lib/ld-musl-arm.so.1"
+#     define CONFIG_SUGAR_ELFINTERP "/lib/ld-musl-arm.so.1"
 #    endif
 #  else
-#   define CONFIG_TCC_ELFINTERP "/lib/ld-linux.so.2"
+#   define CONFIG_SUGAR_ELFINTERP "/lib/ld-linux.so.2"
 #  endif
 # endif
 #endif
 
 /* var elf_interp dans *-gen.c */
-#ifdef CONFIG_TCC_ELFINTERP
-# define DEFAULT_ELFINTERP(s) CONFIG_TCC_ELFINTERP
+#ifdef CONFIG_SUGAR_ELFINTERP
+# define DEFAULT_ELFINTERP(s) CONFIG_SUGAR_ELFINTERP
 #else
 # define DEFAULT_ELFINTERP(s) default_elfinterp(s)
 #endif
 
-/* (target specific) libtcc1.a */
-#ifndef TCC_LIBTCC1
-# define TCC_LIBTCC1 "libtcc1.a"
+/* (target specific) libsugar1.a */
+#ifndef SUGAR_LIBSUGAR1
+# define SUGAR_LIBSUGAR1 "libsugar1.a"
 #endif
 
-/* library to use with CONFIG_USE_LIBGCC instead of libtcc1.a */
-#if defined CONFIG_USE_LIBGCC && !defined TCC_LIBGCC
-#define TCC_LIBGCC USE_TRIPLET(CONFIG_SYSROOT "/" CONFIG_LDDIR) "/libgcc_s.so.1"
+/* library to use with CONFIG_USE_LIBGCC instead of libsugar1.a */
+#if defined CONFIG_USE_LIBGCC && !defined SUGAR_LIBGCC
+#define SUGAR_LIBGCC USE_TRIPLET(CONFIG_SYSROOT "/" CONFIG_LDDIR) "/libgcc_s.so.1"
 #endif
 
 /* -------------------------------------------- */
 
-#include "libtcc.h"
+#include "libsugar.h"
 #include "elf.h"
 #include "stab.h"
 
 /* -------------------------------------------- */
 
-#ifndef PUB_FUNC /* functions used by tcc.c but not in libtcc.h */
+#ifndef PUB_FUNC /* functions used by sugar.c but not in libsugar.h */
 # define PUB_FUNC
 #endif
 
@@ -332,8 +332,8 @@ extern long double strtold (const char *__nptr, char **__endptr);
 # define ONE_SOURCE 1
 #endif
 
-/* support using libtcc from threads */
-#define CONFIG_TCC_SEMLOCK
+/* support using libsugar from threads */
+#define CONFIG_SUGAR_SEMLOCK
 
 #if ONE_SOURCE
 #define ST_INLN static inline
@@ -345,7 +345,7 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #define ST_DATA extern
 #endif
 
-#ifdef TCC_PROFILE /* profile all functions */
+#ifdef SUGAR_PROFILE /* profile all functions */
 # define static
 #endif
 
@@ -353,26 +353,26 @@ extern long double strtold (const char *__nptr, char **__endptr);
 /* include the target specific definitions */
 
 #define TARGET_DEFS_ONLY
-#ifdef TCC_TARGET_I386
+#ifdef SUGAR_TARGET_I386
 # include "i386-gen.c"
 # include "i386-link.c"
-#elif defined TCC_TARGET_X86_64
+#elif defined SUGAR_TARGET_X86_64
 # include "x86_64-gen.c"
 # include "x86_64-link.c"
-#elif defined TCC_TARGET_ARM
+#elif defined SUGAR_TARGET_ARM
 # include "arm-gen.c"
 # include "arm-link.c"
 # include "arm-asm.c"
-#elif defined TCC_TARGET_ARM64
+#elif defined SUGAR_TARGET_ARM64
 # include "arm64-gen.c"
 # include "arm64-link.c"
 # include "arm-asm.c"
-#elif defined TCC_TARGET_C67
-# define TCC_TARGET_COFF
+#elif defined SUGAR_TARGET_C67
+# define SUGAR_TARGET_COFF
 # include "coff.h"
 # include "c67-gen.c"
 # include "c67-link.c"
-#elif defined(TCC_TARGET_RISCV64)
+#elif defined(SUGAR_TARGET_RISCV64)
 # include "riscv64-gen.c"
 # include "riscv64-link.c"
 # include "riscv64-asm.c"
@@ -402,7 +402,7 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #define addr_t ElfW(Addr)
 #define ElfSym ElfW(Sym)
 
-#if PTR_SIZE == 8 && !defined TCC_TARGET_PE
+#if PTR_SIZE == 8 && !defined SUGAR_TARGET_PE
 # define LONG_SIZE 8
 #else
 # define LONG_SIZE 4
@@ -433,7 +433,7 @@ typedef struct TokenSym {
     char str[1];
 } TokenSym;
 
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
 typedef unsigned short nwchar_t;
 #else
 typedef int nwchar_t;
@@ -542,7 +542,7 @@ typedef struct Section {
     unsigned long data_offset; /* current data offset */
     unsigned char *data;       /* section data */
     unsigned long data_allocated; /* used for realloc() handling */
-    TCCState *s1;
+    SUGARState *s1;
     int sh_name;             /* elf section name (only used during output) */
     int sh_num;              /* elf section number */
     int sh_type;             /* elf section type */
@@ -609,7 +609,7 @@ typedef struct BufferedFile {
     int fd;
     struct BufferedFile *prev;
     int line_num;    /* current line number - here to simplify code */
-    int line_ref;    /* tcc -E: last printed line */
+    int line_ref;    /* sugar -E: last printed line */
     int ifndef_macro;  /* #ifndef macro / #endif search */
     int ifndef_macro_saved; /* saved ifndef_macro */
     int *ifdef_stack_ptr; /* ifdef_stack value at the start of the file */
@@ -665,7 +665,7 @@ typedef struct CachedInclude {
 
 #define CACHED_INCLUDES_HASH_SIZE 32
 
-#ifdef CONFIG_TCC_ASM
+#ifdef CONFIG_SUGAR_ASM
 typedef struct ExprValue {
     uint64_t v;
     Sym *sym;
@@ -694,12 +694,12 @@ struct sym_attr {
     unsigned plt_offset;
     int plt_sym;
     int dyn_index;
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
     unsigned char plt_thumb_stub:1;
 #endif
 };
 
-struct TCCState {
+struct SUGARState {
     unsigned char verbose; /* if true, display some information during compilation */
     unsigned char nostdinc; /* if true, no standard headers are added */
     unsigned char nostdlib; /* if true, no standard libraries are added */
@@ -713,13 +713,13 @@ struct TCCState {
     unsigned char enable_new_dtags; /* -Wl,--enable-new-dtags */
     unsigned int  cversion; /* supported C ISO version, 199901 (the default), 201112, ... */
 
-    char *tcc_lib_path; /* CONFIG_TCCDIR or -B option */
+    char *sugar_lib_path; /* CONFIG_SUGARDIR or -B option */
     char *soname; /* as specified on the command line (-soname) */
     char *rpath; /* as specified on the command line (-Wl,-rpath=) */
 
-    /* output type, see TCC_OUTPUT_XXX */
+    /* output type, see SUGAR_OUTPUT_XXX */
     int output_type;
-    /* output format, see TCC_OUTPUT_FORMAT_xxx */
+    /* output format, see SUGAR_OUTPUT_FORMAT_xxx */
     int output_format;
 
     /* C language options */
@@ -740,11 +740,11 @@ struct TCCState {
     /* compile with debug symbol (and use them if error during execution) */
     unsigned char do_debug;
     unsigned char do_backtrace;
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
     /* compile with built-in memory and bounds checker */
     unsigned char do_bounds_check;
 #endif
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
     enum float_abi float_abi; /* float ABI of the generated code*/
 #endif
     int run_test; /* nth test to run with -dt -run */
@@ -756,16 +756,16 @@ struct TCCState {
 
     /* use GNU C extensions */
     unsigned char gnu_ext;
-    /* use TinyCC extensions */
-    unsigned char tcc_ext;
+    /* use SugarC extensions */
+    unsigned char sugar_ext;
 
     char *init_symbol; /* symbols to call at load-time (not used currently) */
     char *fini_symbol; /* symbols to call at unload-time (not used currently) */
 
-#ifdef TCC_TARGET_I386
+#ifdef SUGAR_TARGET_I386
     int seg_size; /* 32. Can be 16 with i386 assembler (.code16) */
 #endif
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
     unsigned char nosse; /* For -mno-sse support. */
 #endif
 
@@ -852,7 +852,7 @@ struct TCCState {
     Section *text_section, *data_section, *bss_section;
     Section *common_section;
     Section *cur_text_section; /* current section where function code is generated */
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
     /* bound check related sections */
     Section *bounds_section; /* contains global data bound description */
     Section *lbounds_section; /* contains local data bound description */
@@ -877,14 +877,14 @@ struct TCCState {
     ElfW_Rel *qrel;
 #   define qrel s1->qrel
 
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
     /* PE info */
     int pe_subsystem;
     unsigned pe_characteristics;
     unsigned pe_file_align;
     unsigned pe_stack_size;
     addr_t pe_imagebase;
-# ifdef TCC_TARGET_X86_64
+# ifdef SUGAR_TARGET_X86_64
     Section *uw_pdata;
     int uw_sym;
     unsigned uw_offs;
@@ -901,17 +901,17 @@ struct TCCState {
     Section *verneed_section;
 #endif
 
-#ifdef TCC_IS_NATIVE
+#ifdef SUGAR_IS_NATIVE
     const char *runtime_main;
     void **runtime_mem;
     int nb_runtime_mem;
 #endif
 
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     int rt_num_callers;
 #endif
 
-    int fd, cc; /* used by tcc_load_ldscript */
+    int fd, cc; /* used by sugar_load_ldscript */
 
     /* benchmark info */
     int total_idents;
@@ -924,7 +924,7 @@ struct TCCState {
     /* for warnings/errors for object files*/
     const char *current_filename;
 
-    /* used by main and tcc_parse_args only */
+    /* used by main and sugar_parse_args only */
     struct filespec **files; /* files seen on command line */
     int nb_files; /* number thereof */
     int nb_libraries; /* number of libs thereof */
@@ -1008,7 +1008,7 @@ struct filespec {
 #define VT_STORAGE (VT_EXTERN | VT_STATIC | VT_TYPEDEF | VT_INLINE)
 #define VT_TYPE (~(VT_STORAGE|VT_STRUCT_MASK))
 
-/* symbol was created by tccasm.c first */
+/* symbol was created by sugarasm.c first */
 #define VT_ASM (VT_VOID | VT_UNSIGNED)
 #define IS_ASM_SYM(sym) (((sym)->type.t & (VT_BTYPE | VT_ASM)) == VT_ASM)
 
@@ -1108,7 +1108,7 @@ struct filespec {
 #define TOK_ASMDIR_FIRST TOK_ASMDIR_byte
 #define TOK_ASMDIR_LAST TOK_ASMDIR_section
 
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
 /* only used for i386 asm opcodes definitions */
 #define DEF_BWL(x) \
  DEF(TOK_ASM_ ## x ## b, #x "b") \
@@ -1119,7 +1119,7 @@ struct filespec {
  DEF(TOK_ASM_ ## x ## w, #x "w") \
  DEF(TOK_ASM_ ## x ## l, #x "l") \
  DEF(TOK_ASM_ ## x, #x)
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
 # define DEF_BWLQ(x) \
  DEF(TOK_ASM_ ## x ## b, #x "b") \
  DEF(TOK_ASM_ ## x ## w, #x "w") \
@@ -1185,56 +1185,56 @@ struct filespec {
  DEF_ASM(x ## nle ## suffix) \
  DEF_ASM(x ## g ## suffix)
 
-#endif /* defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64 */
+#endif /* defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64 */
 
-enum tcc_token {
+enum sugar_token {
     TOK_LAST = TOK_IDENT - 1
 #define DEF(id, str) ,id
-#include "tcctok.h"
+#include "sugartok.h"
 #undef DEF
 };
 
 /* keywords: tok >= TOK_IDENT && tok < TOK_UIDENT */
 #define TOK_UIDENT TOK_DEFINE
 
-/* ------------ libtcc.c ------------ */
+/* ------------ libsugar.c ------------ */
 
-ST_DATA struct TCCState *tcc_state;
+ST_DATA struct SUGARState *sugar_state;
 
-/* public functions currently used by the tcc main function */
+/* public functions currently used by the sugar main function */
 ST_FUNC char *pstrcpy(char *buf, size_t buf_size, const char *s);
 ST_FUNC char *pstrcat(char *buf, size_t buf_size, const char *s);
 ST_FUNC char *pstrncpy(char *out, const char *in, size_t num);
-PUB_FUNC char *tcc_basename(const char *name);
-PUB_FUNC char *tcc_fileextension (const char *name);
+PUB_FUNC char *sugar_basename(const char *name);
+PUB_FUNC char *sugar_fileextension (const char *name);
 
 #ifndef MEM_DEBUG
-PUB_FUNC void tcc_free(void *ptr);
-PUB_FUNC void *tcc_malloc(unsigned long size);
-PUB_FUNC void *tcc_mallocz(unsigned long size);
-PUB_FUNC void *tcc_realloc(void *ptr, unsigned long size);
-PUB_FUNC char *tcc_strdup(const char *str);
+PUB_FUNC void sugar_free(void *ptr);
+PUB_FUNC void *sugar_malloc(unsigned long size);
+PUB_FUNC void *sugar_mallocz(unsigned long size);
+PUB_FUNC void *sugar_realloc(void *ptr, unsigned long size);
+PUB_FUNC char *sugar_strdup(const char *str);
 #else
-#define tcc_free(ptr)           tcc_free_debug(ptr)
-#define tcc_malloc(size)        tcc_malloc_debug(size, __FILE__, __LINE__)
-#define tcc_mallocz(size)       tcc_mallocz_debug(size, __FILE__, __LINE__)
-#define tcc_realloc(ptr,size)   tcc_realloc_debug(ptr, size, __FILE__, __LINE__)
-#define tcc_strdup(str)         tcc_strdup_debug(str, __FILE__, __LINE__)
-PUB_FUNC void tcc_free_debug(void *ptr);
-PUB_FUNC void *tcc_malloc_debug(unsigned long size, const char *file, int line);
-PUB_FUNC void *tcc_mallocz_debug(unsigned long size, const char *file, int line);
-PUB_FUNC void *tcc_realloc_debug(void *ptr, unsigned long size, const char *file, int line);
-PUB_FUNC char *tcc_strdup_debug(const char *str, const char *file, int line);
+#define sugar_free(ptr)           sugar_free_debug(ptr)
+#define sugar_malloc(size)        sugar_malloc_debug(size, __FILE__, __LINE__)
+#define sugar_mallocz(size)       sugar_mallocz_debug(size, __FILE__, __LINE__)
+#define sugar_realloc(ptr,size)   sugar_realloc_debug(ptr, size, __FILE__, __LINE__)
+#define sugar_strdup(str)         sugar_strdup_debug(str, __FILE__, __LINE__)
+PUB_FUNC void sugar_free_debug(void *ptr);
+PUB_FUNC void *sugar_malloc_debug(unsigned long size, const char *file, int line);
+PUB_FUNC void *sugar_mallocz_debug(unsigned long size, const char *file, int line);
+PUB_FUNC void *sugar_realloc_debug(void *ptr, unsigned long size, const char *file, int line);
+PUB_FUNC char *sugar_strdup_debug(const char *str, const char *file, int line);
 #endif
 
-#define free(p) use_tcc_free(p)
-#define malloc(s) use_tcc_malloc(s)
-#define realloc(p, s) use_tcc_realloc(p, s)
+#define free(p) use_sugar_free(p)
+#define malloc(s) use_sugar_malloc(s)
+#define realloc(p, s) use_sugar_realloc(p, s)
 #undef strdup
-#define strdup(s) use_tcc_strdup(s)
-PUB_FUNC void _tcc_error_noabort(const char *fmt, ...) PRINTF_LIKE(1,2);
-PUB_FUNC NORETURN void _tcc_error(const char *fmt, ...) PRINTF_LIKE(1,2);
-PUB_FUNC void _tcc_warning(const char *fmt, ...) PRINTF_LIKE(1,2);
+#define strdup(s) use_sugar_strdup(s)
+PUB_FUNC void _sugar_error_noabort(const char *fmt, ...) PRINTF_LIKE(1,2);
+PUB_FUNC NORETURN void _sugar_error(const char *fmt, ...) PRINTF_LIKE(1,2);
+PUB_FUNC void _sugar_warning(const char *fmt, ...) PRINTF_LIKE(1,2);
 
 /* other utilities */
 ST_FUNC void dynarray_add(void *ptab, int *nb_ptr, void *data);
@@ -1256,11 +1256,11 @@ ST_INLN Sym *struct_find(int v);
 ST_INLN Sym *sym_find(int v);
 ST_FUNC Sym *global_identifier_push(int v, int t, int c);
 
-ST_FUNC void tcc_open_bf(TCCState *s1, const char *filename, int initlen);
-ST_FUNC int tcc_open(TCCState *s1, const char *filename);
-ST_FUNC void tcc_close(void);
+ST_FUNC void sugar_open_bf(SUGARState *s1, const char *filename, int initlen);
+ST_FUNC int sugar_open(SUGARState *s1, const char *filename);
+ST_FUNC void sugar_close(void);
 
-ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags);
+ST_FUNC int sugar_add_file_internal(SUGARState *s1, const char *filename, int flags);
 /* flags: */
 #define AFF_PRINT_ERROR     0x10 /* print error if file not found */
 #define AFF_REFERENCED_DLL  0x20 /* load a referenced dll from another dll */
@@ -1273,33 +1273,33 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
 #define AFF_TYPE_ASMPP  4
 #define AFF_TYPE_LIB    8
 #define AFF_TYPE_MASK   (15 | AFF_TYPE_BIN)
-/* values from tcc_object_type(...) */
+/* values from sugar_object_type(...) */
 #define AFF_BINTYPE_REL 1
 #define AFF_BINTYPE_DYN 2
 #define AFF_BINTYPE_AR  3
 #define AFF_BINTYPE_C67 4
 
 #ifndef ELF_OBJ_ONLY
-ST_FUNC int tcc_add_crt(TCCState *s, const char *filename);
+ST_FUNC int sugar_add_crt(SUGARState *s, const char *filename);
 #endif
-#ifndef TCC_TARGET_MACHO
-ST_FUNC int tcc_add_dll(TCCState *s, const char *filename, int flags);
+#ifndef SUGAR_TARGET_MACHO
+ST_FUNC int sugar_add_dll(SUGARState *s, const char *filename, int flags);
 #endif
-#ifdef CONFIG_TCC_BCHECK
-ST_FUNC void tcc_add_bcheck(TCCState *s1);
+#ifdef CONFIG_SUGAR_BCHECK
+ST_FUNC void sugar_add_bcheck(SUGARState *s1);
 #endif
-#ifdef CONFIG_TCC_BACKTRACE
-ST_FUNC void tcc_add_btstub(TCCState *s1);
+#ifdef CONFIG_SUGAR_BACKTRACE
+ST_FUNC void sugar_add_btstub(SUGARState *s1);
 #endif
-ST_FUNC void tcc_add_pragma_libs(TCCState *s1);
-PUB_FUNC int tcc_add_library_err(TCCState *s, const char *f);
-PUB_FUNC void tcc_print_stats(TCCState *s, unsigned total_time);
-PUB_FUNC int tcc_parse_args(TCCState *s, int *argc, char ***argv, int optind);
+ST_FUNC void sugar_add_pragma_libs(SUGARState *s1);
+PUB_FUNC int sugar_add_library_err(SUGARState *s, const char *f);
+PUB_FUNC void sugar_print_stats(SUGARState *s, unsigned total_time);
+PUB_FUNC int sugar_parse_args(SUGARState *s, int *argc, char ***argv, int optind);
 #ifdef _WIN32
 ST_FUNC char *normalize_slashes(char *path);
 #endif
 
-/* tcc_parse_args return codes: */
+/* sugar_parse_args return codes: */
 #define OPT_HELP 1
 #define OPT_HELP2 2
 #define OPT_V 3
@@ -1309,7 +1309,7 @@ ST_FUNC char *normalize_slashes(char *path);
 #define OPT_M32 32
 #define OPT_M64 64
 
-/* ------------ tccpp.c ------------ */
+/* ------------ sugarpp.c ------------ */
 
 ST_DATA struct BufferedFile *file;
 ST_DATA int ch, tok;
@@ -1365,11 +1365,11 @@ ST_FUNC void parse_define(void);
 ST_FUNC void preprocess(int is_bof);
 ST_FUNC void next(void);
 ST_INLN void unget_tok(int last_tok);
-ST_FUNC void preprocess_start(TCCState *s1, int filetype);
-ST_FUNC void preprocess_end(TCCState *s1);
-ST_FUNC void tccpp_new(TCCState *s);
-ST_FUNC void tccpp_delete(TCCState *s);
-ST_FUNC int tcc_preprocess(TCCState *s1);
+ST_FUNC void preprocess_start(SUGARState *s1, int filetype);
+ST_FUNC void preprocess_end(SUGARState *s1);
+ST_FUNC void sugarpp_new(SUGARState *s);
+ST_FUNC void sugarpp_delete(SUGARState *s);
+ST_FUNC int sugar_preprocess(SUGARState *s1);
 ST_FUNC void skip(int c);
 ST_FUNC NORETURN void expect(const char *msg);
 
@@ -1390,7 +1390,7 @@ static inline int toup(int c) {
     return (c >= 'a' && c <= 'z') ? c - 'a' + 'A' : c;
 }
 
-/* ------------ tccgen.c ------------ */
+/* ------------ sugargen.c ------------ */
 
 #define SYM_POOL_NB (8192 / sizeof(Sym))
 
@@ -1411,18 +1411,18 @@ ST_DATA int func_var; /* true if current function is variadic */
 ST_DATA int func_vc;
 ST_DATA const char *funcname;
 
-ST_FUNC void tcc_debug_start(TCCState *s1);
-ST_FUNC void tcc_debug_end(TCCState *s1);
-ST_FUNC void tcc_debug_bincl(TCCState *s1);
-ST_FUNC void tcc_debug_eincl(TCCState *s1);
-ST_FUNC void tcc_debug_putfile(TCCState *s1, const char *filename);
-ST_FUNC void tcc_debug_funcstart(TCCState *s1, Sym *sym);
-ST_FUNC void tcc_debug_funcend(TCCState *s1, int size);
-ST_FUNC void tcc_debug_line(TCCState *s1);
+ST_FUNC void sugar_debug_start(SUGARState *s1);
+ST_FUNC void sugar_debug_end(SUGARState *s1);
+ST_FUNC void sugar_debug_bincl(SUGARState *s1);
+ST_FUNC void sugar_debug_eincl(SUGARState *s1);
+ST_FUNC void sugar_debug_putfile(SUGARState *s1, const char *filename);
+ST_FUNC void sugar_debug_funcstart(SUGARState *s1, Sym *sym);
+ST_FUNC void sugar_debug_funcend(SUGARState *s1, int size);
+ST_FUNC void sugar_debug_line(SUGARState *s1);
 
-ST_FUNC void tccgen_init(TCCState *s1);
-ST_FUNC int tccgen_compile(TCCState *s1);
-ST_FUNC void tccgen_finish(TCCState *s1);
+ST_FUNC void sugargen_init(SUGARState *s1);
+ST_FUNC int sugargen_compile(SUGARState *s1);
+ST_FUNC void sugargen_finish(SUGARState *s1);
 ST_FUNC void check_vstack(void);
 
 ST_INLN int is_float(int t);
@@ -1443,7 +1443,7 @@ ST_FUNC void vrotb(int n);
 #if PTR_SIZE == 4
 ST_FUNC void lexpand(void);
 #endif
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
 ST_FUNC int get_reg_ex(int rc, int rc2);
 #endif
 ST_FUNC void vpushv(SValue *v);
@@ -1466,22 +1466,22 @@ ST_FUNC void indir(void);
 ST_FUNC void unary(void);
 ST_FUNC void gexpr(void);
 ST_FUNC int expr_const(void);
-#if defined CONFIG_TCC_BCHECK || defined TCC_TARGET_C67
+#if defined CONFIG_SUGAR_BCHECK || defined SUGAR_TARGET_C67
 ST_FUNC Sym *get_sym_ref(CType *type, Section *sec, unsigned long offset, unsigned long size);
 #endif
-#if defined TCC_TARGET_X86_64 && !defined TCC_TARGET_PE
+#if defined SUGAR_TARGET_X86_64 && !defined SUGAR_TARGET_PE
 ST_FUNC int classify_x86_64_va_arg(CType *ty);
 #endif
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
 ST_FUNC void gbound_args(int nb_args);
 ST_DATA int func_bound_add_epilog;
 #endif
 
-/* ------------ tccelf.c ------------ */
+/* ------------ sugarelf.c ------------ */
 
-#define TCC_OUTPUT_FORMAT_ELF    0 /* default output format: ELF */
-#define TCC_OUTPUT_FORMAT_BINARY 1 /* binary image output */
-#define TCC_OUTPUT_FORMAT_COFF   2 /* COFF */
+#define SUGAR_OUTPUT_FORMAT_ELF    0 /* default output format: ELF */
+#define SUGAR_OUTPUT_FORMAT_BINARY 1 /* binary image output */
+#define SUGAR_OUTPUT_FORMAT_COFF   2 /* COFF */
 
 #define ARMAG  "!<arch>\012"    /* For COFF and a.out archives */
 
@@ -1493,21 +1493,21 @@ typedef struct {
     unsigned int n_value;        /* value of symbol */
 } Stab_Sym;
 
-ST_FUNC void tccelf_new(TCCState *s);
-ST_FUNC void tccelf_delete(TCCState *s);
-ST_FUNC void tccelf_stab_new(TCCState *s);
-ST_FUNC void tccelf_begin_file(TCCState *s1);
-ST_FUNC void tccelf_end_file(TCCState *s1);
-#ifdef CONFIG_TCC_BCHECK
-ST_FUNC void tccelf_bounds_new(TCCState *s);
+ST_FUNC void sugarelf_new(SUGARState *s);
+ST_FUNC void sugarelf_delete(SUGARState *s);
+ST_FUNC void sugarelf_stab_new(SUGARState *s);
+ST_FUNC void sugarelf_begin_file(SUGARState *s1);
+ST_FUNC void sugarelf_end_file(SUGARState *s1);
+#ifdef CONFIG_SUGAR_BCHECK
+ST_FUNC void sugarelf_bounds_new(SUGARState *s);
 #endif
-ST_FUNC Section *new_section(TCCState *s1, const char *name, int sh_type, int sh_flags);
+ST_FUNC Section *new_section(SUGARState *s1, const char *name, int sh_type, int sh_flags);
 ST_FUNC void section_realloc(Section *sec, unsigned long new_size);
 ST_FUNC size_t section_add(Section *sec, addr_t size, int align);
 ST_FUNC void *section_ptr_add(Section *sec, addr_t size);
 ST_FUNC void section_reserve(Section *sec, unsigned long size);
-ST_FUNC Section *find_section(TCCState *s1, const char *name);
-ST_FUNC Section *new_symtab(TCCState *s1, const char *symtab_name, int sh_type, int sh_flags, const char *strtab_name, const char *hash_name, int hash_sh_flags);
+ST_FUNC Section *find_section(SUGARState *s1, const char *name);
+ST_FUNC Section *new_symtab(SUGARState *s1, const char *symtab_name, int sh_type, int sh_flags, const char *strtab_name, const char *hash_name, int hash_sh_flags);
 
 ST_FUNC void put_extern_sym2(Sym *sym, int sh_num, addr_t value, unsigned long size, int can_add_underscore);
 ST_FUNC void put_extern_sym(Sym *sym, Section *section, addr_t value, unsigned long size);
@@ -1523,31 +1523,31 @@ ST_FUNC int find_elf_sym(Section *s, const char *name);
 ST_FUNC void put_elf_reloc(Section *symtab, Section *s, unsigned long offset, int type, int symbol);
 ST_FUNC void put_elf_reloca(Section *symtab, Section *s, unsigned long offset, int type, int symbol, addr_t addend);
 
-ST_FUNC void put_stabs(TCCState *s1, const char *str, int type, int other, int desc, unsigned long value);
-ST_FUNC void put_stabs_r(TCCState *s1, const char *str, int type, int other, int desc, unsigned long value, Section *sec, int sym_index);
-ST_FUNC void put_stabn(TCCState *s1, int type, int other, int desc, int value);
+ST_FUNC void put_stabs(SUGARState *s1, const char *str, int type, int other, int desc, unsigned long value);
+ST_FUNC void put_stabs_r(SUGARState *s1, const char *str, int type, int other, int desc, unsigned long value, Section *sec, int sym_index);
+ST_FUNC void put_stabn(SUGARState *s1, int type, int other, int desc, int value);
 
-ST_FUNC void resolve_common_syms(TCCState *s1);
-ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve);
-ST_FUNC void relocate_section(TCCState *s1, Section *s);
+ST_FUNC void resolve_common_syms(SUGARState *s1);
+ST_FUNC void relocate_syms(SUGARState *s1, Section *symtab, int do_resolve);
+ST_FUNC void relocate_section(SUGARState *s1, Section *s);
 
 ST_FUNC ssize_t full_read(int fd, void *buf, size_t count);
 ST_FUNC void *load_data(int fd, unsigned long file_offset, unsigned long size);
-ST_FUNC int tcc_object_type(int fd, ElfW(Ehdr) *h);
-ST_FUNC int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset);
-ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte);
-ST_FUNC void add_array(TCCState *s1, const char *sec, int c);
+ST_FUNC int sugar_object_type(int fd, ElfW(Ehdr) *h);
+ST_FUNC int sugar_load_object_file(SUGARState *s1, int fd, unsigned long file_offset);
+ST_FUNC int sugar_load_archive(SUGARState *s1, int fd, int alacarte);
+ST_FUNC void add_array(SUGARState *s1, const char *sec, int c);
 
-#if !defined(ELF_OBJ_ONLY) || (defined(TCC_TARGET_MACHO) && defined TCC_IS_NATIVE)
-ST_FUNC void build_got_entries(TCCState *s1);
+#if !defined(ELF_OBJ_ONLY) || (defined(SUGAR_TARGET_MACHO) && defined SUGAR_IS_NATIVE)
+ST_FUNC void build_got_entries(SUGARState *s1);
 #endif
-ST_FUNC struct sym_attr *get_sym_attr(TCCState *s1, int index, int alloc);
+ST_FUNC struct sym_attr *get_sym_attr(SUGARState *s1, int index, int alloc);
 ST_FUNC void squeeze_multi_relocs(Section *sec, size_t oldrelocoffset);
 
-ST_FUNC addr_t get_sym_addr(TCCState *s, const char *name, int err, int forc);
-ST_FUNC void list_elf_symbols(TCCState *s, void *ctx,
+ST_FUNC addr_t get_sym_addr(SUGARState *s, const char *name, int err, int forc);
+ST_FUNC void list_elf_symbols(SUGARState *s, void *ctx,
     void (*symbol_cb)(void *ctx, const char *name, const void *val));
-ST_FUNC int set_global_sym(TCCState *s1, const char *name, Section *sec, addr_t offs);
+ST_FUNC int set_global_sym(SUGARState *s1, const char *name, Section *sec, addr_t offs);
 
 /* Browse each elem of type <type> in section <sec> starting at elem <startoff>
    using variable <elem> */
@@ -1556,11 +1556,11 @@ ST_FUNC int set_global_sym(TCCState *s1, const char *name, Section *sec, addr_t 
          elem < (type *) (sec->data + sec->data_offset); elem++)
 
 #ifndef ELF_OBJ_ONLY
-ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level);
-ST_FUNC int tcc_load_ldscript(TCCState *s1, int fd);
+ST_FUNC int sugar_load_dll(SUGARState *s1, int fd, const char *filename, int level);
+ST_FUNC int sugar_load_ldscript(SUGARState *s1, int fd);
 #endif
-#ifndef TCC_TARGET_PE
-ST_FUNC void tcc_add_runtime(TCCState *s1);
+#ifndef SUGAR_TARGET_PE
+ST_FUNC void sugar_add_runtime(SUGARState *s1);
 #endif
 
 /* ------------ xxx-link.c ------------ */
@@ -1574,15 +1574,15 @@ enum gotplt_entry {
     ALWAYS_GOTPLT_ENTRY	/* always generate (eg. PLTOFF relocs) */
 };
 
-#if !defined(ELF_OBJ_ONLY) || defined(TCC_TARGET_MACHO)
+#if !defined(ELF_OBJ_ONLY) || defined(SUGAR_TARGET_MACHO)
 ST_FUNC int code_reloc (int reloc_type);
 ST_FUNC int gotplt_entry_type (int reloc_type);
-#if !defined(TCC_TARGET_MACHO) || defined TCC_IS_NATIVE
-ST_FUNC unsigned create_plt_entry(TCCState *s1, unsigned got_offset, struct sym_attr *attr);
-ST_FUNC void relocate_plt(TCCState *s1);
+#if !defined(SUGAR_TARGET_MACHO) || defined SUGAR_IS_NATIVE
+ST_FUNC unsigned create_plt_entry(SUGARState *s1, unsigned got_offset, struct sym_attr *attr);
+ST_FUNC void relocate_plt(SUGARState *s1);
 #endif
 #endif
-ST_FUNC void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val);
+ST_FUNC void relocate(SUGARState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val);
 
 /* ------------ xxx-gen.c ------------ */
 
@@ -1607,7 +1607,7 @@ ST_FUNC void gen_cvt_ftoi(int t);
 ST_FUNC void gen_cvt_itof(int t);
 ST_FUNC void gen_cvt_ftof(int t);
 ST_FUNC void ggoto(void);
-#ifndef TCC_TARGET_C67
+#ifndef SUGAR_TARGET_C67
 ST_FUNC void o(unsigned int c);
 #endif
 ST_FUNC void gen_vla_sp_save(int addr);
@@ -1640,7 +1640,7 @@ static inline void add64le(unsigned char *p, int64_t x) {
 }
 
 /* ------------ i386-gen.c ------------ */
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
 ST_FUNC void g(int c);
 ST_FUNC void gen_le16(int c);
 ST_FUNC void gen_le32(int c);
@@ -1650,10 +1650,10 @@ ST_FUNC void gen_cvt_csti(int t);
 #endif
 
 /* ------------ x86_64-gen.c ------------ */
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
 ST_FUNC void gen_addr64(int r, Sym *sym, int64_t c);
 ST_FUNC void gen_opl(int op);
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
 ST_FUNC void gen_vla_result(int addr);
 #endif
 ST_FUNC void gen_cvt_sxtw(void);
@@ -1661,15 +1661,15 @@ ST_FUNC void gen_cvt_csti(int t);
 #endif
 
 /* ------------ arm-gen.c ------------ */
-#ifdef TCC_TARGET_ARM
-#if defined(TCC_ARM_EABI) && !defined(CONFIG_TCC_ELFINTERP)
-PUB_FUNC const char *default_elfinterp(struct TCCState *s);
+#ifdef SUGAR_TARGET_ARM
+#if defined(SUGAR_ARM_EABI) && !defined(CONFIG_SUGAR_ELFINTERP)
+PUB_FUNC const char *default_elfinterp(struct SUGARState *s);
 #endif
-ST_FUNC void arm_init(struct TCCState *s);
+ST_FUNC void arm_init(struct SUGARState *s);
 #endif
 
 /* ------------ arm64-gen.c ------------ */
-#ifdef TCC_TARGET_ARM64
+#ifdef SUGAR_TARGET_ARM64
 ST_FUNC void gen_opl(int op);
 ST_FUNC void gfunc_return(CType *func_type);
 ST_FUNC void gen_va_start(void);
@@ -1680,7 +1680,7 @@ ST_FUNC void gen_cvt_csti(int t);
 #endif
 
 /* ------------ riscv64-gen.c ------------ */
-#ifdef TCC_TARGET_RISCV64
+#ifdef SUGAR_TARGET_RISCV64
 ST_FUNC void gen_opl(int op);
 //ST_FUNC void gfunc_return(CType *func_type);
 ST_FUNC void gen_va_start(void);
@@ -1689,31 +1689,31 @@ ST_FUNC void gen_cvt_sxtw(void);
 #endif
 
 /* ------------ c67-gen.c ------------ */
-#ifdef TCC_TARGET_C67
+#ifdef SUGAR_TARGET_C67
 #endif
 
-/* ------------ tcccoff.c ------------ */
+/* ------------ sugarcoff.c ------------ */
 
-#ifdef TCC_TARGET_COFF
-ST_FUNC int tcc_output_coff(TCCState *s1, FILE *f);
-ST_FUNC int tcc_load_coff(TCCState * s1, int fd);
+#ifdef SUGAR_TARGET_COFF
+ST_FUNC int sugar_output_coff(SUGARState *s1, FILE *f);
+ST_FUNC int sugar_load_coff(SUGARState * s1, int fd);
 #endif
 
-/* ------------ tccasm.c ------------ */
+/* ------------ sugarasm.c ------------ */
 ST_FUNC void asm_instr(void);
 ST_FUNC void asm_global_instr(void);
-#ifdef CONFIG_TCC_ASM
+#ifdef CONFIG_SUGAR_ASM
 ST_FUNC int find_constraint(ASMOperand *operands, int nb_operands, const char *name, const char **pp);
 ST_FUNC Sym* get_asm_sym(int name, Sym *csym);
-ST_FUNC void asm_expr(TCCState *s1, ExprValue *pe);
-ST_FUNC int asm_int_expr(TCCState *s1);
-ST_FUNC int tcc_assemble(TCCState *s1, int do_preprocess);
+ST_FUNC void asm_expr(SUGARState *s1, ExprValue *pe);
+ST_FUNC int asm_int_expr(SUGARState *s1);
+ST_FUNC int sugar_assemble(SUGARState *s1, int do_preprocess);
 /* ------------ i386-asm.c ------------ */
 ST_FUNC void gen_expr32(ExprValue *pe);
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
 ST_FUNC void gen_expr64(ExprValue *pe);
 #endif
-ST_FUNC void asm_opcode(TCCState *s1, int opcode);
+ST_FUNC void asm_opcode(SUGARState *s1, int opcode);
 ST_FUNC int asm_parse_regvar(int t);
 ST_FUNC void asm_compute_constraints(ASMOperand *operands, int nb_operands, int nb_outputs, const uint8_t *clobber_regs, int *pout_reg);
 ST_FUNC void subst_asm_operand(CString *add_str, SValue *sv, int modifier);
@@ -1721,18 +1721,18 @@ ST_FUNC void asm_gen_code(ASMOperand *operands, int nb_operands, int nb_outputs,
 ST_FUNC void asm_clobber(uint8_t *clobber_regs, const char *str);
 #endif
 
-/* ------------ tccpe.c -------------- */
-#ifdef TCC_TARGET_PE
-ST_FUNC int pe_load_file(struct TCCState *s1, const char *filename, int fd);
-ST_FUNC int pe_output_file(TCCState * s1, const char *filename);
-ST_FUNC int pe_putimport(TCCState *s1, int dllindex, const char *name, addr_t value);
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+/* ------------ sugarpe.c -------------- */
+#ifdef SUGAR_TARGET_PE
+ST_FUNC int pe_load_file(struct SUGARState *s1, const char *filename, int fd);
+ST_FUNC int pe_output_file(SUGARState * s1, const char *filename);
+ST_FUNC int pe_putimport(SUGARState *s1, int dllindex, const char *name, addr_t value);
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
 ST_FUNC SValue *pe_getimport(SValue *sv, SValue *v2);
 #endif
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
 ST_FUNC void pe_add_unwind_data(unsigned start, unsigned end, unsigned stack);
 #endif
-PUB_FUNC int tcc_get_dllexports(const char *filename, char **pp);
+PUB_FUNC int sugar_get_dllexports(const char *filename, char **pp);
 /* symbol properties stored in Elf32_Sym->st_other */
 # define ST_PE_EXPORT 0x10
 # define ST_PE_IMPORT 0x20
@@ -1740,14 +1740,14 @@ PUB_FUNC int tcc_get_dllexports(const char *filename, char **pp);
 #endif
 #define ST_ASM_SET 0x04
 
-/* ------------ tccmacho.c ----------------- */
-#ifdef TCC_TARGET_MACHO
-ST_FUNC int macho_output_file(TCCState * s1, const char *filename);
-ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev);
+/* ------------ sugarmacho.c ----------------- */
+#ifdef SUGAR_TARGET_MACHO
+ST_FUNC int macho_output_file(SUGARState * s1, const char *filename);
+ST_FUNC int macho_load_dll(SUGARState *s1, int fd, const char *filename, int lev);
 #endif
-/* ------------ tccrun.c ----------------- */
-#ifdef TCC_IS_NATIVE
-#ifdef CONFIG_TCC_STATIC
+/* ------------ sugarrun.c ----------------- */
+#ifdef SUGAR_IS_NATIVE
+#ifdef CONFIG_SUGAR_STATIC
 #define RTLD_LAZY       0x001
 #define RTLD_NOW        0x002
 #define RTLD_GLOBAL     0x100
@@ -1758,17 +1758,17 @@ ST_FUNC void dlclose(void *p);
 ST_FUNC const char *dlerror(void);
 ST_FUNC void *dlsym(void *handle, const char *symbol);
 #endif
-ST_FUNC void tcc_run_free(TCCState *s1);
+ST_FUNC void sugar_run_free(SUGARState *s1);
 #endif
 
-/* ------------ tcctools.c ----------------- */
-#if 0 /* included in tcc.c */
-ST_FUNC int tcc_tool_ar(TCCState *s, int argc, char **argv);
-#ifdef TCC_TARGET_PE
-ST_FUNC int tcc_tool_impdef(TCCState *s, int argc, char **argv);
+/* ------------ sugartools.c ----------------- */
+#if 0 /* included in sugar.c */
+ST_FUNC int sugar_tool_ar(SUGARState *s, int argc, char **argv);
+#ifdef SUGAR_TARGET_PE
+ST_FUNC int sugar_tool_impdef(SUGARState *s, int argc, char **argv);
 #endif
-ST_FUNC void tcc_tool_cross(TCCState *s, char **argv, int option);
-ST_FUNC void gen_makedeps(TCCState *s, const char *target, const char *filename);
+ST_FUNC void sugar_tool_cross(SUGARState *s, char **argv, int option);
+ST_FUNC void gen_makedeps(SUGARState *s, const char *target, const char *filename);
 #endif
 
 /********************************************************/
@@ -1780,41 +1780,41 @@ ST_FUNC void gen_makedeps(TCCState *s, const char *target, const char *filename)
 #endif
 /********************************************************/
 
-#define text_section        TCC_STATE_VAR(text_section)
-#define data_section        TCC_STATE_VAR(data_section)
-#define bss_section         TCC_STATE_VAR(bss_section)
-#define common_section      TCC_STATE_VAR(common_section)
-#define cur_text_section    TCC_STATE_VAR(cur_text_section)
-#define bounds_section      TCC_STATE_VAR(bounds_section)
-#define lbounds_section     TCC_STATE_VAR(lbounds_section)
-#define symtab_section      TCC_STATE_VAR(symtab_section)
-#define stab_section        TCC_STATE_VAR(stab_section)
+#define text_section        SUGAR_STATE_VAR(text_section)
+#define data_section        SUGAR_STATE_VAR(data_section)
+#define bss_section         SUGAR_STATE_VAR(bss_section)
+#define common_section      SUGAR_STATE_VAR(common_section)
+#define cur_text_section    SUGAR_STATE_VAR(cur_text_section)
+#define bounds_section      SUGAR_STATE_VAR(bounds_section)
+#define lbounds_section     SUGAR_STATE_VAR(lbounds_section)
+#define symtab_section      SUGAR_STATE_VAR(symtab_section)
+#define stab_section        SUGAR_STATE_VAR(stab_section)
 #define stabstr_section     stab_section->link
-#define gnu_ext             TCC_STATE_VAR(gnu_ext)
-#define tcc_error_noabort   TCC_SET_STATE(_tcc_error_noabort)
-#define tcc_error           TCC_SET_STATE(_tcc_error)
-#define tcc_warning         TCC_SET_STATE(_tcc_warning)
+#define gnu_ext             SUGAR_STATE_VAR(gnu_ext)
+#define sugar_error_noabort   SUGAR_SET_STATE(_sugar_error_noabort)
+#define sugar_error           SUGAR_SET_STATE(_sugar_error)
+#define sugar_warning         SUGAR_SET_STATE(_sugar_warning)
 
-#define total_idents        TCC_STATE_VAR(total_idents)
-#define total_lines         TCC_STATE_VAR(total_lines)
-#define total_bytes         TCC_STATE_VAR(total_bytes)
+#define total_idents        SUGAR_STATE_VAR(total_idents)
+#define total_lines         SUGAR_STATE_VAR(total_lines)
+#define total_bytes         SUGAR_STATE_VAR(total_bytes)
 
-PUB_FUNC void tcc_enter_state(TCCState *s1);
-PUB_FUNC void tcc_exit_state(void);
+PUB_FUNC void sugar_enter_state(SUGARState *s1);
+PUB_FUNC void sugar_exit_state(void);
 
 /********************************************************/
-#endif /* _TCC_H */
+#endif /* _SUGAR_H */
 
-#undef TCC_STATE_VAR
-#undef TCC_SET_STATE
+#undef SUGAR_STATE_VAR
+#undef SUGAR_SET_STATE
 
 #ifdef USING_GLOBALS
-# define TCC_STATE_VAR(sym) tcc_state->sym
-# define TCC_SET_STATE(fn) fn
+# define SUGAR_STATE_VAR(sym) sugar_state->sym
+# define SUGAR_SET_STATE(fn) fn
 # undef USING_GLOBALS
 #else
-# define TCC_STATE_VAR(sym) s1->sym
-# define TCC_SET_STATE(fn) (tcc_enter_state(s1),fn)
-/* actually we could avoid the tcc_enter_state(s1) hack by using
+# define SUGAR_STATE_VAR(sym) s1->sym
+# define SUGAR_SET_STATE(fn) (sugar_enter_state(s1),fn)
+/* actually we could avoid the sugar_enter_state(s1) hack by using
    __VA_ARGS__ except that some compiler doesn't support it. */
 #endif

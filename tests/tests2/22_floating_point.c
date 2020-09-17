@@ -6,7 +6,7 @@ float fd;
 int
 test()
 {
-   // was an internal tcc compiler error with arm64 backend until 2019-11-08
+   // was an internal sugar compiler error with arm64 backend until 2019-11-08
    if (fd < 5.5) {
      return 1;
    } else {

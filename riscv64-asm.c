@@ -1,12 +1,12 @@
 /*************************************************************/
 /*
- *  RISCV64 dummy assembler for TCC
+ *  RISCV64 dummy assembler for SUGAR
  *
  */
 
 #ifdef TARGET_DEFS_ONLY
 
-#define CONFIG_TCC_ASM
+#define CONFIG_SUGAR_ASM
 #define NB_ASM_REGS 32
 
 ST_FUNC void g(int c);
@@ -17,11 +17,11 @@ ST_FUNC void gen_le32(int c);
 #else
 /*************************************************************/
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 
 static void asm_error(void)
 {
-    tcc_error("RISCV64 asm not implemented.");
+    sugar_error("RISCV64 asm not implemented.");
 }
 
 /* XXX: make it faster ? */
@@ -54,7 +54,7 @@ ST_FUNC void gen_expr32(ExprValue *pe)
     gen_le32(pe->v);
 }
 
-ST_FUNC void asm_opcode(TCCState *s1, int opcode)
+ST_FUNC void asm_opcode(SUGARState *s1, int opcode)
 {
     asm_error();
 }

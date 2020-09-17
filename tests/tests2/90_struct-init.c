@@ -6,7 +6,7 @@ struct contains_empty {
     u8 b;
 };
 struct contains_empty ce = { { (1) }, (empty_s){}, 022, };
-/* The following decl of 'q' would demonstrate the TCC bug in init_putv when
+/* The following decl of 'q' would demonstrate the SUGAR bug in init_putv when
    handling copying compound literals.  (Compound literals
    aren't acceptable constant initializers in isoc99, but
    we accept them like gcc, except for this case)
@@ -176,7 +176,7 @@ void foo (struct W *w, struct pkthdr *phdr_)
   struct SSU lssu1 = { 5, 3 };
   struct SSU lssu2 = { .y = 5, .x = 3 };
   /* designated initializers in GNU form */
-#if defined(__GNUC__) || defined(__TINYC__)
+#if defined(__GNUC__) || defined(__SUGARC__)
   struct S ls4 = {a: 1, b: 2, c: {3, 4}};
 #else
   struct S ls4 = {.a = 1, .b = 2, .c = {3, 4}};
@@ -258,7 +258,7 @@ int
 test_zero_init (void)
 {
   /* The peculiarity here is that only a.j is initialized.  That
-     means that all other members must be zero initialized.  TCC
+     means that all other members must be zero initialized.  SUGAR
      once didn't do that for sub-level designators.  */
   struct SEB b = { .a.j = 5 };
   struct SEC c = { .a.j = 5 };

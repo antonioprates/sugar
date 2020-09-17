@@ -1,6 +1,6 @@
 #ifdef TARGET_DEFS_ONLY
 
-#define EM_TCC_TARGET EM_X86_64
+#define EM_SUGAR_TARGET EM_X86_64
 
 /* relocation type for 32 bit data relocation */
 #define R_DATA_32   R_X86_64_32S
@@ -20,9 +20,9 @@
 
 #else /* !TARGET_DEFS_ONLY */
 
-#include "tcc.h"
+#include "sugar.h"
 
-#if !defined(ELF_OBJ_ONLY) || defined(TCC_TARGET_MACHO)
+#if !defined(ELF_OBJ_ONLY) || defined(SUGAR_TARGET_MACHO)
 /* Returns 1 for a code relocation, 0 for a data relocation. For unknown
    relocations, returns -1. */
 int code_reloc (int reloc_type)
@@ -60,7 +60,7 @@ int code_reloc (int reloc_type)
 }
 
 /* Returns an enumerator to describe whether and when the relocation needs a
-   GOT and/or PLT entry to be created. See tcc.h for a description of the
+   GOT and/or PLT entry to be created. See sugar.h for a description of the
    different values. */
 int gotplt_entry_type (int reloc_type)
 {
@@ -104,8 +104,8 @@ int gotplt_entry_type (int reloc_type)
     return -1;
 }
 
-#if !defined(TCC_TARGET_MACHO) || defined TCC_IS_NATIVE
-ST_FUNC unsigned create_plt_entry(TCCState *s1, unsigned got_offset, struct sym_attr *attr)
+#if !defined(SUGAR_TARGET_MACHO) || defined SUGAR_IS_NATIVE
+ST_FUNC unsigned create_plt_entry(SUGARState *s1, unsigned got_offset, struct sym_attr *attr)
 {
     Section *plt = s1->plt;
     uint8_t *p;
@@ -148,7 +148,7 @@ ST_FUNC unsigned create_plt_entry(TCCState *s1, unsigned got_offset, struct sym_
 
 /* relocate the PLT: compute addresses and offsets in the PLT now that final
    address for PLT and GOT are known (see fill_program_header) */
-ST_FUNC void relocate_plt(TCCState *s1)
+ST_FUNC void relocate_plt(SUGARState *s1)
 {
     uint8_t *p, *p_end;
 
@@ -172,7 +172,7 @@ ST_FUNC void relocate_plt(TCCState *s1)
 #endif
 #endif
 
-void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val)
+void relocate(SUGARState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val)
 {
     int sym_index, esym_index;
 
@@ -180,7 +180,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
 
     switch (type) {
         case R_X86_64_64:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
                 esym_index = get_sym_attr(s1, sym_index, 0)->dyn_index;
                 qrel->r_offset = rel->r_offset;
                 if (esym_index) {
@@ -198,9 +198,9 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             break;
         case R_X86_64_32:
         case R_X86_64_32S:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
-                /* XXX: this logic may depend on TCC's codegen
-                   now TCC uses R_X86_64_32 even for a 64bit pointer */
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
+                /* XXX: this logic may depend on SUGAR's codegen
+                   now SUGAR uses R_X86_64_32 even for a 64bit pointer */
                 qrel->r_offset = rel->r_offset;
                 qrel->r_info = ELFW(R_INFO)(0, R_X86_64_RELATIVE);
                 /* Use sign extension! */
@@ -211,7 +211,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             break;
 
         case R_X86_64_PC32:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
                 /* DLL relocation */
                 esym_index = get_sym_attr(s1, sym_index, 0)->dyn_index;
                 if (esym_index) {
@@ -233,7 +233,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             long long diff;
             diff = (long long)val - addr;
             if (diff < -2147483648LL || diff > 2147483647LL) {
-                tcc_error("internal error: relocation failed");
+                sugar_error("internal error: relocation failed");
             }
             add32le(ptr, diff);
         }
@@ -244,7 +244,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             break;
 
         case R_X86_64_PC64:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
                 /* DLL relocation */
                 esym_index = get_sym_attr(s1, sym_index, 0)->dyn_index;
                 if (esym_index) {
@@ -315,7 +315,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
                     add32le(ptr + 8, x);
                 }
                 else
-                    tcc_error("unexpected R_X86_64_TLSGD pattern");
+                    sugar_error("unexpected R_X86_64_TLSGD pattern");
             }
             break;
         case R_X86_64_TLSLD:
@@ -335,7 +335,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
                     rel[1].r_info = ELFW(R_INFO)(0, R_X86_64_NONE);
                 }
                 else
-                    tcc_error("unexpected R_X86_64_TLSLD pattern");
+                    sugar_error("unexpected R_X86_64_TLSLD pattern");
             }
             break;
         case R_X86_64_DTPOFF32:
@@ -354,7 +354,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
         case R_X86_64_NONE:
             break;
         case R_X86_64_RELATIVE:
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
             add32le(ptr, val - s1->pe_imagebase);
 #endif
             /* do nothing */

@@ -1,14 +1,14 @@
 /*
- * Simple Test program for libtcc
+ * Simple Test program for libsugar
  *
- * libtcc can be useful to use tcc as a "backend" for a code generator.
+ * libsugar can be useful to use sugar as a "backend" for a code generator.
  */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
-#include "libtcc.h"
+#include "libsugar.h"
 
 void handle_error(void *opaque, const char *msg)
 {
@@ -25,7 +25,7 @@ int add(int a, int b)
 const char hello[] = "Hello World!";
 
 char my_program[] =
-"#include <tcclib.h>\n" /* include the "Simple libc header for TCC" */
+"#include <sugarlib.h>\n" /* include the "Simple libc header for SUGAR" */
 "extern int add(int a, int b);\n"
 "#ifdef _WIN32\n" /* dynamically linked data needs 'dllimport' */
 " __attribute__((dllimport))\n"
@@ -49,54 +49,54 @@ char my_program[] =
 
 int main(int argc, char **argv)
 {
-    TCCState *s;
+    SUGARState *s;
     int i;
     int (*func)(int);
 
-    s = tcc_new();
+    s = sugar_new();
     if (!s) {
-        fprintf(stderr, "Could not create tcc state\n");
+        fprintf(stderr, "Could not create sugar state\n");
         exit(1);
     }
 
-    assert(tcc_get_error_func(s) == NULL);
-    assert(tcc_get_error_opaque(s) == NULL);
+    assert(sugar_get_error_func(s) == NULL);
+    assert(sugar_get_error_opaque(s) == NULL);
 
-    tcc_set_error_func(s, stderr, handle_error);
+    sugar_set_error_func(s, stderr, handle_error);
 
-    assert(tcc_get_error_func(s) == handle_error);
-    assert(tcc_get_error_opaque(s) == stderr);
+    assert(sugar_get_error_func(s) == handle_error);
+    assert(sugar_get_error_opaque(s) == stderr);
 
-    /* if tcclib.h and libtcc1.a are not installed, where can we find them */
+    /* if sugarlib.h and libsugar1.a are not installed, where can we find them */
     for (i = 1; i < argc; ++i) {
         char *a = argv[i];
         if (a[0] == '-') {
             if (a[1] == 'B')
-                tcc_set_lib_path(s, a+2);
+                sugar_set_lib_path(s, a+2);
             else if (a[1] == 'I')
-                tcc_add_include_path(s, a+2);
+                sugar_add_include_path(s, a+2);
             else if (a[1] == 'L')
-                tcc_add_library_path(s, a+2);
+                sugar_add_library_path(s, a+2);
         }
     }
 
     /* MUST BE CALLED before any compilation */
-    tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+    sugar_set_output_type(s, SUGAR_OUTPUT_MEMORY);
 
-    if (tcc_compile_string(s, my_program) == -1)
+    if (sugar_compile_string(s, my_program) == -1)
         return 1;
 
     /* as a test, we add symbols that the compiled program can use.
-       You may also open a dll with tcc_add_dll() and use symbols from that */
-    tcc_add_symbol(s, "add", add);
-    tcc_add_symbol(s, "hello", hello);
+       You may also open a dll with sugar_add_dll() and use symbols from that */
+    sugar_add_symbol(s, "add", add);
+    sugar_add_symbol(s, "hello", hello);
 
     /* relocate the code */
-    if (tcc_relocate(s, TCC_RELOCATE_AUTO) < 0)
+    if (sugar_relocate(s, SUGAR_RELOCATE_AUTO) < 0)
         return 1;
 
     /* get entry symbol */
-    func = tcc_get_symbol(s, "foo");
+    func = sugar_get_symbol(s, "foo");
     if (!func)
         return 1;
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     func(32);
 
     /* delete the state */
-    tcc_delete(s);
+    sugar_delete(s);
 
     return 0;
 }

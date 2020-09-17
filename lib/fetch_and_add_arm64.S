@@ -3,7 +3,7 @@
         .global fetch_and_add_arm64
         .type   fetch_and_add_arm64, %function
 fetch_and_add_arm64:
-#ifdef __TINYC__
+#ifdef __SUGARC__
         .int 0x885f7c02
         .int 0x0b010042
         .int 0x8803fc02

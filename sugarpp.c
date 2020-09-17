@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  SUGAR - Sugar C Compiler
  * 
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -19,7 +19,7 @@
  */
 
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 
 /********************************************************/
 /* global variables */
@@ -56,9 +56,9 @@ static struct TinyAlloc *tokstr_alloc;
 
 static TokenString *macro_stack;
 
-static const char tcc_keywords[] = 
+static const char sugar_keywords[] = 
 #define DEF(id, str) str "\0"
-#include "tcctok.h"
+#include "sugartok.h"
 #undef DEF
 ;
 
@@ -97,13 +97,13 @@ static void next_nomacro(void);
 ST_FUNC void skip(int c)
 {
     if (tok != c)
-        tcc_error("'%c' expected (got \"%s\")", c, get_tok_str(tok, &tokc));
+        sugar_error("'%c' expected (got \"%s\")", c, get_tok_str(tok, &tokc));
     next();
 }
 
 ST_FUNC void expect(const char *msg)
 {
-    tcc_error("%s expected", msg);
+    sugar_error("%s expected", msg);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -112,8 +112,8 @@ ST_FUNC void expect(const char *msg)
 #define USE_TAL
 
 #ifndef USE_TAL
-#define tal_free(al, p) tcc_free(p)
-#define tal_realloc(al, p, size) tcc_realloc(p, size)
+#define tal_free(al, p) sugar_free(p)
+#define tal_realloc(al, p, size) sugar_realloc(p, size)
 #define tal_new(a,b,c)
 #define tal_delete(a)
 #else
@@ -164,8 +164,8 @@ typedef struct tal_header_t {
 
 static TinyAlloc *tal_new(TinyAlloc **pal, unsigned limit, unsigned size)
 {
-    TinyAlloc *al = tcc_mallocz(sizeof(TinyAlloc));
-    al->p = al->buffer = tcc_malloc(size);
+    TinyAlloc *al = sugar_mallocz(sizeof(TinyAlloc));
+    al->p = al->buffer = sugar_malloc(size);
     al->limit = limit;
     al->size = size;
     if (pal) *pal = al;
@@ -204,8 +204,8 @@ tail_call:
     }
 #endif
     next = al->next;
-    tcc_free(al->buffer);
-    tcc_free(al);
+    sugar_free(al->buffer);
+    sugar_free(al);
     al = next;
     goto tail_call;
 }
@@ -234,7 +234,7 @@ tail_call:
         goto tail_call;
     }
     else
-        tcc_free(p);
+        sugar_free(p);
 }
 
 static void *tal_realloc_impl(TinyAlloc **pal, void *p, unsigned size TAL_DEBUG_PARAMS)
@@ -299,7 +299,7 @@ tail_call:
     }
     if (is_own) {
         al->nb_allocs--;
-        ret = tcc_malloc(size);
+        ret = sugar_malloc(size);
         header = (((tal_header_t *)p) - 1);
         if (p) memcpy(ret, p, header->size);
 #ifdef TAL_DEBUG
@@ -309,7 +309,7 @@ tail_call:
         al = al->next;
         goto tail_call;
     } else
-        ret = tcc_realloc(p, size);
+        ret = sugar_realloc(p, size);
 #ifdef TAL_INFO
     al->nb_missed++;
 #endif
@@ -329,7 +329,7 @@ static void cstr_realloc(CString *cstr, int new_size)
         size = 8; /* no need to allocate a too small first string */
     while (size < new_size)
         size = size * 2;
-    cstr->data = tcc_realloc(cstr->data, size);
+    cstr->data = sugar_realloc(cstr->data, size);
     cstr->size_allocated = size;
 }
 
@@ -375,7 +375,7 @@ ST_FUNC void cstr_new(CString *cstr)
 /* free string and reset it to NULL */
 ST_FUNC void cstr_free(CString *cstr)
 {
-    tcc_free(cstr->data);
+    sugar_free(cstr->data);
     cstr_new(cstr);
 }
 
@@ -432,12 +432,12 @@ static TokenSym *tok_alloc_new(TokenSym **pts, const char *str, int len)
     int i;
 
     if (tok_ident >= SYM_FIRST_ANOM) 
-        tcc_error("memory full (symbols)");
+        sugar_error("memory full (symbols)");
 
     /* expand token table if needed */
     i = tok_ident - TOK_IDENT;
     if ((i % TOK_ALLOC_INCR) == 0) {
-        ptable = tcc_realloc(table_ident, (i + TOK_ALLOC_INCR) * sizeof(TokenSym *));
+        ptable = sugar_realloc(table_ident, (i + TOK_ALLOC_INCR) * sizeof(TokenSym *));
         table_ident = ptable;
     }
 
@@ -666,7 +666,7 @@ static int handle_stray_noerror(void)
 static void handle_stray(void)
 {
     if (handle_stray_noerror())
-        tcc_error("stray '\\' in program");
+        sugar_error("stray '\\' in program");
 }
 
 /* skip the stray and handle the \\n case. Output an error if
@@ -685,7 +685,7 @@ static int handle_stray1(uint8_t *p)
     ch = *p;
     if (handle_stray_noerror()) {
         if (!(parse_flags & PARSE_FLAG_ACCEPT_STRAYS))
-            tcc_error("stray '\\' in program");
+            sugar_error("stray '\\' in program");
         *--file->buf_ptr = '\\';
     }
     p = file->buf_ptr;
@@ -798,7 +798,7 @@ static uint8_t *parse_comment(uint8_t *p)
                     c = handle_eob();
                     p = file->buf_ptr;
                     if (c == CH_EOF)
-                        tcc_error("unexpected end of file in comment");
+                        sugar_error("unexpected end of file in comment");
                     if (c == '\\') {
                         /* skip '\[\r]\n', otherwise just skip the stray */
                         while (c == '\\') {
@@ -828,7 +828,7 @@ static uint8_t *parse_comment(uint8_t *p)
             c = handle_eob();
             p = file->buf_ptr;
             if (c == CH_EOF) {
-                tcc_error("unexpected end of file in comment");
+                sugar_error("unexpected end of file in comment");
             } else if (c == '\\') {
                 p++;
             }
@@ -882,7 +882,7 @@ static uint8_t *parse_pp_string(uint8_t *p,
             if (c == CH_EOF) {
             unterminated_string:
                 /* XXX: indicate line number of start of string */
-                tcc_error("missing terminating %c character", sep);
+                sugar_error("missing terminating %c character", sep);
             } else if (c == '\\') {
                 /* escape : just skip \[\r]\n */
                 PEEKC_EOB(c, p);
@@ -1337,7 +1337,7 @@ ST_INLN void define_push(int v, int macro_type, int *str, Sym *first_arg)
     table_ident[v - TOK_IDENT]->sym_define = s;
 
     if (o && !macro_is_equal(o->d, s->d))
-	tcc_warning("%s redefined", get_tok_str(v, NULL));
+	sugar_warning("%s redefined", get_tok_str(v, NULL));
 }
 
 /* undefined a define symbol. Its name is just set to zero */
@@ -1402,9 +1402,9 @@ ST_FUNC void label_pop(Sym **ptop, Sym *slast, int keep)
     for(s = *ptop; s != slast; s = s1) {
         s1 = s->prev;
         if (s->r == LABEL_DECLARED) {
-            tcc_warning("label '%s' declared but not used", get_tok_str(s->v, NULL));
+            sugar_warning("label '%s' declared but not used", get_tok_str(s->v, NULL));
         } else if (s->r == LABEL_FORWARD) {
-                tcc_error("label '%s' used but not defined",
+                sugar_error("label '%s' used but not defined",
                       get_tok_str(s->v, NULL));
         } else {
             if (s->c) {
@@ -1425,8 +1425,8 @@ ST_FUNC void label_pop(Sym **ptop, Sym *slast, int keep)
         *ptop = slast;
 }
 
-/* fake the nth "#if defined test_..." for tcc -dt -run */
-static void maybe_run_test(TCCState *s)
+/* fake the nth "#if defined test_..." for sugar -dt -run */
+static void maybe_run_test(SUGARState *s)
 {
     const char *p;
     if (s->include_stack_ptr != s->include_stack)
@@ -1458,8 +1458,8 @@ static int expr_preprocess(void)
                 next_nomacro();
             if (tok < TOK_IDENT)
                 expect("identifier");
-            if (tcc_state->run_test)
-                maybe_run_test(tcc_state);
+            if (sugar_state->run_test)
+                maybe_run_test(sugar_state);
             c = define_find(tok) != 0;
             if (t == '(') {
                 next_nomacro();
@@ -1485,7 +1485,7 @@ static int expr_preprocess(void)
             tok_str_add_tok(str);
             next();
             if (tok == '(')
-                tcc_error("function-like macro '%s' is not defined",
+                sugar_error("function-like macro '%s' is not defined",
                           get_tok_str(t, NULL));
             goto redo;
         }
@@ -1512,7 +1512,7 @@ ST_FUNC void parse_define(void)
 
     v = tok;
     if (v < TOK_IDENT || v == TOK_DEFINED)
-        tcc_error("invalid macro name '%s'", get_tok_str(tok, &tokc));
+        sugar_error("invalid macro name '%s'", get_tok_str(tok, &tokc));
     /* XXX: should check if same macro (ANSI) */
     first = NULL;
     t = MACRO_OBJ;
@@ -1541,7 +1541,7 @@ ST_FUNC void parse_define(void)
             }
             if (varg < TOK_IDENT)
         bad_list:
-                tcc_error("bad macro parameter list");
+                sugar_error("bad macro parameter list");
             s = sym_push2(&define_stack, varg | SYM_FIELD, is_vaargs, 0);
             *ps = s;
             ps = &s->next;
@@ -1590,11 +1590,11 @@ ST_FUNC void parse_define(void)
     tok_str_add(&tokstr_buf, 0);
     if (3 == spc)
 bad_twosharp:
-        tcc_error("'##' cannot appear at either end of macro");
+        sugar_error("'##' cannot appear at either end of macro");
     define_push(v, t, tok_str_dup(&tokstr_buf), first);
 }
 
-static CachedInclude *search_cached_include(TCCState *s1, const char *filename, int add)
+static CachedInclude *search_cached_include(SUGARState *s1, const char *filename, int add)
 {
     const unsigned char *s;
     unsigned int h;
@@ -1625,7 +1625,7 @@ static CachedInclude *search_cached_include(TCCState *s1, const char *filename, 
     if (!add)
         return NULL;
 
-    e = tcc_malloc(sizeof(CachedInclude) + strlen(filename));
+    e = sugar_malloc(sizeof(CachedInclude) + strlen(filename));
     strcpy(e->filename, filename);
     e->ifndef_macro = e->once = 0;
     dynarray_add(&s1->cached_includes, &s1->nb_cached_includes, e);
@@ -1638,7 +1638,7 @@ static CachedInclude *search_cached_include(TCCState *s1, const char *filename, 
     return e;
 }
 
-static void pragma_parse(TCCState *s1)
+static void pragma_parse(SUGARState *s1)
 {
     next_nomacro();
     if (tok == TOK_push_macro || tok == TOK_pop_macro) {
@@ -1666,14 +1666,14 @@ static void pragma_parse(TCCState *s1)
         if (s)
             table_ident[v - TOK_IDENT]->sym_define = s->d ? s : NULL;
         else
-            tcc_warning("unbalanced #pragma pop_macro");
+            sugar_warning("unbalanced #pragma pop_macro");
         pp_debug_tok = t, pp_debug_symv = v;
 
     } else if (tok == TOK_once) {
         search_cached_include(s1, file->filename, 1)->once = pp_once;
 
-    } else if (s1->output_type == TCC_OUTPUT_PREPROCESS) {
-        /* tcc -E: keep pragmas below unchanged */
+    } else if (s1->output_type == SUGAR_OUTPUT_PREPROCESS) {
+        /* sugar -E: keep pragmas below unchanged */
         unget_tok(' ');
         unget_tok(TOK_PRAGMA);
         unget_tok('#');
@@ -1691,7 +1691,7 @@ static void pragma_parse(TCCState *s1)
             next();
             if (s1->pack_stack_ptr <= s1->pack_stack) {
             stk_error:
-                tcc_error("out of pack stack");
+                sugar_error("out of pack stack");
             }
             s1->pack_stack_ptr--;
         } else {
@@ -1725,7 +1725,7 @@ static void pragma_parse(TCCState *s1)
         skip(',');
         if (tok != TOK_STR)
             goto pragma_err;
-        p = tcc_strdup((char *)tokc.str.data);
+        p = sugar_strdup((char *)tokc.str.data);
         next();
         if (tok != ')')
             goto pragma_err;
@@ -1733,24 +1733,24 @@ static void pragma_parse(TCCState *s1)
             dynarray_add(&s1->pragma_libs, &s1->nb_pragma_libs, p);
         } else {
             if (t == TOK_option)
-                tcc_set_options(s1, p);
-            tcc_free(p);
+                sugar_set_options(s1, p);
+            sugar_free(p);
         }
 
     } else if (s1->warn_unsupported) {
-        tcc_warning("#pragma %s is ignored", get_tok_str(tok, &tokc));
+        sugar_warning("#pragma %s is ignored", get_tok_str(tok, &tokc));
     }
     return;
 
 pragma_err:
-    tcc_error("malformed #pragma directive");
+    sugar_error("malformed #pragma directive");
     return;
 }
 
 /* is_bof is true if first non space token at beginning of file */
 ST_FUNC void preprocess(int is_bof)
 {
-    TCCState *s1 = tcc_state;
+    SUGARState *s1 = sugar_state;
     int i, c, n, saved_parse_flags;
     char buf[1024], *q;
     Sym *s;
@@ -1829,14 +1829,14 @@ ST_FUNC void preprocess(int is_bof)
 	    /* check syntax and remove '<>|""' */
 	    if ((len < 2 || ((buf[0] != '"' || buf[len-1] != '"') &&
 			     (buf[0] != '<' || buf[len-1] != '>'))))
-	        tcc_error("'#include' expects \"FILENAME\" or <FILENAME>");
+	        sugar_error("'#include' expects \"FILENAME\" or <FILENAME>");
 	    c = buf[len-1];
 	    memmove(buf, buf + 1, len - 2);
 	    buf[len - 2] = '\0';
         }
 
         if (s1->include_stack_ptr >= s1->include_stack + INCLUDE_STACK_SIZE)
-            tcc_error("#include recursion too deep");
+            sugar_error("#include recursion too deep");
         /* push current file on stack */
         *s1->include_stack_ptr++ = file;
         i = tok == TOK_INCLUDE_NEXT ? file->include_next_index + 1 : 0;
@@ -1858,7 +1858,7 @@ ST_FUNC void preprocess(int is_bof)
                     continue;
                 /* https://savannah.nongnu.org/bugs/index.php?50847 */
                 path = file->true_filename;
-                pstrncpy(buf1, path, tcc_basename(path) - path);
+                pstrncpy(buf1, path, sugar_basename(path) - path);
 
             } else {
                 /* search in all the include paths */
@@ -1879,7 +1879,7 @@ ST_FUNC void preprocess(int is_bof)
                 goto include_done;
             }
 
-            if (tcc_open(s1, buf1) < 0)
+            if (sugar_open(s1, buf1) < 0)
                 continue;
 
             file->include_next_index = i;
@@ -1894,15 +1894,15 @@ ST_FUNC void preprocess(int is_bof)
                 /* skip system include files */
                 if (n - i > s1->nb_sysinclude_paths)
                     dynarray_add(&s1->target_deps, &s1->nb_target_deps,
-                        tcc_strdup(buf1));
+                        sugar_strdup(buf1));
             }
             /* add include file debug info */
-            tcc_debug_bincl(tcc_state);
+            sugar_debug_bincl(sugar_state);
             tok_flags |= TOK_FLAG_BOF | TOK_FLAG_BOL;
             ch = file->buf_ptr[0];
             goto the_end;
         }
-        tcc_error("include file '%s' not found", buf);
+        sugar_error("include file '%s' not found", buf);
 include_done:
         --s1->include_stack_ptr;
         break;
@@ -1917,7 +1917,7 @@ include_done:
     do_ifdef:
         next_nomacro();
         if (tok < TOK_IDENT)
-            tcc_error("invalid argument for '#if%sdef'", c ? "n" : "");
+            sugar_error("invalid argument for '#if%sdef'", c ? "n" : "");
         if (is_bof) {
             if (c) {
 #ifdef INC_DEBUG
@@ -1929,22 +1929,22 @@ include_done:
         c = (define_find(tok) != 0) ^ c;
     do_if:
         if (s1->ifdef_stack_ptr >= s1->ifdef_stack + IFDEF_STACK_SIZE)
-            tcc_error("memory full (ifdef)");
+            sugar_error("memory full (ifdef)");
         *s1->ifdef_stack_ptr++ = c;
         goto test_skip;
     case TOK_ELSE:
         if (s1->ifdef_stack_ptr == s1->ifdef_stack)
-            tcc_error("#else without matching #if");
+            sugar_error("#else without matching #if");
         if (s1->ifdef_stack_ptr[-1] & 2)
-            tcc_error("#else after #else");
+            sugar_error("#else after #else");
         c = (s1->ifdef_stack_ptr[-1] ^= 3);
         goto test_else;
     case TOK_ELIF:
         if (s1->ifdef_stack_ptr == s1->ifdef_stack)
-            tcc_error("#elif without matching #if");
+            sugar_error("#elif without matching #if");
         c = s1->ifdef_stack_ptr[-1];
         if (c > 1)
-            tcc_error("#elif after #else");
+            sugar_error("#elif after #else");
         /* last #if/#elif expression was true: we skip */
         if (c == 1) {
             c = 0;
@@ -1964,7 +1964,7 @@ include_done:
         break;
     case TOK_ENDIF:
         if (s1->ifdef_stack_ptr <= file->ifdef_stack_ptr)
-            tcc_error("#endif without matching #if");
+            sugar_error("#endif without matching #if");
         s1->ifdef_stack_ptr--;
         /* '#ifndef macro' was at the start of file. Now we check if
            an '#endif' is exactly at the end of file */
@@ -1987,19 +1987,19 @@ include_done:
         next();
         if (tok != TOK_CINT)
     _line_err:
-            tcc_error("wrong #line format");
+            sugar_error("wrong #line format");
         n = tokc.i;
     _line_num:
         next();
         if (tok != TOK_LINEFEED) {
             if (tok == TOK_STR) {
                 if (file->true_filename == file->filename)
-                    file->true_filename = tcc_strdup(file->filename);
+                    file->true_filename = sugar_strdup(file->filename);
                 /* prepend directory from real file */
                 pstrcpy(buf, sizeof buf, file->true_filename);
-                *tcc_basename(buf) = 0;
+                *sugar_basename(buf) = 0;
                 pstrcat(buf, sizeof buf, (char *)tokc.str.data);
-                tcc_debug_putfile(s1, buf);
+                sugar_debug_putfile(s1, buf);
             } else if (parse_flags & PARSE_FLAG_ASM_FILE)
                 break;
             else
@@ -2027,9 +2027,9 @@ include_done:
         }
         *q = '\0';
         if (c == TOK_ERROR)
-            tcc_error("#error %s", buf);
+            sugar_error("#error %s", buf);
         else
-            tcc_warning("#warning %s", buf);
+            sugar_warning("#warning %s", buf);
         break;
     case TOK_PRAGMA:
         pragma_parse(s1);
@@ -2043,7 +2043,7 @@ include_done:
         if (tok == '!' && is_bof)
             /* '!' is ignored at beginning to allow C scripts. */
             goto ignore;
-        tcc_warning("Ignoring unknown preprocessing directive #%s", get_tok_str(tok, &tokc));
+        sugar_warning("Ignoring unknown preprocessing directive #%s", get_tok_str(tok, &tokc));
     ignore:
         file->buf_ptr = parse_line_comment(file->buf_ptr - 1);
         goto the_end;
@@ -2142,9 +2142,9 @@ static void parse_escape_string(CString *outstr, const uint8_t *buf, int is_long
             default:
             invalid_escape:
                 if (c >= '!' && c <= '~')
-                    tcc_warning("unknown escape sequence: \'\\%c\'", c);
+                    sugar_warning("unknown escape sequence: \'\\%c\'", c);
                 else
-                    tcc_warning("unknown escape sequence: \'\\x%x\'", c);
+                    sugar_warning("unknown escape sequence: \'\\x%x\'", c);
                 break;
             }
         } else if (is_long && c >= 0x80) {
@@ -2196,7 +2196,7 @@ static void parse_escape_string(CString *outstr, const uint8_t *buf, int is_long
 
             /* error handling */
         invalid_utf8_sequence:
-            tcc_warning("ill-formed UTF-8 subsequence starting with: \'\\x%x\'", c);
+            sugar_warning("ill-formed UTF-8 subsequence starting with: \'\\x%x\'", c);
             c = 0xFFFD;
             p += skip;
             goto add_char_nonext;
@@ -2207,7 +2207,7 @@ static void parse_escape_string(CString *outstr, const uint8_t *buf, int is_long
         if (!is_long)
             cstr_ccat(outstr, c);
         else {
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
             /* store as UTF-16 */
             if (c < 0x10000) {
                 cstr_wccat(outstr, c);
@@ -2238,14 +2238,14 @@ static void parse_string(const char *s, int len)
     sep = *s++;
     len -= 2;
     if (len >= sizeof buf)
-        p = tcc_malloc(len + 1);
+        p = sugar_malloc(len + 1);
     memcpy(p, s, len);
     p[len] = 0;
 
     cstr_reset(&tokcstr);
     parse_escape_string(&tokcstr, p, is_long);
     if (p != buf)
-        tcc_free(p);
+        sugar_free(p);
 
     if (sep == '\'') {
         int char_size, i, n, c;
@@ -2256,9 +2256,9 @@ static void parse_string(const char *s, int len)
             tok = TOK_LCHAR, char_size = sizeof(nwchar_t);
         n = tokcstr.size / char_size - 1;
         if (n < 1)
-            tcc_error("empty character constant");
+            sugar_error("empty character constant");
         if (n > 1)
-            tcc_warning("multi-character character constant");
+            sugar_warning("multi-character character constant");
         for (c = i = 0; i < n; ++i) {
             if (is_long)
                 c = ((nwchar_t *)tokcstr.data)[i];
@@ -2322,7 +2322,7 @@ static void parse_number(const char *p)
             q--;
             ch = *p++;
             b = 16;
-        } else if (tcc_state->tcc_ext && (ch == 'b' || ch == 'B')) {
+        } else if (sugar_state->sugar_ext && (ch == 'b' || ch == 'B')) {
             q--;
             ch = *p++;
             b = 2;
@@ -2343,7 +2343,7 @@ static void parse_number(const char *p)
             break;
         if (q >= token_buf + STRING_MAX_SIZE) {
         num_too_long:
-            tcc_error("number too long");
+            sugar_error("number too long");
         }
         *q++ = ch;
         ch = *p++;
@@ -2392,7 +2392,7 @@ static void parse_number(const char *p)
                         break;
                     }
                     if (t >= b)
-                        tcc_error("invalid digit");
+                        sugar_error("invalid digit");
                     bn_lshift(bn, shift, t);
                     frac_bits += shift;
                     ch = *p++;
@@ -2429,7 +2429,7 @@ static void parse_number(const char *p)
                 tokc.f = (float)d;
             } else if (t == 'L') {
                 ch = *p++;
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
                 tok = TOK_CDOUBLE;
                 tokc.d = d;
 #else
@@ -2485,7 +2485,7 @@ static void parse_number(const char *p)
                 tokc.f = strtof(token_buf, NULL);
             } else if (t == 'L') {
                 ch = *p++;
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
                 tok = TOK_CDOUBLE;
                 tokc.d = strtod(token_buf, NULL);
 #else
@@ -2522,7 +2522,7 @@ static void parse_number(const char *p)
             else
                 t = t - '0';
             if (t >= b)
-                tcc_error("invalid digit");
+                sugar_error("invalid digit");
             n1 = n;
             n = n * b + t;
             /* detect overflow */
@@ -2538,14 +2538,14 @@ static void parse_number(const char *p)
             t = toup(ch);
             if (t == 'L') {
                 if (lcount >= 2)
-                    tcc_error("three 'l's in integer constant");
+                    sugar_error("three 'l's in integer constant");
                 if (lcount && *(p - 1) != ch)
-                    tcc_error("incorrect integer suffix: %s", p1);
+                    sugar_error("incorrect integer suffix: %s", p1);
                 lcount++;
                 ch = *p++;
             } else if (t == 'U') {
                 if (ucount >= 1)
-                    tcc_error("two 'u's in integer constant");
+                    sugar_error("two 'u's in integer constant");
                 ucount++;
                 ch = *p++;
             } else {
@@ -2573,7 +2573,7 @@ static void parse_number(const char *p)
         }
 
         if (ov)
-            tcc_warning("integer constant overflow");
+            sugar_warning("integer constant overflow");
 
         tok = TOK_CINT;
 	if (lcount) {
@@ -2586,7 +2586,7 @@ static void parse_number(const char *p)
         tokc.i = n;
     }
     if (ch)
-        tcc_error("invalid number\n");
+        sugar_error("invalid number\n");
 }
 
 
@@ -2637,7 +2637,7 @@ static inline void next_nomacro1(void)
         if (c != CH_EOF)
             goto redo_no_start;
         {
-            TCCState *s1 = tcc_state;
+            SUGARState *s1 = sugar_state;
             if ((parse_flags & PARSE_FLAG_LINEFEED)
                 && !(tok_flags & TOK_FLAG_EOF)) {
                 tok_flags |= TOK_FLAG_EOF;
@@ -2646,7 +2646,7 @@ static inline void next_nomacro1(void)
             } else if (!(parse_flags & PARSE_FLAG_PREPROCESS)) {
                 tok = TOK_EOF;
             } else if (s1->ifdef_stack_ptr != file->ifdef_stack_ptr) {
-                tcc_error("missing #endif");
+                sugar_error("missing #endif");
             } else if (s1->include_stack_ptr == s1->include_stack) {
                 /* no include left : end of file. */
                 tok = TOK_EOF;
@@ -2666,9 +2666,9 @@ static inline void next_nomacro1(void)
                 }
 
                 /* add end of include file debug info */
-                tcc_debug_eincl(tcc_state);
+                sugar_debug_eincl(sugar_state);
                 /* pop include stack */
-                tcc_close();
+                sugar_close();
                 s1->include_stack_ptr--;
                 p = file->buf_ptr;
                 if (p == file->buffer)
@@ -2999,7 +2999,7 @@ maybe_newline:
 	    goto parse_ident_fast;
         if (parse_flags & PARSE_FLAG_ASM_FILE)
             goto parse_simple;
-        tcc_error("unrecognized character \\x%02x", c);
+        sugar_error("unrecognized character \\x%02x", c);
         break;
     }
     tok_flags = 0;
@@ -3149,7 +3149,7 @@ static int paste_tokens(int t1, CValue *v1, int t2, CValue *v2)
         cstr_cat(&cstr, get_tok_str(t2, v2), -1);
     cstr_ccat(&cstr, '\0');
 
-    tcc_open_bf(tcc_state, ":paste:", cstr.size);
+    sugar_open_bf(sugar_state, ":paste:", cstr.size);
     memcpy(file->buffer, cstr.data, cstr.size);
     tok_flags = 0;
     for (;;) {
@@ -3158,12 +3158,12 @@ static int paste_tokens(int t1, CValue *v1, int t2, CValue *v2)
             break;
         if (is_space(tok))
             continue;
-        tcc_warning("pasting \"%.*s\" and \"%s\" does not give a valid"
+        sugar_warning("pasting \"%.*s\" and \"%s\" does not give a valid"
             " preprocessing token", n, (char *)cstr.data, (char*)cstr.data + n);
         ret = 0;
         break;
     }
-    tcc_close();
+    sugar_close();
     //printf("paste <%s>\n", (char*)cstr.data);
     cstr_free(&cstr);
     return ret;
@@ -3391,7 +3391,7 @@ static int macro_subst_tok(
                 if (!args && !sa && tok == ')')
                     break;
                 if (!sa)
-                    tcc_error("macro '%s' used with too many args",
+                    sugar_error("macro '%s' used with too many args",
                           get_tok_str(s->v, 0));
                 tok_str_new(&str);
                 parlevel = spc = 0;
@@ -3430,7 +3430,7 @@ static int macro_subst_tok(
                     expect(",");
             }
             if (sa) {
-                tcc_error("macro '%s' used with too few args",
+                sugar_error("macro '%s' used with too few args",
                       get_tok_str(s->v, 0));
             }
 
@@ -3583,7 +3583,7 @@ ST_FUNC void next(void)
                 goto redo;
             } else if (t == '\\') {
                 if (!(parse_flags & PARSE_FLAG_ACCEPT_STRAYS))
-                    tcc_error("stray '\\' in program");
+                    sugar_error("stray '\\' in program");
             }
             return;
         }
@@ -3622,16 +3622,16 @@ ST_INLN void unget_tok(int last_tok)
     tok = last_tok;
 }
 
-static void tcc_predefs(CString *cstr)
+static void sugar_predefs(CString *cstr)
 {
     cstr_cat(cstr,
 
-    //"#include <tcc_predefs.h>\n"
+    //"#include <sugar_predefs.h>\n"
 
-#if defined TCC_TARGET_X86_64
-#ifndef TCC_TARGET_PE
+#if defined SUGAR_TARGET_X86_64
+#ifndef SUGAR_TARGET_PE
     /* GCC compatible definition of va_list. */
-    /* This should be in sync with the declaration in our lib/libtcc1.c */
+    /* This should be in sync with the declaration in our lib/libsugar1.c */
     "typedef struct{\n"
     "unsigned gp_offset,fp_offset;\n"
     "union{\n"
@@ -3644,27 +3644,27 @@ static void tcc_predefs(CString *cstr)
     "#define __builtin_va_start(ap,last) (*(ap)=*(__builtin_va_list)((char*)__builtin_frame_address(0)-24))\n"
     "#define __builtin_va_arg(ap,t) (*(t*)(__va_arg(ap,__builtin_va_arg_types(t),sizeof(t),__alignof__(t))))\n"
     "#define __builtin_va_copy(dest,src) (*(dest)=*(src))\n"
-#else /* TCC_TARGET_PE */
+#else /* SUGAR_TARGET_PE */
     "typedef char*__builtin_va_list;\n"
     "#define __builtin_va_arg(ap,t) ((sizeof(t)>8||(sizeof(t)&(sizeof(t)-1)))?**(t**)((ap+=8)-8):*(t*)((ap+=8)-8))\n"
 #endif
-#elif defined TCC_TARGET_ARM
+#elif defined SUGAR_TARGET_ARM
     "typedef char*__builtin_va_list;\n"
-    "#define _tcc_alignof(type) ((int)&((struct{char c;type x;}*)0)->x)\n"
-    "#define _tcc_align(addr,type) (((unsigned)addr+_tcc_alignof(type)-1)&~(_tcc_alignof(type)-1))\n"
+    "#define _sugar_alignof(type) ((int)&((struct{char c;type x;}*)0)->x)\n"
+    "#define _sugar_align(addr,type) (((unsigned)addr+_sugar_alignof(type)-1)&~(_sugar_alignof(type)-1))\n"
     "#define __builtin_va_start(ap,last) (ap=((char*)&(last))+((sizeof(last)+3)&~3))\n"
-    "#define __builtin_va_arg(ap,type) (ap=(void*)((_tcc_align(ap,type)+sizeof(type)+3)&~3),*(type*)(ap-((sizeof(type)+3)&~3)))\n"
-#elif defined TCC_TARGET_ARM64
+    "#define __builtin_va_arg(ap,type) (ap=(void*)((_sugar_align(ap,type)+sizeof(type)+3)&~3),*(type*)(ap-((sizeof(type)+3)&~3)))\n"
+#elif defined SUGAR_TARGET_ARM64
     "typedef struct{\n"
     "void*__stack,*__gr_top,*__vr_top;\n"
     "int __gr_offs,__vr_offs;\n"
     "}__builtin_va_list;\n"
-#elif defined TCC_TARGET_RISCV64
+#elif defined SUGAR_TARGET_RISCV64
     "typedef char*__builtin_va_list;\n"
     "#define __va_reg_size (__riscv_xlen>>3)\n"
-    "#define _tcc_align(addr,type) (((unsigned long)addr+__alignof__(type)-1)&-(__alignof__(type)))\n"
-    "#define __builtin_va_arg(ap,type) (*(sizeof(type)>(2*__va_reg_size)?*(type**)((ap+=__va_reg_size)-__va_reg_size):(ap=(va_list)(_tcc_align(ap,type)+(sizeof(type)+__va_reg_size-1)&-__va_reg_size),(type*)(ap-((sizeof(type)+__va_reg_size-1)&-__va_reg_size)))))\n"
-#else /* TCC_TARGET_I386 */
+    "#define _sugar_align(addr,type) (((unsigned long)addr+__alignof__(type)-1)&-(__alignof__(type)))\n"
+    "#define __builtin_va_arg(ap,type) (*(sizeof(type)>(2*__va_reg_size)?*(type**)((ap+=__va_reg_size)-__va_reg_size):(ap=(va_list)(_sugar_align(ap,type)+(sizeof(type)+__va_reg_size-1)&-__va_reg_size),(type*)(ap-((sizeof(type)+__va_reg_size-1)&-__va_reg_size)))))\n"
+#else /* SUGAR_TARGET_I386 */
     "typedef char*__builtin_va_list;\n"
     "#define __builtin_va_start(ap,last) (ap=((char*)&(last))+((sizeof(last)+3)&~3))\n"
     "#define __builtin_va_arg(ap,t) (*(t*)((ap+=(sizeof(t)+3)&~3)-((sizeof(t)+3)&~3)))\n"
@@ -3673,7 +3673,7 @@ static void tcc_predefs(CString *cstr)
     "#ifndef __builtin_va_copy\n"
     "#define __builtin_va_copy(dest,src) (dest)=(src)\n"
     "#endif\n"
-    /* TCC BBUILTIN AND BOUNDS ALIASES */
+    /* SUGAR BBUILTIN AND BOUNDS ALIASES */
     "#ifdef __BOUNDS_CHECKING_ON\n"
     "#define __BUILTINBC(ret,name,params) ret __builtin_##name params __attribute__((alias(\"__bound_\"#name)));\n"
     "#define __BOUND(ret,name,params) ret name params __attribute__((alias(\"__bound_\"#name)));\n"
@@ -3695,7 +3695,7 @@ static void tcc_predefs(CString *cstr)
     "__BOTH(char*,strcat,(char*,const char*))\n"
     "__BOTH(char*,strchr,(const char*,int))\n"
     "__BOTH(char*,strdup,(const char*))\n"
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
     "#define __MAYBE_REDIR __BOTH\n"
 #else  // HAVE MALLOC_REDIR
     "#define __MAYBE_REDIR __BUILTIN\n"
@@ -3705,10 +3705,10 @@ static void tcc_predefs(CString *cstr)
     "__MAYBE_REDIR(void*,calloc,(__SIZE_TYPE__,__SIZE_TYPE__))\n"
     "__MAYBE_REDIR(void*,memalign,(__SIZE_TYPE__,__SIZE_TYPE__))\n"
     "__MAYBE_REDIR(void,free,(void*))\n"
-#if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
+#if defined SUGAR_TARGET_I386 || defined SUGAR_TARGET_X86_64
     "__BOTH(void*,alloca,(__SIZE_TYPE__))\n"
 #endif
-#if defined(TCC_TARGET_ARM) && defined(TCC_ARM_EABI)
+#if defined(SUGAR_TARGET_ARM) && defined(SUGAR_ARM_EABI)
     "__BOUND(void*,__aeabi_memcpy,(void*,const void*,__SIZE_TYPE__))\n"
     "__BOUND(void*,__aeabi_memmove,(void*,const void*,__SIZE_TYPE__))\n"
     "__BOUND(void*,__aeabi_memmove4,(void*,const void*,__SIZE_TYPE__))\n"
@@ -3717,7 +3717,7 @@ static void tcc_predefs(CString *cstr)
 #endif
     "__BUILTIN(void,abort,(void))\n"
     "__BOUND(int,longjmp,())\n"
-#ifndef TCC_TARGET_PE
+#ifndef SUGAR_TARGET_PE
     "__BOUND(void*,mmap,())\n"
     "__BOUND(void*,munmap,())\n"
 #endif
@@ -3729,12 +3729,12 @@ static void tcc_predefs(CString *cstr)
     , -1);
 }
 
-ST_FUNC void preprocess_start(TCCState *s1, int filetype)
+ST_FUNC void preprocess_start(SUGARState *s1, int filetype)
 {
     int is_asm = !!(filetype & (AFF_TYPE_ASM|AFF_TYPE_ASMPP));
     CString cstr;
 
-    tccpp_new(s1);
+    sugarpp_new(s1);
 
     s1->include_stack_ptr = s1->include_stack;
     s1->ifdef_stack_ptr = s1->ifdef_stack;
@@ -3756,15 +3756,15 @@ ST_FUNC void preprocess_start(TCCState *s1, int filetype)
         cstr_printf(&cstr, "#define __BASE_FILE__ \"%s\"\n", file->filename);
         if (is_asm)
           cstr_printf(&cstr, "#define __ASSEMBLER__ 1\n");
-        if (s1->output_type == TCC_OUTPUT_MEMORY)
-          cstr_printf(&cstr, "#define __TCC_RUN__ 1\n");
-        if (!is_asm && s1->output_type != TCC_OUTPUT_PREPROCESS)
-          tcc_predefs(&cstr);
+        if (s1->output_type == SUGAR_OUTPUT_MEMORY)
+          cstr_printf(&cstr, "#define __SUGAR_RUN__ 1\n");
+        if (!is_asm && s1->output_type != SUGAR_OUTPUT_PREPROCESS)
+          sugar_predefs(&cstr);
         if (s1->cmdline_incl.size)
           cstr_cat(&cstr, s1->cmdline_incl.data, s1->cmdline_incl.size);
         //printf("%s\n", (char*)cstr.data);
         *s1->include_stack_ptr++ = file;
-        tcc_open_bf(s1, "<command line>", cstr.size);
+        sugar_open_bf(s1, "<command line>", cstr.size);
         memcpy(file->buffer, cstr.data, cstr.size);
         cstr_free(&cstr);
     }
@@ -3774,17 +3774,17 @@ ST_FUNC void preprocess_start(TCCState *s1, int filetype)
 }
 
 /* cleanup from error/setjmp */
-ST_FUNC void preprocess_end(TCCState *s1)
+ST_FUNC void preprocess_end(SUGARState *s1)
 {
     while (macro_stack)
         end_macro();
     macro_ptr = NULL;
     while (file)
-        tcc_close();
-    tccpp_delete(s1);
+        sugar_close();
+    sugarpp_delete(s1);
 }
 
-ST_FUNC void tccpp_new(TCCState *s)
+ST_FUNC void sugarpp_new(SUGARState *s)
 {
     int i, c;
     const char *p, *r;
@@ -3813,7 +3813,7 @@ ST_FUNC void tccpp_new(TCCState *s)
     tok_str_realloc(&tokstr_buf, TOKSTR_MAX_SIZE);
 
     tok_ident = TOK_IDENT;
-    p = tcc_keywords;
+    p = sugar_keywords;
     while (*p) {
         r = p;
         for(;;) {
@@ -3834,7 +3834,7 @@ ST_FUNC void tccpp_new(TCCState *s)
     define_push(TOK___COUNTER__, MACRO_OBJ, NULL, NULL);
 }
 
-ST_FUNC void tccpp_delete(TCCState *s)
+ST_FUNC void sugarpp_delete(SUGARState *s)
 {
     int i, n;
 
@@ -3846,7 +3846,7 @@ ST_FUNC void tccpp_delete(TCCState *s)
         total_idents = n;
     for(i = 0; i < n; i++)
         tal_free(toksym_alloc, table_ident[i]);
-    tcc_free(table_ident);
+    sugar_free(table_ident);
     table_ident = NULL;
 
     /* free static buffers */
@@ -3863,7 +3863,7 @@ ST_FUNC void tccpp_delete(TCCState *s)
 }
 
 /* ------------------------------------------------------------------------- */
-/* tcc -E [-P[1]] [-dD} support */
+/* sugar -E [-P[1]] [-dD} support */
 
 static void tok_print(const char *msg, const int *str)
 {
@@ -3871,7 +3871,7 @@ static void tok_print(const char *msg, const int *str)
     int t, s = 0;
     CValue cval;
 
-    fp = tcc_state->ppfp;
+    fp = sugar_state->ppfp;
     fprintf(fp, "%s", msg);
     while (str) {
 	TOK_GET(&t, &str, &cval);
@@ -3882,7 +3882,7 @@ static void tok_print(const char *msg, const int *str)
     fprintf(fp, "\n");
 }
 
-static void pp_line(TCCState *s1, BufferedFile *f, int level)
+static void pp_line(SUGARState *s1, BufferedFile *f, int level)
 {
     int d = f->line_num - f->line_ref;
 
@@ -3903,7 +3903,7 @@ static void pp_line(TCCState *s1, BufferedFile *f, int level)
     f->line_ref = f->line_num;
 }
 
-static void define_print(TCCState *s1, int v)
+static void define_print(SUGARState *s1, int v)
 {
     FILE *fp;
     Sym *s;
@@ -3929,7 +3929,7 @@ static void define_print(TCCState *s1, int v)
     tok_print("", s->d);
 }
 
-static void pp_debug_defines(TCCState *s1)
+static void pp_debug_defines(SUGARState *s1)
 {
     int v, t;
     const char *vs;
@@ -3958,7 +3958,7 @@ static void pp_debug_defines(TCCState *s1)
     pp_debug_tok = 0;
 }
 
-static void pp_debug_builtins(TCCState *s1)
+static void pp_debug_builtins(SUGARState *s1)
 {
     int v;
     for (v = TOK_IDENT; v < tok_ident; ++v)
@@ -3985,7 +3985,7 @@ static int pp_check_he0xE(int t, const char *p)
 }
 
 /* Preprocess the current file */
-ST_FUNC int tcc_preprocess(TCCState *s1)
+ST_FUNC int sugar_preprocess(SUGARState *s1)
 {
     BufferedFile **iptr;
     int token_seen, spcs, level;
@@ -4000,7 +4000,7 @@ ST_FUNC int tcc_preprocess(TCCState *s1)
                 ;
     /* Credits to Fabrice Bellard's initial revision to demonstrate its
        capability to compile and run itself, provided all numbers are
-       given as decimals. tcc -E -P10 will do. */
+       given as decimals. sugar -E -P10 will do. */
     if (s1->Pflag == LINE_MACRO_OUTPUT_FORMAT_P10)
         parse_flags |= PARSE_FLAG_TOK_NUM, s1->Pflag = 1;
 

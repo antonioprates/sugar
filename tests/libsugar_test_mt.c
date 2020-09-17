@@ -1,12 +1,12 @@
 /*
- * Multi-thread Test for libtcc
+ * Multi-thread Test for libsugar
  */
 
 #ifndef FIB
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "libtcc.h"
+#include "libsugar.h"
 
 #define M 20 /* number of states */
 #define F(n) (n % 20 + 2) /* fib argument */
@@ -72,7 +72,7 @@ int add(int a, int b)
     char lbl[] = "#line " str(__LINE__) " " str(__FILE__) "\n\n"
 
 PROG(my_program)
-"#include <tcclib.h>\n" /* include the "Simple libc header for TCC" */
+"#include <sugarlib.h>\n" /* include the "Simple libc header for SUGAR" */
 "int add(int a, int b);\n"
 "int fib(int n)\n"
 "{\n"
@@ -91,48 +91,48 @@ PROG(my_program)
 
 int g_argc; char **g_argv;
 
-void parse_args(TCCState *s)
+void parse_args(SUGARState *s)
 {
     int i;
-    /* if tcclib.h and libtcc1.a are not installed, where can we find them */
+    /* if sugarlib.h and libsugar1.a are not installed, where can we find them */
     for (i = 1; i < g_argc; ++i) {
         char *a = g_argv[i];
         if (a[0] == '-') {
             if (a[1] == 'B')
-                tcc_set_lib_path(s, a+2);
+                sugar_set_lib_path(s, a+2);
             else if (a[1] == 'I')
-                tcc_add_include_path(s, a+2);
+                sugar_add_include_path(s, a+2);
             else if (a[1] == 'L')
-                tcc_add_library_path(s, a+2);
+                sugar_add_library_path(s, a+2);
             else if (a[1] == 'D')
-                tcc_define_symbol(s, a+2, NULL);
+                sugar_define_symbol(s, a+2, NULL);
         }
     }
 }
 
-TCCState *new_state(int w)
+SUGARState *new_state(int w)
 {
-    TCCState *s = tcc_new();
+    SUGARState *s = sugar_new();
     if (!s) {
-        fprintf(stderr, __FILE__ ": could not create tcc state\n");
+        fprintf(stderr, __FILE__ ": could not create sugar state\n");
         exit(1);
     }
-    tcc_set_error_func(s, stdout, handle_error);
+    sugar_set_error_func(s, stdout, handle_error);
     parse_args(s);
-    if (!w) tcc_set_options(s, "-w");
-    tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+    if (!w) sugar_set_options(s, "-w");
+    sugar_set_output_type(s, SUGAR_OUTPUT_MEMORY);
     return s;
 }
 
-void *reloc_state(TCCState *s, const char *entry)
+void *reloc_state(SUGARState *s, const char *entry)
 {
     void *func;
-    tcc_add_symbol(s, "add", add);
-    if (tcc_relocate(s, TCC_RELOCATE_AUTO) < 0) {
-        fprintf(stderr, __FILE__ ": could not relocate tcc state.\n");
+    sugar_add_symbol(s, "add", add);
+    if (sugar_relocate(s, SUGAR_RELOCATE_AUTO) < 0) {
+        fprintf(stderr, __FILE__ ": could not relocate sugar state.\n");
         return NULL;
     }
-    func = tcc_get_symbol(s, entry);
+    func = sugar_get_symbol(s, entry);
     if (!func)
         fprintf(stderr, __FILE__ ": could not get entry symbol.\n");
     return func;
@@ -141,7 +141,7 @@ void *reloc_state(TCCState *s, const char *entry)
 /* work with several states at the same time */
 int state_test(void)
 {
-    TCCState *s[M];
+    SUGARState *s[M];
     int (*func[M])(int);
     int n;
 
@@ -150,14 +150,14 @@ int state_test(void)
         if (a < M)
             s[a] = new_state(0);
         if (b < M)
-            if (tcc_compile_string(s[b], my_program) == -1)
+            if (sugar_compile_string(s[b], my_program) == -1)
                 break;
         if (c < M)
             func[c] = reloc_state(s[c], "foo");
         if (d < M && func[d])
             func[d](F(d));
         if (e < M)
-            tcc_delete(s[e]);
+            sugar_delete(s[e]);
     }
     return 0;
 }
@@ -165,28 +165,28 @@ int state_test(void)
 /* simple compilation in threads */
 TF_TYPE(thread_test_simple, vn)
 {
-    TCCState *s;
+    SUGARState *s;
     int (*func)(int);
     int ret;
     int n = (size_t)vn;
 
     s = new_state(0);
     sleep_ms(1);
-    ret = tcc_compile_string(s, my_program);
+    ret = sugar_compile_string(s, my_program);
     sleep_ms(1);
     if (ret >= 0) {
         func = reloc_state(s, "foo");
         if (func)
             func(F(n));
     }
-    tcc_delete(s);
+    sugar_delete(s);
     return 0;
 }
 
 /* more complex compilation in threads */
 TF_TYPE(thread_test_complex, vn)
 {
-    TCCState *s;
+    SUGARState *s;
     int ret;
     int n = (size_t)vn;
     char *argv[30], b[10];
@@ -207,24 +207,24 @@ TF_TYPE(thread_test_complex, vn)
 
     s = new_state(1);
     sleep_ms(2);
-    ret = tcc_add_file(s, argv[0]);
+    ret = sugar_add_file(s, argv[0]);
     sleep_ms(3);
     if (ret < 0)
         exit(1);
-    tcc_run(s, argc, argv);
-    tcc_delete(s);
+    sugar_run(s, argc, argv);
+    sugar_delete(s);
     fflush(stdout);
     return 0;
 }
 
-void time_tcc(int n, const char *src)
+void time_sugar(int n, const char *src)
 {
-    TCCState *s;
+    SUGARState *s;
     int ret;
     while (--n >= 0) {
         s = new_state(1);
-        ret = tcc_add_file(s, src);
-        tcc_delete(s);
+        ret = sugar_add_file(s, src);
+        sugar_delete(s);
         if (ret < 0)
             exit(1);
     }
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
     g_argv = argv;
 
     if (argc < 2) {
-        fprintf(stderr, "usage: libtcc_test_mt tcc.c <options>\n");
+        fprintf(stderr, "usage: libsugar_test_mt sugar.c <options>\n");
         return 1;
     }
 
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
     printf("\n (%u ms)\n", getclock_ms() - t);
 #endif
 #if 1
-    printf("running tcc.c in threads to run fib\n"), fflush(stdout);
+    printf("running sugar.c in threads to run fib\n"), fflush(stdout);
     t = getclock_ms();
     for (n = 0; n < M; ++n)
         create_thread(thread_test_complex, n);
@@ -277,16 +277,16 @@ int main(int argc, char **argv)
     printf("\n (%u ms)\n", getclock_ms() - t);
 #endif
 #if 1
-    printf("compiling tcc.c 10 times\n"), fflush(stdout);
+    printf("compiling sugar.c 10 times\n"), fflush(stdout);
     t = getclock_ms();
-    time_tcc(10, argv[1]);
+    time_sugar(10, argv[1]);
     printf(" (%u ms)\n", getclock_ms() - t), fflush(stdout);
 #endif
     return 0;
 }
 
 #else
-#include <tcclib.h>
+#include <sugarlib.h>
 int fib(n)
 {
     return (n <= 2) ? 1 : fib(n-1) + fib(n-2);

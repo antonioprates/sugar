@@ -1,9 +1,9 @@
-#!/usr/local/bin/tcc -run -L/usr/X11R6/lib -lX11
+#!/usr/local/bin/sugar -run -L/usr/X11R6/lib -lX11
 #include <stdlib.h>
 #include <stdio.h>
 #include <X11/Xlib.h>
 
-/* Yes, TCC can use X11 too ! */
+/* Yes, SUGAR can use X11 too ! */
 
 int main(int argc, char **argv)
 {

@@ -1,4 +1,4 @@
-/* Test that the memmove TCC is emitting for the struct copy
+/* Test that the memmove SUGAR is emitting for the struct copy
    and hence implicitely declares can be declared properly also
    later.  */
 struct S { int a,b,c,d, e[1024];};

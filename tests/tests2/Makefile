@@ -73,7 +73,7 @@ GEN-ALWAYS =
 
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
-104_inline.test : GEN = $(GEN-TCC)
+104_inline.test : GEN = $(GEN-SUGAR)
 
 # this test needs pthread
 106_pthread.test: FLAGS += -pthread
@@ -89,16 +89,16 @@ GEN-ALWAYS =
 
 # this test creates two DLLs and an EXE
 113_btdll.test: T1 = \
-    $(TCC) -bt $1 -shared -D DLL=1 -o a1$(DLLSUF) && \
-    $(TCC) -bt $1 -shared -D DLL=2 -o a2$(DLLSUF) && \
-    $(TCC) -bt $1 a1$(DLLSUF) a2$(DLLSUF) -Wl,-rpath=. -o a.exe && \
+    $(SUGAR) -bt $1 -shared -D DLL=1 -o a1$(DLLSUF) && \
+    $(SUGAR) -bt $1 -shared -D DLL=2 -o a2$(DLLSUF) && \
+    $(SUGAR) -bt $1 a1$(DLLSUF) a2$(DLLSUF) -Wl,-rpath=. -o a.exe && \
     ./a.exe
 
 114_bound_signal.test: FLAGS += -b
-114_bound_signal.test: NORUN = true # tcc -run does not support fork and -b and SELINUX
+114_bound_signal.test: NORUN = true # sugar -run does not support fork and -b and SELINUX
 115_bound_setjmp.test: FLAGS += -b
 116_bound_setjmp2.test: FLAGS += -b
-117_builtins.test: T1 = ( $(TCC) -run $1 && $(TCC) -b -run $1 )
+117_builtins.test: T1 = ( $(SUGAR) -run $1 && $(SUGAR) -b -run $1 )
 
 # Filter source directory in warnings/errors (out-of-tree builds)
 FILTER = 2>&1 | sed -e 's,$(SRC)/,,g'
@@ -110,7 +110,7 @@ all test tests2.all: $(filter-out $(SKIP),$(TESTS))
 	@echo Test: $*...
 	@$(call T1,$<) $(T3)
 
-T1 = $(TCC) $(FLAGS) $(T2) $(ARGS)
+T1 = $(SUGAR) $(FLAGS) $(T2) $(ARGS)
 T2 = $(if $(NORUN),$1 -o a.exe && ./a.exe,-run $1)
 T3 = $(FILTER) >$*.output 2>&1 || true \
      && diff -Nbu $(filter %.expect,$^) $*.output \
@@ -120,7 +120,7 @@ T3 = $(FILTER) >$*.output 2>&1 || true \
 tests2.%+:
 	@$(MAKE) $(call F2,$(call F1,$*)) --no-print-directory
 
-# just run tcc to see the output, e.g. "make tests2.37-"
+# just run sugar to see the output, e.g. "make tests2.37-"
 tests2.%-:
 	@$(MAKE) $(call F1,$*) T3= --no-print-directory
 
@@ -137,10 +137,10 @@ F2 = $1 UPDATE="$(patsubst %.test,%.expect,$1)"
 	@$(call GEN,$(SRC)/$*.c) $(FILTER) >$@ 2>&1
 	@rm -f *.exe *.obj *.pdb
 
-# using TCC for .expect if -dt in FLAGS
-GEN = $(if $(filter -dt -bt -b,$(FLAGS)),$(GEN-TCC),$(GEN-CC))
+# using SUGAR for .expect if -dt in FLAGS
+GEN = $(if $(filter -dt -bt -b,$(FLAGS)),$(GEN-SUGAR),$(GEN-CC))
 GEN-CC = $(CC) -w -std=gnu99 $(FLAGS) $1 -o a.exe && ./a.exe $(ARGS)
-GEN-TCC = $(T1)
+GEN-SUGAR = $(T1)
 GEN-MSC = $(MS-CC) $1 && ./$(basename $@).exe
 MS-CC = cl
 

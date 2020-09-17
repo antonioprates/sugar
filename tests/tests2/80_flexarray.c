@@ -18,7 +18,7 @@ int f1int (void) {
 int main (void) {
    char s[9]="nonono";
    static struct wchar q = {"bugs", {'c'}};
-   //printf ("tcc has %s %s\n", s, q.data);
+   //printf ("sugar has %s %s\n", s, q.data);
    if (f1char() || f1int())
      printf ("bla\n");
    return !s[0];

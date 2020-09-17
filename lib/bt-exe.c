@@ -1,9 +1,9 @@
 /* ------------------------------------------------------------- */
 /* for linking rt_printline and the signal/exception handler
-   from tccrun.c into executables. */
+   from sugarrun.c into executables. */
 
-#define CONFIG_TCC_BACKTRACE_ONLY
-#include "../tccrun.c"
+#define CONFIG_SUGAR_BACKTRACE_ONLY
+#include "../sugarrun.c"
 
 int (*__rt_error)(void*, void*, const char *, va_list);
 

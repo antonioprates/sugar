@@ -1,5 +1,5 @@
 /*
- *  A64 code generator for TCC
+ *  A64 code generator for SUGAR
  *
  *  Copyright (c) 2014-2015 Edmund Grimley Evans
  *
@@ -41,13 +41,13 @@
 #define CHAR_IS_UNSIGNED
 
 /* define if return values need to be extended explicitely
-   at caller side (for interfacing with non-TCC compilers) */
+   at caller side (for interfacing with non-SUGAR compilers) */
 #define PROMOTE_RET
 /******************************************************/
 #else /* ! TARGET_DEFS_ONLY */
 /******************************************************/
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 #include <assert.h>
 
 ST_DATA const int reg_classes[NB_REGS] = {
@@ -81,7 +81,7 @@ ST_DATA const int reg_classes[NB_REGS] = {
   RC_FLOAT | RC_F(7)
 };
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 static addr_t func_bound_offset;
 static unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
@@ -239,7 +239,7 @@ ST_FUNC void gsym_addr(int t_, int a_)
         unsigned char *ptr = cur_text_section->data + t;
         uint32_t next = read32le(ptr);
         if (a - t + 0x8000000 >= 0x10000000)
-            tcc_error("branch out of range");
+            sugar_error("branch out of range");
         write32le(ptr, (a - t == 4 ? 0xd503201f : // nop
                         0x14000000 | ((a - t) >> 2 & 0x3ffffff))); // b
         t = next;
@@ -250,7 +250,7 @@ static int arm64_type_size(int t)
 {
     /*
      * case values are in increasing order (from 1 to 11).
-     * which 'may' help compiler optimizers. See tcc.h
+     * which 'may' help compiler optimizers. See sugar.h
      */
     switch (t & VT_BTYPE) {
     case VT_BYTE: return 0;
@@ -651,14 +651,14 @@ static void arm64_gen_bl_or_b(int b)
 	o(0x14000000 | (uint32_t)!b << 31); // b/bl .
     }
     else {
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
         vtop->r &= ~VT_MUSTBOUND;
 #endif
         o(0xd61f0000 | (uint32_t)!b << 21 | intr(gv(RC_R30)) << 5); // br/blr
     }
 }
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 
 static void gen_bounds_call(int v)
 {
@@ -963,8 +963,8 @@ ST_FUNC void gfunc_call(int nb_args)
     unsigned long stack;
     int i;
 
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gbound_args(nb_args);
 #endif
 
@@ -972,9 +972,9 @@ ST_FUNC void gfunc_call(int nb_args)
     if ((return_type->t & VT_BTYPE) == VT_STRUCT)
         --nb_args;
 
-    t = tcc_malloc((nb_args + 1) * sizeof(*t));
-    a = tcc_malloc((nb_args + 1) * sizeof(*a));
-    a1 = tcc_malloc((nb_args + 1) * sizeof(*a1));
+    t = sugar_malloc((nb_args + 1) * sizeof(*t));
+    a = sugar_malloc((nb_args + 1) * sizeof(*a));
+    a1 = sugar_malloc((nb_args + 1) * sizeof(*a1));
 
     t[0] = return_type;
     for (i = 0; i < nb_args; i++)
@@ -996,7 +996,7 @@ ST_FUNC void gfunc_call(int nb_args)
     stack = (stack + 15) >> 4 << 4;
 
     if (stack >= 0x1000000) // 16Mb
-        tcc_error("stack size too big %lu", stack);
+        sugar_error("stack size too big %lu", stack);
     if (stack & 0xfff)
         o(0xd10003ff | (stack & 0xfff) << 10); // sub sp,sp,#(n)
     if (stack >> 12)
@@ -1125,9 +1125,9 @@ ST_FUNC void gfunc_call(int nb_args)
         }
     }
 
-    tcc_free(a1);
-    tcc_free(a);
-    tcc_free(t);
+    sugar_free(a1);
+    sugar_free(a);
+    sugar_free(t);
 }
 
 static unsigned long arm64_func_va_list_stack;
@@ -1148,8 +1148,8 @@ ST_FUNC void gfunc_prolog(Sym *func_sym)
 
     for (sym = func_type->ref; sym; sym = sym->next)
         ++n;
-    t = n ? tcc_malloc(n * sizeof(*t)) : NULL;
-    a = n ? tcc_malloc(n * sizeof(*a)) : NULL;
+    t = n ? sugar_malloc(n * sizeof(*t)) : NULL;
+    a = n ? sugar_malloc(n * sizeof(*a)) : NULL;
 
     for (sym = func_type->ref; sym; sym = sym->next)
         t[i++] = &sym->type;
@@ -1201,8 +1201,8 @@ ST_FUNC void gfunc_prolog(Sym *func_sym)
         }
     }
 
-    tcc_free(a);
-    tcc_free(t);
+    sugar_free(a);
+    sugar_free(t);
 
     o(0x910003fd); // mov x29,sp
     arm64_func_sub_sp_offset = ind;
@@ -1210,8 +1210,8 @@ ST_FUNC void gfunc_prolog(Sym *func_sym)
     o(0xd503201f); // nop
     o(0xd503201f); // nop
     loc = 0;
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gen_bounds_prolog();
 #endif
 }
@@ -1384,8 +1384,8 @@ ST_FUNC void gfunc_return(CType *func_type)
 
 ST_FUNC void gfunc_epilog(void)
 {
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gen_bounds_epilog();
 #endif
 
@@ -1427,7 +1427,7 @@ ST_FUNC void gfunc_epilog(void)
 ST_FUNC void gen_fill_nops(int bytes)
 {
     if ((bytes & 3))
-      tcc_error("alignment of code section not multiple of 4");
+      sugar_error("alignment of code section not multiple of 4");
     while (bytes > 0) {
 	o(0xd503201f); // nop
 	bytes -= 4;
@@ -1598,7 +1598,7 @@ static int arm64_gen_opic(int op, uint32_t l, int rev, uint64_t val,
         if (rev)
             return 0;
         if (!val) {
-            // tcc_warning("shift count >= width of type");
+            // sugar_warning("shift count >= width of type");
             o(0x2a0003e0 | l << 31 | a << 16);
             return 1;
         }
@@ -2039,8 +2039,8 @@ ST_FUNC void gen_vla_sp_restore(int addr) {
 
 ST_FUNC void gen_vla_alloc(CType *type, int align) {
     uint32_t r;
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check)
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check)
         vpushv(vtop);
 #endif
     r = intr(gv(RC_INT));
@@ -2048,8 +2048,8 @@ ST_FUNC void gen_vla_alloc(CType *type, int align) {
     o(0x927cec00 | r | r << 5); // bic x(r),x(r),#15
     o(0xcb2063ff | r << 16); // sub sp,sp,x(r)
     vpop();
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check) {
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check) {
         vpushi(0);
         vtop->r = TREG_R(0);
         o(0x910003e0 | vtop->r); // mov r0,sp

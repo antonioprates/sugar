@@ -13,7 +13,7 @@ int (*__rt_error)(void*, void*, const char *, va_list);
 # define DLL_EXPORT
 #endif
 
-DLL_EXPORT int tcc_backtrace(const char *fmt, ...)
+DLL_EXPORT int sugar_backtrace(const char *fmt, ...)
 {
     va_list ap;
     int ret;

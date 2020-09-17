@@ -1,7 +1,7 @@
 #if defined __x86_64__
 #ifndef _WIN64
     /* GCC compatible definition of va_list. */
-    /* This should be in sync with the declaration in our lib/libtcc1.c */
+    /* This should be in sync with the declaration in our lib/libsugar1.c */
     typedef struct {
         unsigned gp_offset, fp_offset;
         union {
@@ -26,11 +26,11 @@
 
 #elif defined __arm__
     typedef char *__builtin_va_list;
-    #define _tcc_alignof(type) ((int)&((struct {char c;type x;} *)0)->x)
-    #define _tcc_align(addr,type) (((unsigned)addr + _tcc_alignof(type) - 1) \
-                                  & ~(_tcc_alignof(type) - 1))
+    #define _sugar_alignof(type) ((int)&((struct {char c;type x;} *)0)->x)
+    #define _sugar_align(addr,type) (((unsigned)addr + _sugar_alignof(type) - 1) \
+                                  & ~(_sugar_alignof(type) - 1))
     #define __builtin_va_start(ap,last) (ap = ((char *)&(last)) + ((sizeof(last)+3)&~3))
-    #define __builtin_va_arg(ap,type) (ap = (void *) ((_tcc_align(ap,type)+sizeof(type)+3) \
+    #define __builtin_va_arg(ap,type) (ap = (void *) ((_sugar_align(ap,type)+sizeof(type)+3) \
                            &~3), *(type *)(ap - ((sizeof(type)+3)&~3)))
 
 #elif defined __aarch64__
@@ -42,9 +42,9 @@
 #elif defined __riscv
     typedef char *__builtin_va_list;
     #define __va_reg_size (__riscv_xlen >> 3)
-    #define _tcc_align(addr,type) (((unsigned long)addr + __alignof__(type) - 1) \
+    #define _sugar_align(addr,type) (((unsigned long)addr + __alignof__(type) - 1) \
                                   & -(__alignof__(type)))
-    #define __builtin_va_arg(ap,type) (*(sizeof(type) > (2*__va_reg_size) ? *(type **)((ap += __va_reg_size) - __va_reg_size) : (ap = (va_list)(_tcc_align(ap,type) + (sizeof(type)+__va_reg_size - 1)& -__va_reg_size), (type *)(ap - ((sizeof(type)+ __va_reg_size - 1)& -__va_reg_size)))))
+    #define __builtin_va_arg(ap,type) (*(sizeof(type) > (2*__va_reg_size) ? *(type **)((ap += __va_reg_size) - __va_reg_size) : (ap = (va_list)(_sugar_align(ap,type) + (sizeof(type)+__va_reg_size - 1)& -__va_reg_size), (type *)(ap - ((sizeof(type)+ __va_reg_size - 1)& -__va_reg_size)))))
 
 #else /* __i386__ */
     typedef char *__builtin_va_list;
@@ -58,7 +58,7 @@
     #endif
 
 
-    /* TCC BBUILTIN AND BOUNDS ALIASES */
+    /* SUGAR BBUILTIN AND BOUNDS ALIASES */
     #ifdef __BOUNDS_CHECKING_ON
     # define __BUILTIN(ret,name,params) \
        ret __builtin_##name params __attribute__((alias("__bound_" #name)));

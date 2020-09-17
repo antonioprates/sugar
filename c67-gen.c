@@ -1,5 +1,5 @@
 /*
- *  TMS320C67xx code generator for TCC
+ *  TMS320C67xx code generator for SUGAR
  * 
  *  Copyright (c) 2001, 2002 Fabrice Bellard
  *
@@ -112,7 +112,7 @@ enum {
 #else /* ! TARGET_DEFS_ONLY */
 /******************************************************/
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 
 ST_DATA const int reg_classes[NB_REGS] = {
     /* eax */ RC_INT | RC_FLOAT | RC_EAX, 
@@ -143,7 +143,7 @@ ST_DATA const int reg_classes[NB_REGS] = {
     /* B13  */ RC_C67_B11
 };
 
-// although tcc thinks it is passing parameters on the stack,
+// although sugar thinks it is passing parameters on the stack,
 // the C67 really passes up to the first 10 params in special
 // regs or regs pairs (for 64 bit params).  So keep track of
 // the stack offsets so we can translate to the appropriate 
@@ -166,7 +166,7 @@ int TotalBytesPushedOnStack;
 #define ALWAYS_ASSERT(x) \
 do {\
    if (!(x))\
-       tcc_error("internal compiler error file at %s:%d", __FILE__, __LINE__);\
+       sugar_error("internal compiler error file at %s:%d", __FILE__, __LINE__);\
 } while (0)
 
 /******************************************************/
@@ -227,7 +227,7 @@ void gsym_addr(int t, int a)
     }
 }
 
-// these are regs that tcc doesn't really know about, 
+// these are regs that sugar doesn't really know about, 
 // but assign them unique values so the mapping routines
 // can distinguish them
 
@@ -247,17 +247,17 @@ int ConvertRegToRegClass(int r)
 }
 
 
-// map TCC reg to C67 reg number
+// map SUGAR reg to C67 reg number
 
 int C67_map_regn(int r)
 {
-    if (r == 0)			// normal tcc regs
+    if (r == 0)			// normal sugar regs
 	return 0x2;		// A2
-    else if (r == 1)		// normal tcc regs
+    else if (r == 1)		// normal sugar regs
 	return 3;		// A3
-    else if (r == 2)		// normal tcc regs
+    else if (r == 2)		// normal sugar regs
 	return 0;		// B0
-    else if (r == 3)		// normal tcc regs
+    else if (r == 3)		// normal sugar regs
 	return 1;		// B1
     else if (r >= TREG_C67_A4 && r <= TREG_C67_B13)	// these form a pattern of alt pairs
 	return (((r & 0xfffffffc) >> 1) | (r & 1)) + 2;
@@ -279,26 +279,26 @@ int C67_map_regn(int r)
     return 0;
 }
 
-// mapping from tcc reg number to 
+// mapping from sugar reg number to 
 // C67 register to condition code field
 //
 // valid condition code regs are:
 //
-// tcc reg 2 ->B0 -> 1
-// tcc reg 3 ->B1 -> 2
-// tcc reg 0 -> A2 -> 5
-// tcc reg 1 -> A3 -> X
-// tcc reg      B2 -> 3
+// sugar reg 2 ->B0 -> 1
+// sugar reg 3 ->B1 -> 2
+// sugar reg 0 -> A2 -> 5
+// sugar reg 1 -> A3 -> X
+// sugar reg      B2 -> 3
 
 int C67_map_regc(int r)
 {
-    if (r == 0)			// normal tcc regs
+    if (r == 0)			// normal sugar regs
 	return 0x5;
-    else if (r == 2)		// normal tcc regs
+    else if (r == 2)		// normal sugar regs
 	return 0x1;
-    else if (r == 3)		// normal tcc regs
+    else if (r == 3)		// normal sugar regs
 	return 0x2;
-    else if (r == C67_B2)	// normal tcc regs
+    else if (r == C67_B2)	// normal sugar regs
 	return 0x3;
     else if (r == C67_CREG_ZERO)
 	return 0;		// Special code for no condition reg test
@@ -309,17 +309,17 @@ int C67_map_regc(int r)
 }
 
 
-// map TCC reg to C67 reg side A or B
+// map SUGAR reg to C67 reg side A or B
 
 int C67_map_regs(int r)
 {
-    if (r == 0)			// normal tcc regs
+    if (r == 0)			// normal sugar regs
 	return 0x0;
-    else if (r == 1)		// normal tcc regs
+    else if (r == 1)		// normal sugar regs
 	return 0x0;
-    else if (r == 2)		// normal tcc regs
+    else if (r == 2)		// normal sugar regs
 	return 0x1;
-    else if (r == 3)		// normal tcc regs
+    else if (r == 3)		// normal sugar regs
 	return 0x1;
     else if (r >= TREG_C67_A4 && r <= TREG_C67_B13)	// these form a pattern of alt pairs
 	return (r & 2) >> 1;
@@ -371,7 +371,7 @@ void C67_asm(char *s, int a, int b, int c)
 
 #ifdef ASSEMBLY_LISTING_C67
     if (!f) {
-	f = fopen("TCC67_out.txt", "wt");
+	f = fopen("SUGAR67_out.txt", "wt");
     }
     fprintf(f, "%04X ", ind);
 #endif
@@ -1561,7 +1561,7 @@ void load(int r, SValue * sv)
 	    load(r, &v1);
 	    fr = r;
 	} else if ((ft & VT_BTYPE) == VT_LDOUBLE) {
-	    tcc_error("long double not supported");
+	    sugar_error("long double not supported");
 	} else if ((ft & VT_TYPE) == VT_BYTE) {
 	    size = 1;
 	} else if ((ft & VT_TYPE) == (VT_BYTE | VT_UNSIGNED)) {
@@ -1579,7 +1579,7 @@ void load(int r, SValue * sv)
 	}
 
 	// check if fc is a positive reference on the stack, 
-	// if it is tcc is referencing what it thinks is a parameter
+	// if it is sugar is referencing what it thinks is a parameter
 	// on the stack, so check if it is really in a register.
 
 
@@ -1715,7 +1715,7 @@ void store(int r, SValue * v)
     /* XXX: incorrect if float reg to reg */
 
     if (bt == VT_LDOUBLE) {
-	tcc_error("long double not supported");
+	sugar_error("long double not supported");
     } else {
 	if (bt == VT_SHORT)
 	    size = 2;
@@ -1747,7 +1747,7 @@ void store(int r, SValue * v)
 		C67_STW_PTR_PRE_INC(r + 1, C67_A0, 1);	// STW  r, *+A0[1]
 	} else if ((v->r & VT_VALMASK) == VT_LOCAL) {
 	    // check case of storing to passed argument that
-	    // tcc thinks is on the stack but for C67 is
+	    // sugar thinks is on the stack but for C67 is
 	    // passed as a reg.  However it may have been
 	    // saved to the stack, if that reg was required
 	    // for a call to a child function
@@ -1877,7 +1877,7 @@ void gfunc_call(int nb_args)
     int args_sizes[NoCallArgsPassedOnStack];
 
     if (nb_args > NoCallArgsPassedOnStack) {
-	tcc_error("more than 10 function params not currently supported");
+	sugar_error("more than 10 function params not currently supported");
 	// handle more than 10, put some on the stack
     }
 
@@ -1890,9 +1890,9 @@ void gfunc_call(int nb_args)
 
 
 	    if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
-		tcc_error("long long not supported");
+		sugar_error("long long not supported");
 	    } else if ((vtop->type.t & VT_BTYPE) == VT_LDOUBLE) {
-		tcc_error("long double not supported");
+		sugar_error("long double not supported");
 	    } else if ((vtop->type.t & VT_BTYPE) == VT_DOUBLE) {
 		size = 8;
 	    } else {
@@ -1967,7 +1967,7 @@ void gfunc_prolog(Sym *func_sym)
 	size = (size + 3) & ~3;
 
 	// keep track of size of arguments so
-	// we can translate where tcc thinks they
+	// we can translate where sugar thinks they
 	// are on the stack into the appropriate reg
 
 	TranslateStackToReg[NoOfCurFuncArgs] = size;
@@ -2033,7 +2033,7 @@ void gfunc_epilog(void)
 ST_FUNC void gen_fill_nops(int bytes)
 {
     if ((bytes & 3))
-      tcc_error("alignment of code section not multiple of 4");
+      sugar_error("alignment of code section not multiple of 4");
     while (bytes > 0) {
 	C67_NOP(4);
 	bytes -= 4;
@@ -2297,7 +2297,7 @@ void gen_opf(int op)
 
 
     if ((ft & VT_BTYPE) == VT_LDOUBLE)
-	tcc_error("long doubles not supported");
+	sugar_error("long doubles not supported");
 
     if (op >= TOK_ULT && op <= TOK_GT) {
 
@@ -2449,7 +2449,7 @@ void gen_cvt_ftoi(int t)
     r = vtop->r;
 
     if (t != VT_INT)
-	tcc_error("long long not supported");
+	sugar_error("long long not supported");
     else {
 	if ((vtop->type.t & VT_BTYPE) == VT_DOUBLE) {
 	    C67_DPTRUNC(r, r);
@@ -2518,17 +2518,17 @@ void ggoto(void)
 
 /* Save the stack pointer onto the stack and return the location of its address */
 ST_FUNC void gen_vla_sp_save(int addr) {
-    tcc_error("variable length arrays unsupported for this target");
+    sugar_error("variable length arrays unsupported for this target");
 }
 
 /* Restore the SP from a location on the stack */
 ST_FUNC void gen_vla_sp_restore(int addr) {
-    tcc_error("variable length arrays unsupported for this target");
+    sugar_error("variable length arrays unsupported for this target");
 }
 
 /* Subtract from the stack pointer, and push the resulting value onto the stack */
 ST_FUNC void gen_vla_alloc(CType *type, int align) {
-    tcc_error("variable length arrays unsupported for this target");
+    sugar_error("variable length arrays unsupported for this target");
 }
 
 /* end of C67 code generator */

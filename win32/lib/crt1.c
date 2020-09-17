@@ -71,13 +71,13 @@ void _tstart(void)
     exit(do_main(__argc, __targv, _tenviron));
 }
 
-int _runtmain(int argc, /* as tcc passed in */ char **argv)
+int _runtmain(int argc, /* as sugar passed in */ char **argv)
 {
 #ifdef UNICODE
     _startupinfo start_info = {0};
 
     __tgetmainargs(&__argc, &__targv, &_tenviron, _dowildcard, &start_info);
-    /* may be wrong when tcc has received wildcards (*.c) */
+    /* may be wrong when sugar has received wildcards (*.c) */
     if (argc < __argc) {
         __targv += __argc - argc;
         __argc = argc;

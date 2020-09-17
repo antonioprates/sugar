@@ -1,5 +1,5 @@
 #
-# Tiny C Compiler Makefile - tests
+# Sugar C Compiler Makefile - tests
 #
 
 TOP = ..
@@ -58,23 +58,23 @@ ifeq (,$(filter i386 x86_64,$(ARCH)))
  TESTS := $(filter-out dlltest asm-c-connect-test,$(TESTS))
 endif
 
-ifeq ($(OS),Windows_NT) # for libtcc_test to find libtcc.dll
+ifeq ($(OS),Windows_NT) # for libsugar_test to find libsugar.dll
  PATH := $(CURDIR)/$(TOP)$(if $(findstring ;,$(PATH)),;,:)$(PATH)
 endif
 
 ifdef CONFIG_OSX
-LIBS += $(LINK_LIBTCC)
+LIBS += $(LINK_LIBSUGAR)
 endif
 
 
 ifeq ($(ARCH),arm)
-# tcctest refers to the alignment of functions, and with thumb mode
+# sugartest refers to the alignment of functions, and with thumb mode
 # the low bit of code addresses selects the mode, so the "alignment"
 # of functions via bit masking comes out as 1.  Just disable thumb.
 test.ref: CFLAGS+=-marm
 endif
 ifeq ($(ARCH),i386)
-# tcctest.c:get_asm_string uses a construct that is checked too strictly
+# sugartest.c:get_asm_string uses a construct that is checked too strictly
 # by GCC in 32bit mode when PIC is enabled.
 test.ref: CFLAGS+=-fno-PIC -fno-PIE
 endif
@@ -82,12 +82,12 @@ ifeq ($(CC_NAME),msvc)
 test.ref abitest : CC = gcc
 endif
 
-RUN_TCC = $(NATIVE_DEFINES) -run $(TOPSRC)/tcc.c $(TCCFLAGS)
+RUN_SUGAR = $(NATIVE_DEFINES) -run $(TOPSRC)/sugar.c $(SUGARFLAGS)
 DISAS = objdump -d
 ifdef CONFIG_OSX
-DUMPTCC = (set -x; $(TOP)/tcc -vv; otool -L $(TOP)/tcc; exit 1)
+DUMPSUGAR = (set -x; $(TOP)/sugar -vv; otool -L $(TOP)/sugar; exit 1)
 else
-DUMPTCC = (set -x; $(TOP)/tcc -vv; ldd $(TOP)/tcc; exit 1)
+DUMPSUGAR = (set -x; $(TOP)/sugar -vv; ldd $(TOP)/sugar; exit 1)
 endif
 
 all test :
@@ -96,20 +96,20 @@ all test :
 
 hello-exe: ../examples/ex1.c
 	@echo ------------ $@ ------------
-	$(TCC) $< -o hello$(EXESUF) && ./hello$(EXESUF) || $(DUMPTCC)
+	$(SUGAR) $< -o hello$(EXESUF) && ./hello$(EXESUF) || $(DUMPSUGAR)
 
 hello-run: ../examples/ex1.c
 	@echo ------------ $@ ------------
-	$(TCC) -run $< || $(DUMPTCC)
+	$(SUGAR) -run $< || $(DUMPSUGAR)
 
-libtes%: libtcc_tes%$(EXESUF)
+libtes%: libsugar_tes%$(EXESUF)
 	@echo ------------ $@ ------------
-	./libtcc_tes$*$(EXESUF) $(TOPSRC)/tcc.c $(TCCFLAGS) $(NATIVE_DEFINES)
+	./libsugar_tes$*$(EXESUF) $(TOPSRC)/sugar.c $(SUGARFLAGS) $(NATIVE_DEFINES)
 
-libtcc_test$(EXESUF): libtcc_test.c $(LIBTCC)
+libsugar_test$(EXESUF): libsugar_test.c $(LIBSUGAR)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-libtcc_test_mt$(EXESUF): libtcc_test_mt.c $(LIBTCC)
+libsugar_test_mt$(EXESUF): libsugar_test_mt.c $(LIBSUGAR)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 %-dir:
@@ -117,76 +117,76 @@ libtcc_test_mt$(EXESUF): libtcc_test_mt.c $(LIBTCC)
 	$(MAKE) -k -C $*
 
 # test.ref - generate using cc
-test.ref: tcctest.c
-	$(CC) -o tcctest.gcc $< $(NATIVE_DEFINES) $(CFLAGS) -w -O0 -std=gnu99 -fno-omit-frame-pointer
-	./tcctest.gcc > $@
+test.ref: sugartest.c
+	$(CC) -o sugartest.gcc $< $(NATIVE_DEFINES) $(CFLAGS) -w -O0 -std=gnu99 -fno-omit-frame-pointer
+	./sugartest.gcc > $@
 
 # auto test
-test1 test1b: tcctest.c test.ref
+test1 test1b: sugartest.c test.ref
 	@echo ------------ $@ ------------
-	$(TCC) $(RUN_TCC) -w -run $< > test.out1
+	$(SUGAR) $(RUN_SUGAR) -w -run $< > test.out1
 	@diff -u test.ref test.out1 && echo "$(AUTO_TEST) OK"
 
-# iterated test2 (compile tcc then compile tcctest.c !)
-test2 test2b: tcctest.c test.ref
+# iterated test2 (compile sugar then compile sugartest.c !)
+test2 test2b: sugartest.c test.ref
 	@echo ------------ $@ ------------
-	$(TCC) $(RUN_TCC) $(RUN_TCC) -w -run $< > test.out2
+	$(SUGAR) $(RUN_SUGAR) $(RUN_SUGAR) -w -run $< > test.out2
 	@diff -u test.ref test.out2 && echo "$(AUTO_TEST)2 OK"
 
-# iterated test3 (compile tcc then compile tcc then compile tcctest.c !)
-test3 test3b: tcctest.c test.ref
+# iterated test3 (compile sugar then compile sugar then compile sugartest.c !)
+test3 test3b: sugartest.c test.ref
 	@echo ------------ $@ ------------
-	$(TCC) $(RUN_TCC) $(RUN_TCC) $(RUN_TCC) -w -run $< > test.out3
+	$(SUGAR) $(RUN_SUGAR) $(RUN_SUGAR) $(RUN_SUGAR) -w -run $< > test.out3
 	@diff -u test.ref test.out3 && echo "$(AUTO_TEST)3 OK"
 
 AUTO_TEST = Auto Test
-test%b : TCCFLAGS += -b -bt1
+test%b : SUGARFLAGS += -b -bt1
 test%b : AUTO_TEST = Auto Bound-Test
 
 # binary output test
-test4: tcctest.c test.ref
+test4: sugartest.c test.ref
 	@echo ------------ $@ ------------
 # object + link output
-	$(TCC) -c -o tcctest3.o $<
-	$(TCC) -o tcctest3 tcctest3.o
-	./tcctest3 > test3.out
+	$(SUGAR) -c -o sugartest3.o $<
+	$(SUGAR) -o sugartest3 sugartest3.o
+	./sugartest3 > test3.out
 	@if diff -u test.ref test3.out ; then echo "Object $(AUTO_TEST) OK"; fi
 # dynamic output
-	$(TCC) -o tcctest1 $<
-	./tcctest1 > test1.out
+	$(SUGAR) -o sugartest1 $<
+	./sugartest1 > test1.out
 	@if diff -u test.ref test1.out ; then echo "Dynamic $(AUTO_TEST) OK"; fi
 # dynamic output + bound check
-	$(TCC) -b -o tcctest4 $<
-	./tcctest4 > test4.out
+	$(SUGAR) -b -o sugartest4 $<
+	./sugartest4 > test4.out
 	@if diff -u test.ref test4.out ; then echo "BCheck $(AUTO_TEST) OK"; fi
 
-test4_static: tcctest.c test.ref
+test4_static: sugartest.c test.ref
 	@echo ------------ $@ ------------
 # static output.
-	$(TCC) -static -o tcctest2 $<
-	./tcctest2 > test2.out
+	$(SUGAR) -static -o sugartest2 $<
+	./sugartest2 > test2.out
 	@if diff -u test.ref test2.out ; then echo "Static $(AUTO_TEST) OK"; fi
 
-# use tcc to create libtcc.so/.dll and the tcc(.exe) frontend and run them
+# use sugar to create libsugar.so/.dll and the sugar(.exe) frontend and run them
 dlltest:
 	@echo ------------ $@ ------------
-	$(TCC) $(NATIVE_DEFINES) -DLIBTCC_AS_DLL $(TOPSRC)/libtcc.c $(LIBS) -shared -o libtcc2$(DLLSUF)
-	$(TCC) $(NATIVE_DEFINES) -DONE_SOURCE=0 $(TOPSRC)/tcc.c libtcc2$(DLLSUF) $(LIBS) -Wl,-rpath=. -o tcc2$(EXESUF)
-	./tcc2$(EXESUF) $(TCCFLAGS) $(RUN_TCC) -run $(TOPSRC)/examples/ex1.c
+	$(SUGAR) $(NATIVE_DEFINES) -DLIBSUGAR_AS_DLL $(TOPSRC)/libsugar.c $(LIBS) -shared -o libsugar2$(DLLSUF)
+	$(SUGAR) $(NATIVE_DEFINES) -DONE_SOURCE=0 $(TOPSRC)/sugar.c libsugar2$(DLLSUF) $(LIBS) -Wl,-rpath=. -o sugar2$(EXESUF)
+	./sugar2$(EXESUF) $(SUGARFLAGS) $(RUN_SUGAR) -run $(TOPSRC)/examples/ex1.c
 ifndef CONFIG_WIN32
 	@echo ------------ $@ with PIC ------------
-	$(CC) $(CFLAGS) -fPIC $(NATIVE_DEFINES) -DLIBTCC_AS_DLL -c $(TOPSRC)/libtcc.c
-	$(TCC) libtcc.o $(LIBS) -shared -o libtcc2$(DLLSUF)
-	$(TCC) $(NATIVE_DEFINES) -DONE_SOURCE=0 $(TOPSRC)/tcc.c libtcc2$(DLLSUF) $(LIBS) -Wl,-rpath=. -o tcc2$(EXESUF)
-	./tcc2$(EXESUF) $(TCCFLAGS) $(RUN_TCC) -run $(TOPSRC)/examples/ex1.c
+	$(CC) $(CFLAGS) -fPIC $(NATIVE_DEFINES) -DLIBSUGAR_AS_DLL -c $(TOPSRC)/libsugar.c
+	$(SUGAR) libsugar.o $(LIBS) -shared -o libsugar2$(DLLSUF)
+	$(SUGAR) $(NATIVE_DEFINES) -DONE_SOURCE=0 $(TOPSRC)/sugar.c libsugar2$(DLLSUF) $(LIBS) -Wl,-rpath=. -o sugar2$(EXESUF)
+	./sugar2$(EXESUF) $(SUGARFLAGS) $(RUN_SUGAR) -run $(TOPSRC)/examples/ex1.c
 endif
-	@rm tcc2$(EXESUF) libtcc2$(DLLSUF)
+	@rm sugar2$(EXESUF) libsugar2$(DLLSUF)
 
 memtest:
 	@echo ------------ $@ ------------
-	$(CC) $(CFLAGS) $(NATIVE_DEFINES) -DMEM_DEBUG=2 $(TOPSRC)/tcc.c $(LIBS) -o memtest-tcc$(EXESUF)
-	./memtest-tcc$(EXESUF) $(TCCFLAGS) $(NATIVE_DEFINES) $(TOPSRC)/tcc.c $(LIBS)
-	./memtest-tcc$(EXESUF) $(TCCFLAGS) $(NATIVE_DEFINES) -run $(TOPSRC)/tcc.c $(TCCFLAGS) -w $(TOPSRC)/tests/tcctest.c
+	$(CC) $(CFLAGS) $(NATIVE_DEFINES) -DMEM_DEBUG=2 $(TOPSRC)/sugar.c $(LIBS) -o memtest-sugar$(EXESUF)
+	./memtest-sugar$(EXESUF) $(SUGARFLAGS) $(NATIVE_DEFINES) $(TOPSRC)/sugar.c $(LIBS)
+	./memtest-sugar$(EXESUF) $(SUGARFLAGS) $(NATIVE_DEFINES) -run $(TOPSRC)/sugar.c $(SUGARFLAGS) -w $(TOPSRC)/tests/sugartest.c
 	@echo OK
 
 # memory and bound check auto test
@@ -196,14 +196,14 @@ BOUNDS_FAIL= 2 5 6 7 9 11 12 13 15 17 18
 btest: boundtest.c
 	@echo ------------ $@ ------------
 	@for i in $(BOUNDS_OK); do \
-	   if $(TCC) -b -run $< $$i >/dev/null 2>&1 ; then \
+	   if $(SUGAR) -b -run $< $$i >/dev/null 2>&1 ; then \
 	       echo "Test $$i succeeded as expected" ; \
 	   else\
 	       echo "Failed positive test $$i" ; exit 1 ; \
 	   fi ;\
 	done ;\
 	for i in $(BOUNDS_FAIL); do \
-	   if $(TCC) -b -bt1 -run $< $$i >/dev/null 2>&1 ; then \
+	   if $(SUGAR) -b -bt1 -run $< $$i >/dev/null 2>&1 ; then \
 	       echo "Failed negative test $$i" ; exit 1 ;\
 	   else\
 	       echo "Test $$i failed as expected" ; \
@@ -215,17 +215,17 @@ btest: boundtest.c
 speedtest: ex2 ex3
 	@echo ------------ $@ ------------
 	time ./ex2 1238 2 3 4 10 13 4
-	time $(TCC) -run $(TOPSRC)/examples/ex2.c 1238 2 3 4 10 13 4
+	time $(SUGAR) -run $(TOPSRC)/examples/ex2.c 1238 2 3 4 10 13 4
 	time ./ex3 35
-	time $(TCC) -run $(TOPSRC)/examples/ex3.c 35
+	time $(SUGAR) -run $(TOPSRC)/examples/ex3.c 35
 
-weaktest: tcctest.c test.ref
+weaktest: sugartest.c test.ref
 	@echo ------------ $@ ------------
-	$(TCC) -c $< -o weaktest.tcc.o
+	$(SUGAR) -c $< -o weaktest.sugar.o
 	$(CC) -c $< -o weaktest.gcc.o $(NATIVE_DEFINES) $(CFLAGS) -w -O0 -std=gnu99 -fno-omit-frame-pointer
-	objdump -t weaktest.tcc.o | grep ' w ' | sed -e 's/.* \([a-zA-Z0-9_]*\)$$/\1/' | LC_ALL=C sort > weaktest.tcc.o.txt
+	objdump -t weaktest.sugar.o | grep ' w ' | sed -e 's/.* \([a-zA-Z0-9_]*\)$$/\1/' | LC_ALL=C sort > weaktest.sugar.o.txt
 	objdump -t weaktest.gcc.o | grep ' w ' | sed -e 's/.* \([a-zA-Z0-9_]*\)$$/\1/' | LC_ALL=C sort > weaktest.gcc.o.txt
-	diff weaktest.gcc.o.txt weaktest.tcc.o.txt && echo "Weak Auto Test OK"
+	diff weaktest.gcc.o.txt weaktest.sugar.o.txt && echo "Weak Auto Test OK"
 
 ex%: $(TOPSRC)/examples/ex%.c
 	$(CC) -o $@ $< $(CFLAGS)
@@ -237,45 +237,45 @@ asmtest.ref: asmtest.S
 
 asmtest asmtest2: asmtest.ref
 	@echo ------------ $@ ------------
-	$(TCC) $(MAYBE_RUN_TCC) -c asmtest.S
+	$(SUGAR) $(MAYBE_RUN_SUGAR) -c asmtest.S
 	objdump -D asmtest.o > asmtest.out
 	@if diff -u --ignore-matching-lines="file format" asmtest.ref asmtest.out ; then echo "ASM Auto Test OK"; fi
 
-# test assembler with tcc compiled by itself
-asmtest2: MAYBE_RUN_TCC = $(RUN_TCC)
+# test assembler with sugar compiled by itself
+asmtest2: MAYBE_RUN_SUGAR = $(RUN_SUGAR)
 
-# Check that code generated by libtcc is binary compatible with
+# Check that code generated by libsugar is binary compatible with
 # that generated by CC
-abitest-cc.exe: abitest.c $(LIBTCC)
+abitest-cc.exe: abitest.c $(LIBSUGAR)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) -w
 
-abitest-tcc.exe: abitest.c libtcc.c
-	$(TCC) -o $@ $^ $(NATIVE_DEFINES) $(LIBS)
+abitest-sugar.exe: abitest.c libsugar.c
+	$(SUGAR) -o $@ $^ $(NATIVE_DEFINES) $(LIBS)
 
 abitest-% : abitest-%.exe
 	@echo ------------ $@ ------------
-	./$< $(TCCFLAGS)
+	./$< $(SUGARFLAGS)
 
 abitest: abitest-cc
 ifneq ($(CONFIG_arm_eabi),yes) # not ARM soft-float
-abitest: abitest-tcc
+abitest: abitest-sugar
 endif
 
 vla_test$(EXESUF): vla_test.c
-	$(TCC) -o $@ $^
+	$(SUGAR) -o $@ $^
 
 vla_test-run: vla_test$(EXESUF)
 	@echo ------------ $@ ------------
 	./vla_test$(EXESUF)
 
 asm-c-connect$(EXESUF): asm-c-connect-1.c asm-c-connect-2.c
-	$(TCC) -o $@ $^
+	$(SUGAR) -o $@ $^
 
 asm-c-connect-%.o: asm-c-connect-%.c
-	$(TCC) -c -o $@ $<
+	$(SUGAR) -c -o $@ $<
 
 asm-c-connect-sep$(EXESUF): asm-c-connect-1.o asm-c-connect-2.o
-	$(TCC) -o $@ $^
+	$(SUGAR) -o $@ $^
 
 asm-c-connect-test: asm-c-connect$(EXESUF) asm-c-connect-sep$(EXESUF)
 	@echo ------------ $@ ------------
@@ -283,20 +283,20 @@ asm-c-connect-test: asm-c-connect$(EXESUF) asm-c-connect-sep$(EXESUF)
 	./asm-c-connect-sep$(EXESUF) > asm-c-connect.out2 && cat asm-c-connect.out2
 	@diff -u asm-c-connect.out1 asm-c-connect.out2 || (echo "error"; exit 1)
 
-TCC_YY = $(foreach T,$(TCC_X),$(if $(wildcard $(TOP)/$T-tcc$(EXESUF)),$T))
+SUGAR_YY = $(foreach T,$(SUGAR_X),$(if $(wildcard $(TOP)/$T-sugar$(EXESUF)),$T))
 
 cross-test :
-	$(if $(strip $(TCC_YY)),\
-	    $(MAKE) $(foreach T,$(TCC_YY),cross-$T.test) --no-print-directory,:)
+	$(if $(strip $(SUGAR_YY)),\
+	    $(MAKE) $(foreach T,$(SUGAR_YY),cross-$T.test) --no-print-directory,:)
 
 cross-%.test :
 	@echo ------------ $@ ------------
-	$(TOP)/$*-tcc$(EXESUF) -v $(TCCFLAGS-$(if $(findstring win,$*),win,unx))\
+	$(TOP)/$*-sugar$(EXESUF) -v $(SUGARFLAGS-$(if $(findstring win,$*),win,unx))\
 	    -c $(TOPSRC)/examples/ex3.c
 
 # targets for development
-%.bin: %.c tcc
-	$(TCC) -g -o $@ $<
+%.bin: %.c sugar
+	$(SUGAR) -g -o $@ $<
 	$(DISAS) $@
 
 instr: instr.o
@@ -305,16 +305,16 @@ instr: instr.o
 instr.o: instr.S
 	$(CC) -o $@ -c $< -O2 -Wall -g
 
-cache: tcc_g
-	cachegrind ./tcc_g -o /tmp/linpack -lm bench/linpack.c
-	vg_annotate tcc.c > /tmp/linpack.cache.log
+cache: sugar_g
+	cachegrind ./sugar_g -o /tmp/linpack -lm bench/linpack.c
+	vg_annotate sugar.c > /tmp/linpack.cache.log
 
 # clean
 clean:
 	rm -f *~ *.o *.a *.bin *.i *.ref *.out *.out? *.out?b *.cc *.gcc
-	rm -f *-cc *-gcc *-tcc *.exe hello libtcc_test vla_test tcctest[1234]
+	rm -f *-cc *-gcc *-sugar *.exe hello libsugar_test vla_test sugartest[1234]
 	rm -f asm-c-connect$(EXESUF) asm-c-connect-sep$(EXESUF)
-	rm -f ex? tcc_g weaktest.*.txt *.def *.pdb *.obj libtcc_test_mt
+	rm -f ex? sugar_g weaktest.*.txt *.def *.pdb *.obj libsugar_test_mt
 	@$(MAKE) -C tests2 $@
 	@$(MAKE) -C pp $@
 

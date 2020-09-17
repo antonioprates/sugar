@@ -65,8 +65,8 @@ extern "C" {
 #define _ftcsupr _tcsupr
 
 #define _ftclen _tclen
-#define _ftccpy _tccpy
-#define _ftccmp _tccmp
+#define _fsugarpy _sugarpy
+#define _fsugarmp _sugarmp
 
 #ifndef _CONST_RETURN
 #ifdef __cplusplus
@@ -409,8 +409,8 @@ extern "C" {
 #define _tcsxfrm_l _wcsxfrm_l
 
 #define _tclen(_pc) (1)
-#define _tccpy(_pc1,_cpc2) ((*(_pc1) = *(_cpc2)))
-#define _tccmp(_cpc1,_cpc2) ((*(_cpc1))-(*(_cpc2)))
+#define _sugarpy(_pc1,_cpc2) ((*(_pc1) = *(_cpc2)))
+#define _sugarmp(_cpc1,_cpc2) ((*(_cpc1))-(*(_cpc2)))
 
 #define _istalnum iswalnum
 #define _istalnum_l _iswalnum_l
@@ -831,8 +831,8 @@ extern "C" {
 #define _tcsupr_l _mbsupr_l
 
 #define _tclen _mbclen
-#define _tccpy _mbccpy
-#define _tccpy_l _mbccpy_l
+#define _sugarpy _mbccpy
+#define _sugarpy_l _mbccpy_l
 #else
 
   _CRTIMP _CONST_RETURN char *__cdecl _tcschr(const char *_Str,unsigned int _Val);
@@ -893,7 +893,7 @@ extern "C" {
   _CRTIMP char *__cdecl _tcsupr(char *_Str);
   _CRTIMP char *__cdecl _tcsupr_l(char *_Str,_locale_t _Locale);
   _CRTIMP size_t __cdecl _tclen(const char *_Str);
-  _CRTIMP void __cdecl _tccpy(char *_DstCh,const char *_SrcCh);
+  _CRTIMP void __cdecl _sugarpy(char *_DstCh,const char *_SrcCh);
 
 #ifdef __cplusplus
 #ifndef _CPP_TCHAR_INLINES_DEFINED
@@ -908,7 +908,7 @@ extern "C" {
 #endif
 #endif
 
-#define _tccmp(_cp1,_cp2) _tcsnccmp(_cp1,_cp2,1)
+#define _sugarmp(_cp1,_cp2) _tcsnccmp(_cp1,_cp2,1)
 
 #define _istalnum _ismbcalnum
 #define _istalnum_l _ismbcalnum_l
@@ -1028,8 +1028,8 @@ extern "C" {
 #define _istleadbyte_l(_Char,_Locale) (0)
 
 #define _tclen(_pc) (1)
-#define _tccpy(_pc1,_cpc2) (*(_pc1) = *(_cpc2))
-#define _tccmp(_cpc1,_cpc2) (((unsigned char)*(_cpc1))-((unsigned char)*(_cpc2)))
+#define _sugarpy(_pc1,_cpc2) (*(_pc1) = *(_cpc2))
+#define _sugarmp(_cpc1,_cpc2) (((unsigned char)*(_cpc1))-((unsigned char)*(_cpc2)))
 
   /* dirent structures and functions */
 #define _tdirent	dirent

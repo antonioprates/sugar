@@ -49,7 +49,7 @@ void *alloca(size_t size);
    _STDDEF_H guard, so that it works even when we've included the file
    already (without requiring wint_t).  Some other libs define _WINT_T
    if they've already provided that type, so we can use that as guard.
-   TCC defines __WINT_TYPE__ for us.  */
+   SUGAR defines __WINT_TYPE__ for us.  */
 #if defined (__need_wint_t)
 #ifndef _WINT_T
 #define _WINT_T

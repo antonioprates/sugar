@@ -1,5 +1,5 @@
 /*
- *  ELF file handling for TCC
+ *  ELF file handling for SUGAR
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "tcc.h"
+#include "sugar.h"
 
 /* Define this to get some debug output during relocation processing.  */
 #undef DEBUG_RELOC
@@ -49,9 +49,9 @@ struct sym_version {
 
 /* ------------------------------------------------------------------------- */
 
-ST_FUNC void tccelf_new(TCCState *s)
+ST_FUNC void sugarelf_new(SUGARState *s)
 {
-    TCCState *s1 = s;
+    SUGARState *s1 = s;
     /* no section zero */
     dynarray_add(&s->sections, &s->nb_sections, NULL);
 
@@ -75,10 +75,10 @@ ST_FUNC void tccelf_new(TCCState *s)
     get_sym_attr(s, 0, 1);
 }
 
-#ifdef CONFIG_TCC_BCHECK
-ST_FUNC void tccelf_bounds_new(TCCState *s)
+#ifdef CONFIG_SUGAR_BCHECK
+ST_FUNC void sugarelf_bounds_new(SUGARState *s)
 {
-    TCCState *s1 = s;
+    SUGARState *s1 = s;
     /* create bounds sections */
     bounds_section = new_section(s, ".bounds",
                                  SHT_PROGBITS, SHF_ALLOC);
@@ -87,13 +87,13 @@ ST_FUNC void tccelf_bounds_new(TCCState *s)
 }
 #endif
 
-ST_FUNC void tccelf_stab_new(TCCState *s)
+ST_FUNC void sugarelf_stab_new(SUGARState *s)
 {
-    TCCState *s1 = s;
+    SUGARState *s1 = s;
     int shf = 0;
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
     /* include stab info with standalone backtrace support */
-    if (s->do_backtrace && s->output_type != TCC_OUTPUT_MEMORY)
+    if (s->do_backtrace && s->output_type != SUGAR_OUTPUT_MEMORY)
         shf = SHF_ALLOC;
 #endif
     stab_section = new_section(s, ".stab", SHT_PROGBITS, shf);
@@ -106,21 +106,21 @@ ST_FUNC void tccelf_stab_new(TCCState *s)
 
 static void free_section(Section *s)
 {
-    tcc_free(s->data);
+    sugar_free(s->data);
 }
 
-ST_FUNC void tccelf_delete(TCCState *s1)
+ST_FUNC void sugarelf_delete(SUGARState *s1)
 {
     int i;
 
 #ifndef ELF_OBJ_ONLY
     /* free symbol versions */
     for (i = 0; i < nb_sym_versions; i++) {
-        tcc_free(sym_versions[i].version);
-        tcc_free(sym_versions[i].lib);
+        sugar_free(sym_versions[i].version);
+        sugar_free(sym_versions[i].lib);
     }
-    tcc_free(sym_versions);
-    tcc_free(sym_to_version);
+    sugar_free(sym_versions);
+    sugar_free(sym_to_version);
 #endif
 
     /* free all sections */
@@ -133,7 +133,7 @@ ST_FUNC void tccelf_delete(TCCState *s1)
     dynarray_reset(&s1->priv_sections, &s1->nb_priv_sections);
 
     /* free any loaded DLLs */
-#ifdef TCC_IS_NATIVE
+#ifdef SUGAR_IS_NATIVE
     for ( i = 0; i < s1->nb_loaded_dlls; i++) {
         DLLReference *ref = s1->loaded_dlls[i];
         if ( ref->handle )
@@ -146,13 +146,13 @@ ST_FUNC void tccelf_delete(TCCState *s1)
 #endif
     /* free loaded dlls array */
     dynarray_reset(&s1->loaded_dlls, &s1->nb_loaded_dlls);
-    tcc_free(s1->sym_attrs);
+    sugar_free(s1->sym_attrs);
 
-    symtab_section = NULL; /* for tccrun.c:rt_printline() */
+    symtab_section = NULL; /* for sugarrun.c:rt_printline() */
 }
 
 /* save section data state */
-ST_FUNC void tccelf_begin_file(TCCState *s1)
+ST_FUNC void sugarelf_begin_file(SUGARState *s1)
 {
     Section *s; int i;
     for (i = 1; i < s1->nb_sections; i++) {
@@ -161,14 +161,14 @@ ST_FUNC void tccelf_begin_file(TCCState *s1)
     }
     /* disable symbol hashing during compilation */
     s = s1->symtab, s->reloc = s->hash, s->hash = NULL;
-#if defined TCC_TARGET_X86_64 && defined TCC_TARGET_PE
+#if defined SUGAR_TARGET_X86_64 && defined SUGAR_TARGET_PE
     s1->uw_sym = 0;
 #endif
 }
 
 /* At the end of compilation, convert any UNDEF syms to global, and merge
    with previously existing symbols */
-ST_FUNC void tccelf_end_file(TCCState *s1)
+ST_FUNC void sugarelf_end_file(SUGARState *s1)
 {
     Section *s = s1->symtab;
     int first_sym, nb_syms, *tr, i;
@@ -178,7 +178,7 @@ ST_FUNC void tccelf_end_file(TCCState *s1)
     s->data_offset = s->sh_offset;
     s->link->data_offset = s->link->sh_offset;
     s->hash = s->reloc, s->reloc = NULL;
-    tr = tcc_mallocz(nb_syms * sizeof *tr);
+    tr = sugar_mallocz(nb_syms * sizeof *tr);
 
     for (i = 0; i < nb_syms; ++i) {
         ElfSym *sym = (ElfSym*)s->data + first_sym + i;
@@ -196,19 +196,19 @@ ST_FUNC void tccelf_end_file(TCCState *s1)
             ElfW_Rel *rel_end = (ElfW_Rel*)(sr->data + sr->data_offset);
             for (; rel < rel_end; ++rel) {
                 int n = ELFW(R_SYM)(rel->r_info) - first_sym;
-                //if (n < 0) tcc_error("internal: invalid symbol index in relocation");
+                //if (n < 0) sugar_error("internal: invalid symbol index in relocation");
                 rel->r_info = ELFW(R_INFO)(tr[n], ELFW(R_TYPE)(rel->r_info));
             }
         }
     }
-    tcc_free(tr);
+    sugar_free(tr);
 }
 
-ST_FUNC Section *new_section(TCCState *s1, const char *name, int sh_type, int sh_flags)
+ST_FUNC Section *new_section(SUGARState *s1, const char *name, int sh_type, int sh_flags)
 {
     Section *sec;
 
-    sec = tcc_mallocz(sizeof(Section) + strlen(name));
+    sec = sugar_mallocz(sizeof(Section) + strlen(name));
     sec->s1 = s1;
     strcpy(sec->name, name);
     sec->sh_type = sh_type;
@@ -245,7 +245,7 @@ ST_FUNC Section *new_section(TCCState *s1, const char *name, int sh_type, int sh
     return sec;
 }
 
-ST_FUNC Section *new_symtab(TCCState *s1,
+ST_FUNC Section *new_symtab(SUGARState *s1,
                            const char *symtab_name, int sh_type, int sh_flags,
                            const char *strtab_name,
                            const char *hash_name, int hash_sh_flags)
@@ -285,7 +285,7 @@ ST_FUNC void section_realloc(Section *sec, unsigned long new_size)
         size = 1;
     while (size < new_size)
         size = size * 2;
-    data = tcc_realloc(sec->data, size);
+    data = sugar_realloc(sec->data, size);
     memset(data + sec->data_allocated, 0, size - sec->data_allocated);
     sec->data = data;
     sec->data_allocated = size;
@@ -324,7 +324,7 @@ ST_FUNC void section_reserve(Section *sec, unsigned long size)
         sec->data_offset = size;
 }
 
-static Section *find_section_create (TCCState *s1, const char *name, int create)
+static Section *find_section_create (SUGARState *s1, const char *name, int create)
 {
     Section *sec;
     int i;
@@ -339,7 +339,7 @@ static Section *find_section_create (TCCState *s1, const char *name, int create)
 
 /* return a reference to a section, and create it if it does not
    exists */
-ST_FUNC Section *find_section(TCCState *s1, const char *name)
+ST_FUNC Section *find_section(SUGARState *s1, const char *name)
 {
     return find_section_create (s1, name, 1);
 }
@@ -483,13 +483,13 @@ ST_FUNC int find_elf_sym(Section *s, const char *name)
 
 /* return elf symbol value, signal error if 'err' is nonzero, decorate
    name if FORC */
-ST_FUNC addr_t get_sym_addr(TCCState *s1, const char *name, int err, int forc)
+ST_FUNC addr_t get_sym_addr(SUGARState *s1, const char *name, int err, int forc)
 {
     int sym_index;
     ElfW(Sym) *sym;
     char buf[256];
     if (forc && s1->leading_underscore
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
         /* win32-32bit stdcall symbols always have _ already */
         && !strchr(name, '@')
 #endif
@@ -502,21 +502,21 @@ ST_FUNC addr_t get_sym_addr(TCCState *s1, const char *name, int err, int forc)
     sym = &((ElfW(Sym) *)s1->symtab->data)[sym_index];
     if (!sym_index || sym->st_shndx == SHN_UNDEF) {
         if (err)
-            tcc_error("%s not defined", name);
+            sugar_error("%s not defined", name);
         return (addr_t)-1;
     }
     return sym->st_value;
 }
 
 /* return elf symbol value */
-LIBTCCAPI void *tcc_get_symbol(TCCState *s, const char *name)
+LIBSUGARAPI void *sugar_get_symbol(SUGARState *s, const char *name)
 {
     addr_t addr = get_sym_addr(s, name, 0, 1);
     return addr == -1 ? NULL : (void*)(uintptr_t)addr;
 }
 
 /* list elf symbol names and values */
-ST_FUNC void list_elf_symbols(TCCState *s, void *ctx,
+ST_FUNC void list_elf_symbols(SUGARState *s, void *ctx,
     void (*symbol_cb)(void *ctx, const char *name, const void *val))
 {
     ElfW(Sym) *sym;
@@ -540,7 +540,7 @@ ST_FUNC void list_elf_symbols(TCCState *s, void *ctx,
 }
 
 /* list elf symbol names and values */
-LIBTCCAPI void tcc_list_symbols(TCCState *s, void *ctx,
+LIBSUGARAPI void sugar_list_symbols(SUGARState *s, void *ctx,
     void (*symbol_cb)(void *ctx, const char *name, const void *val))
 {
     list_elf_symbols(s, ctx, symbol_cb);
@@ -548,7 +548,7 @@ LIBTCCAPI void tcc_list_symbols(TCCState *s, void *ctx,
 
 #ifndef ELF_OBJ_ONLY
 static void
-version_add (TCCState *s1)
+version_add (SUGARState *s1)
 {
     int i;
     ElfW(Sym) *sym;
@@ -635,7 +635,7 @@ version_add (TCCState *s1)
 ST_FUNC int set_elf_sym(Section *s, addr_t value, unsigned long size,
                        int info, int other, int shndx, const char *name)
 {
-    TCCState *s1 = s->s1;
+    SUGARState *s1 = s->s1;
     ElfW(Sym) *esym;
     int sym_bind, sym_index, sym_type, esym_bind;
     unsigned char sym_vis, esym_vis, new_vis;
@@ -699,7 +699,7 @@ ST_FUNC int set_elf_sym(Section *s, addr_t value, unsigned long size,
                 printf("new_bind=%x new_shndx=%x new_vis=%x old_bind=%x old_shndx=%x old_vis=%x\n",
                        sym_bind, shndx, new_vis, esym_bind, esym->st_shndx, esym_vis);
 #endif
-                tcc_error_noabort("'%s' defined twice", name);
+                sugar_error_noabort("'%s' defined twice", name);
             }
         } else {
         do_patch:
@@ -723,7 +723,7 @@ ST_FUNC int set_elf_sym(Section *s, addr_t value, unsigned long size,
 ST_FUNC void put_elf_reloca(Section *symtab, Section *s, unsigned long offset,
                             int type, int symbol, addr_t addend)
 {
-    TCCState *s1 = s->s1;
+    SUGARState *s1 = s->s1;
     char buf[256];
     Section *sr;
     ElfW_Rel *rel;
@@ -747,7 +747,7 @@ ST_FUNC void put_elf_reloca(Section *symtab, Section *s, unsigned long offset,
     rel->r_addend = addend;
 #endif
     if (SHT_RELX != SHT_RELA && addend)
-        tcc_error("non-zero addend on REL architecture");
+        sugar_error("non-zero addend on REL architecture");
 }
 
 ST_FUNC void put_elf_reloc(Section *symtab, Section *s, unsigned long offset,
@@ -795,7 +795,7 @@ ST_FUNC void squeeze_multi_relocs(Section *s, size_t oldrelocoffset)
 
 /* put stab debug information */
 
-ST_FUNC void put_stabs(TCCState *s1, const char *str, int type, int other, int desc,
+ST_FUNC void put_stabs(SUGARState *s1, const char *str, int type, int other, int desc,
                       unsigned long value)
 {
     Stab_Sym *sym;
@@ -823,7 +823,7 @@ ST_FUNC void put_stabs(TCCState *s1, const char *str, int type, int other, int d
     sym->n_value = value;
 }
 
-ST_FUNC void put_stabs_r(TCCState *s1, const char *str, int type, int other, int desc,
+ST_FUNC void put_stabs_r(SUGARState *s1, const char *str, int type, int other, int desc,
                         unsigned long value, Section *sec, int sym_index)
 {
     put_elf_reloc(symtab_section, stab_section,
@@ -833,12 +833,12 @@ ST_FUNC void put_stabs_r(TCCState *s1, const char *str, int type, int other, int
     put_stabs(s1, str, type, other, desc, value);
 }
 
-ST_FUNC void put_stabn(TCCState *s1, int type, int other, int desc, int value)
+ST_FUNC void put_stabn(SUGARState *s1, int type, int other, int desc, int value)
 {
     put_stabs(s1, NULL, type, other, desc, value);
 }
 
-ST_FUNC struct sym_attr *get_sym_attr(TCCState *s1, int index, int alloc)
+ST_FUNC struct sym_attr *get_sym_attr(SUGARState *s1, int index, int alloc)
 {
     int n;
     struct sym_attr *tab;
@@ -850,7 +850,7 @@ ST_FUNC struct sym_attr *get_sym_attr(TCCState *s1, int index, int alloc)
         n = 1;
         while (index >= n)
             n *= 2;
-        tab = tcc_realloc(s1->sym_attrs, n * sizeof(*s1->sym_attrs));
+        tab = sugar_realloc(s1->sym_attrs, n * sizeof(*s1->sym_attrs));
         s1->sym_attrs = tab;
         memset(s1->sym_attrs + s1->nb_sym_attrs, 0,
                (n - s1->nb_sym_attrs) * sizeof(*s1->sym_attrs));
@@ -860,10 +860,10 @@ ST_FUNC struct sym_attr *get_sym_attr(TCCState *s1, int index, int alloc)
 }
 
 /* In an ELF file symbol table, the local symbols must appear below
-   the global and weak ones. Since TCC cannot sort it while generating
+   the global and weak ones. Since SUGAR cannot sort it while generating
    the code, we must do it after. All the relocation tables are also
    modified to take into account the symbol table sorting */
-static void sort_syms(TCCState *s1, Section *s)
+static void sort_syms(SUGARState *s1, Section *s)
 {
     int *old_to_new_syms;
     ElfW(Sym) *new_syms;
@@ -874,8 +874,8 @@ static void sort_syms(TCCState *s1, Section *s)
     int type, sym_index;
 
     nb_syms = s->data_offset / sizeof(ElfW(Sym));
-    new_syms = tcc_malloc(nb_syms * sizeof(ElfW(Sym)));
-    old_to_new_syms = tcc_malloc(nb_syms * sizeof(int));
+    new_syms = sugar_malloc(nb_syms * sizeof(ElfW(Sym)));
+    old_to_new_syms = sugar_malloc(nb_syms * sizeof(int));
 
     /* first pass for local symbols */
     p = (ElfW(Sym) *)s->data;
@@ -903,7 +903,7 @@ static void sort_syms(TCCState *s1, Section *s)
 
     /* we copy the new symbols to the old */
     memcpy(s->data, new_syms, nb_syms * sizeof(ElfW(Sym)));
-    tcc_free(new_syms);
+    sugar_free(new_syms);
 
     /* now we modify all the relocations */
     for(i = 1; i < s1->nb_sections; i++) {
@@ -918,12 +918,12 @@ static void sort_syms(TCCState *s1, Section *s)
         }
     }
 
-    tcc_free(old_to_new_syms);
+    sugar_free(old_to_new_syms);
 }
 
 /* relocate symbol table, resolve undefined symbols if do_resolve is
    true and output error if undefined symbol. */
-ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve)
+ST_FUNC void relocate_syms(SUGARState *s1, Section *symtab, int do_resolve)
 {
     ElfW(Sym) *sym;
     int sym_bind, sh_num;
@@ -933,10 +933,10 @@ ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve)
         sh_num = sym->st_shndx;
         if (sh_num == SHN_UNDEF) {
             name = (char *) s1->symtab->link->data + sym->st_name;
-            /* Use ld.so to resolve symbol for us (for tcc -run) */
+            /* Use ld.so to resolve symbol for us (for sugar -run) */
             if (do_resolve) {
-#if defined TCC_IS_NATIVE && !defined TCC_TARGET_PE
-#ifdef TCC_TARGET_MACHO
+#if defined SUGAR_IS_NATIVE && !defined SUGAR_TARGET_PE
+#ifdef SUGAR_TARGET_MACHO
                 /* The symbols in the symtables have a prepended '_'
                    but dlsym() needs the undecorated name.  */
                 void *addr = dlsym(RTLD_DEFAULT, name + 1);
@@ -964,7 +964,7 @@ ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve)
             if (sym_bind == STB_WEAK)
                 sym->st_value = 0;
             else
-                tcc_error_noabort("undefined symbol '%s'", name);
+                sugar_error_noabort("undefined symbol '%s'", name);
         } else if (sh_num < SHN_LORESERVE) {
             /* add section base */
             sym->st_value += s1->sections[sym->st_shndx]->sh_addr;
@@ -975,7 +975,7 @@ ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve)
 
 /* relocate a given section (CPU dependent) by applying the relocations
    in the associated relocation section */
-ST_FUNC void relocate_section(TCCState *s1, Section *s)
+ST_FUNC void relocate_section(SUGARState *s1, Section *s)
 {
     Section *sr = s->reloc;
     ElfW_Rel *rel;
@@ -1001,7 +1001,7 @@ ST_FUNC void relocate_section(TCCState *s1, Section *s)
     /* if the relocation is allocated, we change its symbol table */
     if (sr->sh_flags & SHF_ALLOC) {
         sr->link = s1->dynsym;
-        if (s1->output_type == TCC_OUTPUT_DLL) {
+        if (s1->output_type == SUGAR_OUTPUT_DLL) {
             size_t r = (uint8_t*)qrel - sr->data;
             if (sizeof ((Stab_Sym*)0)->n_value < PTR_SIZE
                 && 0 == strcmp(s->name, ".stab"))
@@ -1013,7 +1013,7 @@ ST_FUNC void relocate_section(TCCState *s1, Section *s)
 
 #ifndef ELF_OBJ_ONLY
 /* relocate relocation table in 'sr' */
-static void relocate_rel(TCCState *s1, Section *sr)
+static void relocate_rel(SUGARState *s1, Section *sr)
 {
     Section *s;
     ElfW_Rel *rel;
@@ -1025,18 +1025,18 @@ static void relocate_rel(TCCState *s1, Section *sr)
 
 /* count the number of dynamic relocations so that we can reserve
    their space */
-static int prepare_dynamic_rel(TCCState *s1, Section *sr)
+static int prepare_dynamic_rel(SUGARState *s1, Section *sr)
 {
     int count = 0;
-#if defined(TCC_TARGET_I386) || defined(TCC_TARGET_X86_64) || \
-    defined(TCC_TARGET_ARM) || defined(TCC_TARGET_ARM64) || \
-    defined(TCC_TARGET_RISCV64)
+#if defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_X86_64) || \
+    defined(SUGAR_TARGET_ARM) || defined(SUGAR_TARGET_ARM64) || \
+    defined(SUGAR_TARGET_RISCV64)
     ElfW_Rel *rel;
     for_each_elem(sr, 0, rel, ElfW_Rel) {
         int sym_index = ELFW(R_SYM)(rel->r_info);
         int type = ELFW(R_TYPE)(rel->r_info);
         switch(type) {
-#if defined(TCC_TARGET_I386)
+#if defined(SUGAR_TARGET_I386)
         case R_386_32:
             if (!get_sym_attr(s1, sym_index, 0)->dyn_index
                 && ((ElfW(Sym)*)symtab_section->data + sym_index)->st_shndx == SHN_UNDEF) {
@@ -1044,26 +1044,26 @@ static int prepare_dynamic_rel(TCCState *s1, Section *sr)
                 rel->r_info = ELFW(R_INFO)(sym_index, R_386_RELATIVE);
                 break;
             }
-#elif defined(TCC_TARGET_X86_64)
+#elif defined(SUGAR_TARGET_X86_64)
         case R_X86_64_32:
         case R_X86_64_32S:
         case R_X86_64_64:
-#elif defined(TCC_TARGET_ARM)
+#elif defined(SUGAR_TARGET_ARM)
         case R_ARM_ABS32:
-#elif defined(TCC_TARGET_ARM64)
+#elif defined(SUGAR_TARGET_ARM64)
         case R_AARCH64_ABS32:
         case R_AARCH64_ABS64:
-#elif defined(TCC_TARGET_RISCV64)
+#elif defined(SUGAR_TARGET_RISCV64)
         case R_RISCV_32:
         case R_RISCV_64:
 #endif
             count++;
             break;
-#if defined(TCC_TARGET_I386)
+#if defined(SUGAR_TARGET_I386)
         case R_386_PC32:
-#elif defined(TCC_TARGET_X86_64)
+#elif defined(SUGAR_TARGET_X86_64)
         case R_X86_64_PC32:
-#elif defined(TCC_TARGET_ARM64)
+#elif defined(SUGAR_TARGET_ARM64)
         case R_AARCH64_PREL32:
 #endif
             if (get_sym_attr(s1, sym_index, 0)->dyn_index)
@@ -1083,8 +1083,8 @@ static int prepare_dynamic_rel(TCCState *s1, Section *sr)
 }
 #endif
 
-#if !defined(ELF_OBJ_ONLY) || (defined(TCC_TARGET_MACHO) && defined TCC_IS_NATIVE)
-static void build_got(TCCState *s1)
+#if !defined(ELF_OBJ_ONLY) || (defined(SUGAR_TARGET_MACHO) && defined SUGAR_IS_NATIVE)
+static void build_got(SUGARState *s1)
 {
     /* if no got, then create it */
     s1->got = new_section(s1, ".got", SHT_PROGBITS, SHF_ALLOC | SHF_WRITE);
@@ -1099,7 +1099,7 @@ static void build_got(TCCState *s1)
    in s1->symtab. When creating the dynamic symbol table entry for the GOT
    relocation, use 'size' and 'info' for the corresponding symbol metadata.
    Returns the offset of the GOT or (if any) PLT entry. */
-static struct sym_attr * put_got_entry(TCCState *s1, int dyn_reloc_type,
+static struct sym_attr * put_got_entry(SUGARState *s1, int dyn_reloc_type,
                                        int sym_index)
 {
     int need_plt_entry;
@@ -1191,7 +1191,7 @@ static struct sym_attr * put_got_entry(TCCState *s1, int dyn_reloc_type,
 }
 
 /* build GOT and PLT entries */
-ST_FUNC void build_got_entries(TCCState *s1)
+ST_FUNC void build_got_entries(SUGARState *s1)
 {
     Section *s;
     ElfW_Rel *rel;
@@ -1210,7 +1210,7 @@ ST_FUNC void build_got_entries(TCCState *s1)
             type = ELFW(R_TYPE)(rel->r_info);
             gotplt_entry = gotplt_entry_type(type);
             if (gotplt_entry == -1)
-                tcc_error ("Unknown relocation type for got: %d", type);
+                sugar_error ("Unknown relocation type for got: %d", type);
             sym_index = ELFW(R_SYM)(rel->r_info);
             sym = &((ElfW(Sym) *)symtab_section->data)[sym_index];
 
@@ -1220,18 +1220,18 @@ ST_FUNC void build_got_entries(TCCState *s1)
 
             /* Automatically create PLT/GOT [entry] if it is an undefined
 	       reference (resolved at runtime), or the symbol is absolute,
-	       probably created by tcc_add_symbol, and thus on 64-bit
+	       probably created by sugar_add_symbol, and thus on 64-bit
 	       targets might be too far from application code.  */
             if (gotplt_entry == AUTO_GOTPLT_ENTRY) {
                 if (sym->st_shndx == SHN_UNDEF) {
                     ElfW(Sym) *esym;
 		    int dynindex;
-                    if (s1->output_type == TCC_OUTPUT_DLL && ! PCRELATIVE_DLLPLT)
+                    if (s1->output_type == SUGAR_OUTPUT_DLL && ! PCRELATIVE_DLLPLT)
                         continue;
 		    /* Relocations for UNDEF symbols would normally need
 		       to be transferred into the executable or shared object.
 		       If that were done AUTO_GOTPLT_ENTRY wouldn't exist.
-		       But TCC doesn't do that (at least for exes), so we
+		       But SUGAR doesn't do that (at least for exes), so we
 		       need to resolve all such relocs locally.  And that
 		       means PLT slots for functions in DLLs and COPY relocs for
 		       data symbols.  COPY relocs were generated in
@@ -1249,26 +1249,26 @@ ST_FUNC void build_got_entries(TCCState *s1)
 			    goto jmp_slot;
 		    }
                 } else if (!(sym->st_shndx == SHN_ABS
-#ifndef TCC_TARGET_ARM
+#ifndef SUGAR_TARGET_ARM
 			&& PTR_SIZE == 8
 #endif
 			))
                     continue;
             }
 
-#ifdef TCC_TARGET_X86_64
+#ifdef SUGAR_TARGET_X86_64
             if ((type == R_X86_64_PLT32 || type == R_X86_64_PC32) &&
 		sym->st_shndx != SHN_UNDEF &&
                 (ELFW(ST_VISIBILITY)(sym->st_other) != STV_DEFAULT ||
 		 ELFW(ST_BIND)(sym->st_info) == STB_LOCAL ||
-		 s1->output_type == TCC_OUTPUT_EXE)) {
+		 s1->output_type == SUGAR_OUTPUT_EXE)) {
                 rel->r_info = ELFW(R_INFO)(sym_index, R_X86_64_PC32);
                 continue;
             }
 #endif
             reloc_type = code_reloc(type);
             if (reloc_type == -1)
-                tcc_error ("Unknown relocation type: %d", type);
+                sugar_error ("Unknown relocation type: %d", type);
             else if (reloc_type != 0) {
             jmp_slot:
                 reloc_type = R_JMP_SLOT;
@@ -1290,7 +1290,7 @@ ST_FUNC void build_got_entries(TCCState *s1)
 }
 #endif
 
-ST_FUNC int set_global_sym(TCCState *s1, const char *name, Section *sec, addr_t offs)
+ST_FUNC int set_global_sym(SUGARState *s1, const char *name, Section *sec, addr_t offs)
 {
     int shn = sec ? sec->sh_num : offs ? SHN_ABS : SHN_UNDEF;
     if (sec && offs == -1)
@@ -1299,7 +1299,7 @@ ST_FUNC int set_global_sym(TCCState *s1, const char *name, Section *sec, addr_t 
         ELFW(ST_INFO)(name ? STB_GLOBAL : STB_LOCAL, STT_NOTYPE), 0, shn, name);
 }
 
-static void add_init_array_defines(TCCState *s1, const char *section_name)
+static void add_init_array_defines(SUGARState *s1, const char *section_name)
 {
     Section *s;
     addr_t end_offset;
@@ -1317,29 +1317,29 @@ static void add_init_array_defines(TCCState *s1, const char *section_name)
     set_global_sym(s1, buf, s, end_offset);
 }
 
-#ifndef TCC_TARGET_PE
-static int tcc_add_support(TCCState *s1, const char *filename)
+#ifndef SUGAR_TARGET_PE
+static int sugar_add_support(SUGARState *s1, const char *filename)
 {
     char buf[1024];
-    snprintf(buf, sizeof(buf), "%s/%s", s1->tcc_lib_path, filename);
-    return tcc_add_file(s1, buf);
+    snprintf(buf, sizeof(buf), "%s/%s", s1->sugar_lib_path, filename);
+    return sugar_add_file(s1, buf);
 }
 #endif
 
-ST_FUNC void add_array (TCCState *s1, const char *sec, int c)
+ST_FUNC void add_array (SUGARState *s1, const char *sec, int c)
 {
     Section *s;
     s = find_section(s1, sec);
     s->sh_flags |= SHF_WRITE;
-#ifndef TCC_TARGET_PE
+#ifndef SUGAR_TARGET_PE
     s->sh_type = sec[1] == 'i' ? SHT_INIT_ARRAY : SHT_FINI_ARRAY;
 #endif
     put_elf_reloc (s1->symtab, s, s->data_offset, R_DATA_PTR, c);
     section_ptr_add(s, PTR_SIZE);
 }
 
-#ifdef CONFIG_TCC_BCHECK
-ST_FUNC void tcc_add_bcheck(TCCState *s1)
+#ifdef CONFIG_SUGAR_BCHECK
+ST_FUNC void sugar_add_bcheck(SUGARState *s1)
 {
     if (0 == s1->do_bounds_check)
         return;
@@ -1347,8 +1347,8 @@ ST_FUNC void tcc_add_bcheck(TCCState *s1)
 }
 #endif
 
-#ifdef CONFIG_TCC_BACKTRACE
-static void put_ptr(TCCState *s1, Section *s, int offs)
+#ifdef CONFIG_SUGAR_BACKTRACE
+static void put_ptr(SUGARState *s1, Section *s, int offs)
 {
     int c;
     c = set_global_sym(s1, NULL, s, offs);
@@ -1359,7 +1359,7 @@ static void put_ptr(TCCState *s1, Section *s, int offs)
 
 /* set symbol to STB_LOCAL and resolve. The point is to not export it as
    a dynamic symbol to allow so's to have one each with a different value. */
-static void set_local_sym(TCCState *s1, const char *name, Section *s, int offset)
+static void set_local_sym(SUGARState *s1, const char *name, Section *s, int offset)
 {
     int c = find_elf_sym(s1->symtab, name);
     if (c) {
@@ -1370,7 +1370,7 @@ static void set_local_sym(TCCState *s1, const char *name, Section *s, int offset
     }
 }
 
-ST_FUNC void tcc_add_btstub(TCCState *s1)
+ST_FUNC void sugar_add_btstub(SUGARState *s1)
 {
     Section *s;
     int n, o;
@@ -1378,19 +1378,19 @@ ST_FUNC void tcc_add_btstub(TCCState *s1)
 
     s = data_section;
     o = s->data_offset;
-    /* create (part of) a struct rt_context (see tccrun.c) */
+    /* create (part of) a struct rt_context (see sugarrun.c) */
     put_ptr(s1, stab_section, 0);
     put_ptr(s1, stab_section, -1);
     put_ptr(s1, stab_section->link, 0);
     section_ptr_add(s, 3 * PTR_SIZE);
     /* prog_base */
-#ifndef TCC_TARGET_MACHO
+#ifndef SUGAR_TARGET_MACHO
     /* XXX this relocation is wrong, it uses sym-index 0 (local,undef) */
     put_elf_reloc(s1->symtab, s, s->data_offset, R_DATA_PTR, 0);
 #endif
     section_ptr_add(s, PTR_SIZE);
     n = 2 * PTR_SIZE;
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
     if (s1->do_bounds_check) {
         put_ptr(s1, bounds_section, 0);
         n -= PTR_SIZE;
@@ -1402,66 +1402,66 @@ ST_FUNC void tcc_add_btstub(TCCState *s1)
     cstr_printf(&cstr,
         " extern void __bt_init(),*__rt_info[],__bt_init_dll();"
         "__attribute__((constructor)) static void __bt_init_rt(){");
-#ifdef TCC_TARGET_PE
-    if (s1->output_type == TCC_OUTPUT_DLL)
-#ifdef CONFIG_TCC_BCHECK
+#ifdef SUGAR_TARGET_PE
+    if (s1->output_type == SUGAR_OUTPUT_DLL)
+#ifdef CONFIG_SUGAR_BCHECK
         cstr_printf(&cstr, "__bt_init_dll(%d);", s1->do_bounds_check);
 #else
         cstr_printf(&cstr, "__bt_init_dll(0);");
 #endif
 #endif
     cstr_printf(&cstr, "__bt_init(__rt_info,%d, 0);}",
-        s1->output_type == TCC_OUTPUT_DLL ? 0 : s1->rt_num_callers + 1);
-    tcc_compile_string(s1, cstr.data);
+        s1->output_type == SUGAR_OUTPUT_DLL ? 0 : s1->rt_num_callers + 1);
+    sugar_compile_string(s1, cstr.data);
     cstr_free(&cstr);
     set_local_sym(s1, &"___rt_info"[!s1->leading_underscore], s, o);
 }
 #endif
 
-#ifndef TCC_TARGET_PE
-/* add tcc runtime libraries */
-ST_FUNC void tcc_add_runtime(TCCState *s1)
+#ifndef SUGAR_TARGET_PE
+/* add sugar runtime libraries */
+ST_FUNC void sugar_add_runtime(SUGARState *s1)
 {
     s1->filetype = 0;
-#ifdef CONFIG_TCC_BCHECK
-    tcc_add_bcheck(s1);
+#ifdef CONFIG_SUGAR_BCHECK
+    sugar_add_bcheck(s1);
 #endif
-    tcc_add_pragma_libs(s1);
+    sugar_add_pragma_libs(s1);
     /* add libc */
     if (!s1->nostdlib) {
         if (s1->option_pthread)
-            tcc_add_library_err(s1, "pthread");
-        tcc_add_library_err(s1, "c");
-#ifdef TCC_LIBGCC
+            sugar_add_library_err(s1, "pthread");
+        sugar_add_library_err(s1, "c");
+#ifdef SUGAR_LIBGCC
         if (!s1->static_link) {
-            if (TCC_LIBGCC[0] == '/')
-                tcc_add_file(s1, TCC_LIBGCC);
+            if (SUGAR_LIBGCC[0] == '/')
+                sugar_add_file(s1, SUGAR_LIBGCC);
             else
-                tcc_add_dll(s1, TCC_LIBGCC, 0);
+                sugar_add_dll(s1, SUGAR_LIBGCC, 0);
         }
 #endif
-#ifdef CONFIG_TCC_BCHECK
-        if (s1->do_bounds_check && s1->output_type != TCC_OUTPUT_DLL) {
-            tcc_add_library_err(s1, "pthread");
-            tcc_add_library_err(s1, "dl");
-            tcc_add_support(s1, "bcheck.o");
+#ifdef CONFIG_SUGAR_BCHECK
+        if (s1->do_bounds_check && s1->output_type != SUGAR_OUTPUT_DLL) {
+            sugar_add_library_err(s1, "pthread");
+            sugar_add_library_err(s1, "dl");
+            sugar_add_support(s1, "bcheck.o");
         }
 #endif
-#ifdef CONFIG_TCC_BACKTRACE
+#ifdef CONFIG_SUGAR_BACKTRACE
         if (s1->do_backtrace) {
-            if (s1->output_type == TCC_OUTPUT_EXE)
-                tcc_add_support(s1, "bt-exe.o");
-            if (s1->output_type != TCC_OUTPUT_DLL)
-                tcc_add_support(s1, "bt-log.o");
-            if (s1->output_type != TCC_OUTPUT_MEMORY)
-                tcc_add_btstub(s1);
+            if (s1->output_type == SUGAR_OUTPUT_EXE)
+                sugar_add_support(s1, "bt-exe.o");
+            if (s1->output_type != SUGAR_OUTPUT_DLL)
+                sugar_add_support(s1, "bt-log.o");
+            if (s1->output_type != SUGAR_OUTPUT_MEMORY)
+                sugar_add_btstub(s1);
         }
 #endif
-        tcc_add_support(s1, TCC_LIBTCC1);
-#ifndef TCC_TARGET_MACHO
+        sugar_add_support(s1, SUGAR_LIBSUGAR1);
+#ifndef SUGAR_TARGET_MACHO
         /* add crt end if not memory output */
-        if (s1->output_type != TCC_OUTPUT_MEMORY)
-            tcc_add_crt(s1, "crtn.o");
+        if (s1->output_type != SUGAR_OUTPUT_MEMORY)
+            sugar_add_crt(s1, "crtn.o");
 #endif
     }
 }
@@ -1470,7 +1470,7 @@ ST_FUNC void tcc_add_runtime(TCCState *s1)
 /* add various standard linker symbols (must be done after the
    sections are filled (for example after allocating common
    symbols)) */
-static void tcc_add_linker_symbols(TCCState *s1)
+static void sugar_add_linker_symbols(SUGARState *s1)
 {
     char buf[1024];
     int i;
@@ -1479,7 +1479,7 @@ static void tcc_add_linker_symbols(TCCState *s1)
     set_global_sym(s1, "_etext", text_section, -1);
     set_global_sym(s1, "_edata", data_section, -1);
     set_global_sym(s1, "_end", bss_section, -1);
-#ifdef TCC_TARGET_RISCV64
+#ifdef SUGAR_TARGET_RISCV64
     /* XXX should be .sdata+0x800, not .data+0x800 */
     set_global_sym(s1, "__global_pointer$", data_section, 0x800);
 #endif
@@ -1514,7 +1514,7 @@ static void tcc_add_linker_symbols(TCCState *s1)
     }
 }
 
-ST_FUNC void resolve_common_syms(TCCState *s1)
+ST_FUNC void resolve_common_syms(SUGARState *s1)
 {
     ElfW(Sym) *sym;
 
@@ -1529,10 +1529,10 @@ ST_FUNC void resolve_common_syms(TCCState *s1)
     }
 
     /* Now assign linker provided symbols their value.  */
-    tcc_add_linker_symbols(s1);
+    sugar_add_linker_symbols(s1);
 }
 
-static void tcc_output_binary(TCCState *s1, FILE *f,
+static void sugar_output_binary(SUGARState *s1, FILE *f,
                               const int *sec_order)
 {
     Section *s;
@@ -1555,7 +1555,7 @@ static void tcc_output_binary(TCCState *s1, FILE *f,
 }
 
 #ifndef ELF_OBJ_ONLY
-ST_FUNC void fill_got_entry(TCCState *s1, ElfW_Rel *rel)
+ST_FUNC void fill_got_entry(SUGARState *s1, ElfW_Rel *rel)
 {
     int sym_index = ELFW(R_SYM) (rel->r_info);
     ElfW(Sym) *sym = &((ElfW(Sym) *) symtab_section->data)[sym_index];
@@ -1573,7 +1573,7 @@ ST_FUNC void fill_got_entry(TCCState *s1, ElfW_Rel *rel)
 }
 
 /* Perform relocation to GOT or PLT entries */
-ST_FUNC void fill_got(TCCState *s1)
+ST_FUNC void fill_got(SUGARState *s1)
 {
     Section *s;
     ElfW_Rel *rel;
@@ -1602,7 +1602,7 @@ ST_FUNC void fill_got(TCCState *s1)
 
 /* See put_got_entry for a description.  This is the second stage
    where GOT references to local defined symbols are rewritten.  */
-static void fill_local_got_entries(TCCState *s1)
+static void fill_local_got_entries(SUGARState *s1)
 {
     ElfW_Rel *rel;
     if (!s1->got->reloc)
@@ -1614,7 +1614,7 @@ static void fill_local_got_entries(TCCState *s1)
 	    struct sym_attr *attr = get_sym_attr(s1, sym_index, 0);
 	    unsigned offset = attr->got_offset;
 	    if (offset != rel->r_offset - s1->got->sh_addr)
-	      tcc_error_noabort("huh");
+	      sugar_error_noabort("huh");
 	    rel->r_info = ELFW(R_INFO)(0, R_RELATIVE);
 #if SHT_RELX == SHT_RELA
 	    rel->r_addend = sym->st_value;
@@ -1629,7 +1629,7 @@ static void fill_local_got_entries(TCCState *s1)
 /* Bind symbols of executable: resolve undefined symbols from exported symbols
    in shared libraries and export non local defined symbols to shared libraries
    if -rdynamic switch was given on command line */
-static void bind_exe_dynsyms(TCCState *s1)
+static void bind_exe_dynsyms(SUGARState *s1)
 {
     const char *name;
     int sym_index, index;
@@ -1698,7 +1698,7 @@ static void bind_exe_dynsyms(TCCState *s1)
                 if (ELFW(ST_BIND)(sym->st_info) == STB_WEAK ||
                     !strcmp(name, "_fp_hw")) {
                 } else {
-                    tcc_error_noabort("undefined symbol '%s'", name);
+                    sugar_error_noabort("undefined symbol '%s'", name);
                 }
             }
         } else if (s1->rdynamic && ELFW(ST_BIND)(sym->st_info) != STB_LOCAL) {
@@ -1715,7 +1715,7 @@ static void bind_exe_dynsyms(TCCState *s1)
    search symbol first in executable and then in libraries. Therefore a
    reference to a symbol already defined by a library can still be resolved by
    a symbol in the executable. */
-static void bind_libs_dynsyms(TCCState *s1)
+static void bind_libs_dynsyms(SUGARState *s1)
 {
     const char *name;
     int sym_index;
@@ -1732,7 +1732,7 @@ static void bind_libs_dynsyms(TCCState *s1)
         } else if (esym->st_shndx == SHN_UNDEF) {
             /* weak symbols can stay undefined */
             if (ELFW(ST_BIND)(esym->st_info) != STB_WEAK)
-                tcc_warning("undefined dynamic symbol '%s'", name);
+                sugar_warning("undefined dynamic symbol '%s'", name);
         }
     }
 }
@@ -1741,7 +1741,7 @@ static void bind_libs_dynsyms(TCCState *s1)
    non local symbols they define can resolve a reference in another shared
    library or in the executable. Correspondingly, it allows undefined local
    symbols to be resolved by other shared libraries or by the executable. */
-static void export_global_syms(TCCState *s1)
+static void export_global_syms(SUGARState *s1)
 {
     int dynindex, index;
     const char *name;
@@ -1762,7 +1762,7 @@ static void export_global_syms(TCCState *s1)
 /* Allocate strings for section names and decide if an unallocated section
    should be output.
    NOTE: the strsec section comes last, so its size is also correct ! */
-static int alloc_sec_names(TCCState *s1, int file_type, Section *strsec)
+static int alloc_sec_names(SUGARState *s1, int file_type, Section *strsec)
 {
     int i;
     Section *s;
@@ -1774,7 +1774,7 @@ static int alloc_sec_names(TCCState *s1, int file_type, Section *strsec)
         /* when generating a DLL, we include relocations but we may
            patch them */
 #ifndef ELF_OBJ_ONLY
-        if (file_type == TCC_OUTPUT_DLL &&
+        if (file_type == SUGAR_OUTPUT_DLL &&
             s->sh_type == SHT_RELX &&
             !(s->sh_flags & SHF_ALLOC) &&
             (s1->sections[s->sh_info]->sh_flags & SHF_ALLOC) &&
@@ -1784,17 +1784,17 @@ static int alloc_sec_names(TCCState *s1, int file_type, Section *strsec)
         } else
 #endif
         if ((s1->do_debug && s->sh_type != SHT_RELX) ||
-            file_type == TCC_OUTPUT_OBJ ||
+            file_type == SUGAR_OUTPUT_OBJ ||
             (s->sh_flags & SHF_ALLOC) ||
 	    i == (s1->nb_sections - 1)
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
             || s->sh_type == SHT_ARM_ATTRIBUTES
 #endif
             ) {
             /* we output all sections if debug or object file */
             s->sh_size = s->data_offset;
         }
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
         /* XXX: Suppress stack unwinding section. */
         if (s->sh_type == SHT_ARM_EXIDX) {
             s->sh_flags = 0;
@@ -1823,7 +1823,7 @@ struct dyn_inf {
 
 /* Assign sections to segments and decide how are sections laid out when loaded
    in memory. This function also fills corresponding program headers. */
-static int layout_sections(TCCState *s1, ElfW(Phdr) *phdr, int phnum,
+static int layout_sections(SUGARState *s1, ElfW(Phdr) *phdr, int phnum,
                            Section *interp, Section* strsec,
                            struct dyn_inf *dyninf, int *sec_order)
 {
@@ -1837,7 +1837,7 @@ static int layout_sections(TCCState *s1, ElfW(Phdr) *phdr, int phnum,
     file_type = s1->output_type;
     sh_order_index = 1;
     file_offset = 0;
-    if (s1->output_format == TCC_OUTPUT_FORMAT_ELF)
+    if (s1->output_format == SUGAR_OUTPUT_FORMAT_ELF)
         file_offset = sizeof(ElfW(Ehdr)) + phnum * sizeof(ElfW(Phdr));
     s_align = ELF_PAGE_SIZE;
     if (s1->section_align)
@@ -1855,7 +1855,7 @@ static int layout_sections(TCCState *s1, ElfW(Phdr) *phdr, int phnum,
                 a_offset += s_align;
             file_offset += (a_offset - p_offset);
         } else {
-            if (file_type == TCC_OUTPUT_DLL)
+            if (file_type == SUGAR_OUTPUT_DLL)
                 addr = 0;
             else
                 addr = ELF_START_ADDR;
@@ -1976,7 +1976,7 @@ static int layout_sections(TCCState *s1, ElfW(Phdr) *phdr, int phnum,
             ph->p_memsz = addr - ph->p_vaddr;
             ph++;
             if (j == 0) {
-                if (s1->output_format == TCC_OUTPUT_FORMAT_ELF) {
+                if (s1->output_format == SUGAR_OUTPUT_FORMAT_ELF) {
                     /* if in the middle of a page, we duplicate the page in
                        memory so that one copy is RX and the other is RW */
                     if ((addr & (s_align - 1)) != 0)
@@ -2061,7 +2061,7 @@ static void fill_unloadable_phdr(ElfW(Phdr) *phdr, int phnum, Section *interp,
 
 /* Fill the dynamic section with tags describing the address and size of
    sections */
-static void fill_dynamic(TCCState *s1, struct dyn_inf *dyninf)
+static void fill_dynamic(SUGARState *s1, struct dyn_inf *dyninf)
 {
     Section *dynamic = dyninf->dynamic;
     Section *s;
@@ -2126,7 +2126,7 @@ static void fill_dynamic(TCCState *s1, struct dyn_inf *dyninf)
 
 /* Relocate remaining sections and symbols (that is those not related to
    dynamic linking) */
-static int final_sections_reloc(TCCState *s1)
+static int final_sections_reloc(SUGARState *s1)
 {
     int i;
     Section *s;
@@ -2159,7 +2159,7 @@ static int final_sections_reloc(TCCState *s1)
 
 /* Create an ELF file on disk.
    This function handle ELF specific layout requirements */
-static void tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr,
+static void sugar_output_elf(SUGARState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr,
                            int file_offset, int *sec_order)
 {
     int i, shnum, offset, size, file_type;
@@ -2189,15 +2189,15 @@ static void tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr,
     ehdr.e_ident[4] = ELFCLASSW;
     ehdr.e_ident[5] = ELFDATA2LSB;
     ehdr.e_ident[6] = EV_CURRENT;
-#if !defined(TCC_TARGET_PE) && (defined(__FreeBSD__) || defined(__FreeBSD_kernel__))
+#if !defined(SUGAR_TARGET_PE) && (defined(__FreeBSD__) || defined(__FreeBSD_kernel__))
     /* FIXME: should set only for freebsd _target_, but we exclude only PE target */
     ehdr.e_ident[EI_OSABI] = ELFOSABI_FREEBSD;
 #endif
-#ifdef TCC_TARGET_ARM
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_TARGET_ARM
+#ifdef SUGAR_ARM_EABI
     ehdr.e_ident[EI_OSABI] = 0;
     ehdr.e_flags = EF_ARM_EABI_VER4;
-    if (file_type == TCC_OUTPUT_EXE || file_type == TCC_OUTPUT_DLL)
+    if (file_type == SUGAR_OUTPUT_EXE || file_type == SUGAR_OUTPUT_DLL)
         ehdr.e_flags |= EF_ARM_HASENTRY;
     if (s1->float_abi == ARM_HARD_FLOAT)
         ehdr.e_flags |= EF_ARM_VFP_FLOAT;
@@ -2206,24 +2206,24 @@ static void tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr,
 #else
     ehdr.e_ident[EI_OSABI] = ELFOSABI_ARM;
 #endif
-#elif defined TCC_TARGET_RISCV64
+#elif defined SUGAR_TARGET_RISCV64
     ehdr.e_flags = EF_RISCV_FLOAT_ABI_DOUBLE;
 #endif
     switch(file_type) {
     default:
-    case TCC_OUTPUT_EXE:
+    case SUGAR_OUTPUT_EXE:
         ehdr.e_type = ET_EXEC;
         ehdr.e_entry = get_sym_addr(s1, "_start", 1, 0);
         break;
-    case TCC_OUTPUT_DLL:
+    case SUGAR_OUTPUT_DLL:
         ehdr.e_type = ET_DYN;
         ehdr.e_entry = text_section->sh_addr; /* XXX: is it correct ? */
         break;
-    case TCC_OUTPUT_OBJ:
+    case SUGAR_OUTPUT_OBJ:
         ehdr.e_type = ET_REL;
         break;
     }
-    ehdr.e_machine = EM_TCC_TARGET;
+    ehdr.e_machine = EM_SUGAR_TARGET;
     ehdr.e_version = EV_CURRENT;
     ehdr.e_shoff = file_offset;
     ehdr.e_ehsize = sizeof(ElfW(Ehdr));
@@ -2278,36 +2278,36 @@ static void tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr,
 }
 
 /* Write an elf, coff or "binary" file */
-static int tcc_write_elf_file(TCCState *s1, const char *filename, int phnum,
+static int sugar_write_elf_file(SUGARState *s1, const char *filename, int phnum,
                               ElfW(Phdr) *phdr, int file_offset, int *sec_order)
 {
     int fd, mode, file_type;
     FILE *f;
 
     file_type = s1->output_type;
-    if (file_type == TCC_OUTPUT_OBJ)
+    if (file_type == SUGAR_OUTPUT_OBJ)
         mode = 0666;
     else
         mode = 0777;
     unlink(filename);
     fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, mode);
     if (fd < 0) {
-        tcc_error_noabort("could not write '%s'", filename);
+        sugar_error_noabort("could not write '%s'", filename);
         return -1;
     }
     f = fdopen(fd, "wb");
     if (s1->verbose)
         printf("<- %s\n", filename);
 
-#ifdef TCC_TARGET_COFF
-    if (s1->output_format == TCC_OUTPUT_FORMAT_COFF)
-        tcc_output_coff(s1, f);
+#ifdef SUGAR_TARGET_COFF
+    if (s1->output_format == SUGAR_OUTPUT_FORMAT_COFF)
+        sugar_output_coff(s1, f);
     else
 #endif
-    if (s1->output_format == TCC_OUTPUT_FORMAT_ELF)
-        tcc_output_elf(s1, f, phnum, phdr, file_offset, sec_order);
+    if (s1->output_format == SUGAR_OUTPUT_FORMAT_ELF)
+        sugar_output_elf(s1, f, phnum, phdr, file_offset, sec_order);
     else
-        tcc_output_binary(s1, f, sec_order);
+        sugar_output_binary(s1, f, sec_order);
     fclose(f);
 
     return 0;
@@ -2316,14 +2316,14 @@ static int tcc_write_elf_file(TCCState *s1, const char *filename, int phnum,
 #ifndef ELF_OBJ_ONLY
 /* Sort section headers by assigned sh_addr, remove sections
    that we aren't going to output.  */
-static void tidy_section_headers(TCCState *s1, int *sec_order)
+static void tidy_section_headers(SUGARState *s1, int *sec_order)
 {
     int i, nnew, l, *backmap;
     Section **snew, *s;
     ElfW(Sym) *sym;
 
-    snew = tcc_malloc(s1->nb_sections * sizeof(snew[0]));
-    backmap = tcc_malloc(s1->nb_sections * sizeof(backmap[0]));
+    snew = sugar_malloc(s1->nb_sections * sizeof(snew[0]));
+    backmap = sugar_malloc(s1->nb_sections * sizeof(backmap[0]));
     for (i = 0, nnew = 0, l = s1->nb_sections; i < s1->nb_sections; i++) {
 	s = s1->sections[sec_order[i]];
 	if (!i || s->sh_name) {
@@ -2354,15 +2354,15 @@ static void tidy_section_headers(TCCState *s1, int *sec_order)
     }
     for (i = 0; i < s1->nb_sections; i++)
 	sec_order[i] = i;
-    tcc_free(s1->sections);
+    sugar_free(s1->sections);
     s1->sections = snew;
     s1->nb_sections = nnew;
-    tcc_free(backmap);
+    sugar_free(backmap);
 }
 #endif
 
-#ifdef TCC_TARGET_ARM
-static void create_arm_attribute_section(TCCState *s1)
+#ifdef SUGAR_TARGET_ARM
+static void create_arm_attribute_section(SUGARState *s1)
 {
    // Needed for DLL support.
     static const unsigned char arm_attr[] = {
@@ -2399,14 +2399,14 @@ static void create_arm_attribute_section(TCCState *s1)
 
 /* Output an elf, coff or binary file */
 /* XXX: suppress unneeded sections */
-static int elf_output_file(TCCState *s1, const char *filename)
+static int elf_output_file(SUGARState *s1, const char *filename)
 {
     int ret, phnum, shnum, file_type, file_offset, *sec_order;
     struct dyn_inf dyninf = {0};
     ElfW(Phdr) *phdr;
     Section *strsec, *interp, *dynamic, *dynstr;
 
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
     create_arm_attribute_section (s1);
 #endif
 
@@ -2418,13 +2418,13 @@ static int elf_output_file(TCCState *s1, const char *filename)
     interp = dynamic = dynstr = NULL; /* avoid warning */
 
 #ifndef ELF_OBJ_ONLY
-    if (file_type != TCC_OUTPUT_OBJ) {
+    if (file_type != SUGAR_OUTPUT_OBJ) {
         /* if linking, also link in runtime libraries (libc, libgcc, etc.) */
-        tcc_add_runtime(s1);
+        sugar_add_runtime(s1);
 	resolve_common_syms(s1);
 
         if (!s1->static_link) {
-            if (file_type == TCC_OUTPUT_EXE) {
+            if (file_type == SUGAR_OUTPUT_EXE) {
                 char *ptr;
                 /* allow override the dynamic loader */
                 const char *elfint = getenv("LD_SO");
@@ -2450,7 +2450,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
 
             build_got(s1);
 
-            if (file_type == TCC_OUTPUT_EXE) {
+            if (file_type == SUGAR_OUTPUT_EXE) {
                 bind_exe_dynsyms(s1);
                 if (s1->nb_errors)
                     goto the_end;
@@ -2486,7 +2486,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
             put_dt(dynamic, s1->enable_new_dtags ? DT_RUNPATH : DT_RPATH,
                    put_elf_str(dynstr, s1->rpath));
 
-        if (file_type == TCC_OUTPUT_DLL) {
+        if (file_type == SUGAR_OUTPUT_DLL) {
             if (s1->soname)
                 put_dt(dynamic, DT_SONAME, put_elf_str(dynstr, s1->soname));
             /* XXX: currently, since we do not handle PIC code, we
@@ -2509,9 +2509,9 @@ static int elf_output_file(TCCState *s1, const char *filename)
 #endif
 
     /* compute number of program headers */
-    if (file_type == TCC_OUTPUT_OBJ)
+    if (file_type == SUGAR_OUTPUT_OBJ)
         phnum = 0;
-    else if (file_type == TCC_OUTPUT_DLL)
+    else if (file_type == SUGAR_OUTPUT_DLL)
         phnum = 3;
     else if (s1->static_link)
         phnum = 2;
@@ -2523,13 +2523,13 @@ static int elf_output_file(TCCState *s1, const char *filename)
     }
 
     /* allocate program segment headers */
-    phdr = tcc_mallocz(phnum * sizeof(ElfW(Phdr)));
+    phdr = sugar_mallocz(phnum * sizeof(ElfW(Phdr)));
 
     /* compute number of sections */
     shnum = s1->nb_sections;
 
     /* this array is used to reorder sections in the output file */
-    sec_order = tcc_malloc(sizeof(int) * shnum);
+    sec_order = sugar_malloc(sizeof(int) * shnum);
     sec_order[0] = 0;
 
     /* compute section to program header mapping */
@@ -2539,7 +2539,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
 #ifndef ELF_OBJ_ONLY
     /* Fill remaining program header and finalize relocation related to dynamic
        linking. */
-    if (file_type != TCC_OUTPUT_OBJ) {
+    if (file_type != SUGAR_OUTPUT_OBJ) {
         fill_unloadable_phdr(phdr, phnum, interp, dynamic);
         if (dynamic) {
             ElfW(Sym) *sym;
@@ -2548,8 +2548,8 @@ static int elf_output_file(TCCState *s1, const char *filename)
 
             /* put in GOT the dynamic section address and relocate PLT */
             write32le(s1->got->data, dynamic->sh_addr);
-            if (file_type == TCC_OUTPUT_EXE
-                || (RELOCATE_DLLPLT && file_type == TCC_OUTPUT_DLL))
+            if (file_type == SUGAR_OUTPUT_EXE
+                || (RELOCATE_DLLPLT && file_type == SUGAR_OUTPUT_DLL))
                 relocate_plt(s1);
 
             /* relocate symbols in .dynsym now that final addresses are known */
@@ -2569,7 +2569,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
 	tidy_section_headers(s1, sec_order);
 
         /* Perform relocation to GOT or PLT entries */
-        if (file_type == TCC_OUTPUT_EXE && s1->static_link)
+        if (file_type == SUGAR_OUTPUT_EXE && s1->static_link)
             fill_got(s1);
         else if (s1->got)
             fill_local_got_entries(s1);
@@ -2577,24 +2577,24 @@ static int elf_output_file(TCCState *s1, const char *filename)
 #endif
 
     /* Create the ELF file with name 'filename' */
-    ret = tcc_write_elf_file(s1, filename, phnum, phdr, file_offset, sec_order);
+    ret = sugar_write_elf_file(s1, filename, phnum, phdr, file_offset, sec_order);
     s1->nb_sections = shnum;
     goto the_end;
  the_end:
-    tcc_free(sec_order);
-    tcc_free(phdr);
+    sugar_free(sec_order);
+    sugar_free(phdr);
     return ret;
 }
 
-LIBTCCAPI int tcc_output_file(TCCState *s, const char *filename)
+LIBSUGARAPI int sugar_output_file(SUGARState *s, const char *filename)
 {
     int ret;
-#ifdef TCC_TARGET_PE
-    if (s->output_type != TCC_OUTPUT_OBJ) {
+#ifdef SUGAR_TARGET_PE
+    if (s->output_type != SUGAR_OUTPUT_OBJ) {
         ret = pe_output_file(s, filename);
     } else
-#elif TCC_TARGET_MACHO
-    if (s->output_type != TCC_OUTPUT_OBJ) {
+#elif SUGAR_TARGET_MACHO
+    if (s->output_type != SUGAR_OUTPUT_OBJ) {
         ret = macho_output_file(s, filename);
     } else
 #endif
@@ -2618,7 +2618,7 @@ ST_FUNC void *load_data(int fd, unsigned long file_offset, unsigned long size)
 {
     void *data;
 
-    data = tcc_malloc(size);
+    data = sugar_malloc(size);
     lseek(fd, file_offset, SEEK_SET);
     full_read(fd, data, size);
     return data;
@@ -2631,7 +2631,7 @@ typedef struct SectionMergeInfo {
     uint8_t link_once;         /* true if link once section */
 } SectionMergeInfo;
 
-ST_FUNC int tcc_object_type(int fd, ElfW(Ehdr) *h)
+ST_FUNC int sugar_object_type(int fd, ElfW(Ehdr) *h)
 {
     int size = full_read(fd, h, sizeof *h);
     if (size == sizeof *h && 0 == memcmp(h, ELFMAG, 4)) {
@@ -2642,7 +2642,7 @@ ST_FUNC int tcc_object_type(int fd, ElfW(Ehdr) *h)
     } else if (size >= 8) {
         if (0 == memcmp(h, ARMAG, 8))
             return AFF_BINTYPE_AR;
-#ifdef TCC_TARGET_COFF
+#ifdef SUGAR_TARGET_COFF
         if (((struct filehdr*)h)->f_magic == COFF_C67_MAGIC)
             return AFF_BINTYPE_C67;
 #endif
@@ -2652,7 +2652,7 @@ ST_FUNC int tcc_object_type(int fd, ElfW(Ehdr) *h)
 
 /* load an object file and merge it with current files */
 /* XXX: handle correctly stab (debug) info */
-ST_FUNC int tcc_load_object_file(TCCState *s1,
+ST_FUNC int sugar_load_object_file(SUGARState *s1,
                                 int fd, unsigned long file_offset)
 {
     ElfW(Ehdr) ehdr;
@@ -2668,19 +2668,19 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
     Section *s;
 
     lseek(fd, file_offset, SEEK_SET);
-    if (tcc_object_type(fd, &ehdr) != AFF_BINTYPE_REL)
+    if (sugar_object_type(fd, &ehdr) != AFF_BINTYPE_REL)
         goto fail1;
     /* test CPU specific stuff */
     if (ehdr.e_ident[5] != ELFDATA2LSB ||
-        ehdr.e_machine != EM_TCC_TARGET) {
+        ehdr.e_machine != EM_SUGAR_TARGET) {
     fail1:
-        tcc_error_noabort("invalid object file");
+        sugar_error_noabort("invalid object file");
         return -1;
     }
     /* read sections */
     shdr = load_data(fd, file_offset + ehdr.e_shoff,
                      sizeof(ElfW(Shdr)) * ehdr.e_shnum);
-    sm_table = tcc_mallocz(sizeof(SectionMergeInfo) * ehdr.e_shnum);
+    sm_table = sugar_mallocz(sizeof(SectionMergeInfo) * ehdr.e_shnum);
 
     /* load section names */
     sh = &shdr[ehdr.e_shstrndx];
@@ -2698,7 +2698,7 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
         sh = &shdr[i];
         if (sh->sh_type == SHT_SYMTAB) {
             if (symtab) {
-                tcc_error_noabort("object must contain only one symtab");
+                sugar_error_noabort("object must contain only one symtab");
             fail:
                 ret = -1;
                 goto the_end;
@@ -2726,7 +2726,7 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
 	  sh = &shdr[sh->sh_info];
         /* ignore sections types we do not handle (plus relocs to those) */
         if (sh->sh_type != SHT_PROGBITS &&
-#ifdef TCC_ARM_EABI
+#ifdef SUGAR_ARM_EABI
             sh->sh_type != SHT_ARM_EXIDX &&
 #endif
             sh->sh_type != SHT_NOBITS &&
@@ -2775,7 +2775,7 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
         sm_table[i].new_section = 1;
     found:
         if (sh->sh_type != s->sh_type) {
-            tcc_error_noabort("invalid section type");
+            sugar_error_noabort("invalid section type");
             goto fail;
         }
         /* align start of section */
@@ -2829,7 +2829,7 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
     }
 
     /* resolve symbols */
-    old_to_new_syms = tcc_mallocz(nb_syms * sizeof(int));
+    old_to_new_syms = sugar_mallocz(nb_syms * sizeof(int));
 
     sym = symtab + 1;
     for(i = 1; i < nb_syms; i++, sym++) {
@@ -2887,22 +2887,22 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
                 sym_index = old_to_new_syms[sym_index];
                 /* ignore link_once in rel section. */
                 if (!sym_index && !sm_table[sh->sh_info].link_once
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
                     && type != R_ARM_V4BX
-#elif defined TCC_TARGET_RISCV64
+#elif defined SUGAR_TARGET_RISCV64
                     && type != R_RISCV_ALIGN
                     && type != R_RISCV_RELAX
 #endif
                    ) {
                 invalid_reloc:
-                    tcc_error_noabort("Invalid relocation entry [%2d] '%s' @ %.8x",
+                    sugar_error_noabort("Invalid relocation entry [%2d] '%s' @ %.8x",
                         i, strsec + sh->sh_name, (int)rel->r_offset);
                     goto fail;
                 }
                 rel->r_info = ELFW(R_INFO)(sym_index, type);
                 /* offset the relocation offset */
                 rel->r_offset += offseti;
-#ifdef TCC_TARGET_ARM
+#ifdef SUGAR_TARGET_ARM
                 /* Jumps and branches from a Thumb code to a PLT entry need
                    special handling since PLT entries are ARM code.
                    Unconditional bl instructions referencing PLT entries are
@@ -2923,12 +2923,12 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
 
     ret = 0;
  the_end:
-    tcc_free(symtab);
-    tcc_free(strtab);
-    tcc_free(old_to_new_syms);
-    tcc_free(sm_table);
-    tcc_free(strsec);
-    tcc_free(shdr);
+    sugar_free(symtab);
+    sugar_free(strtab);
+    sugar_free(old_to_new_syms);
+    sugar_free(sm_table);
+    sugar_free(strsec);
+    sugar_free(shdr);
     return ret;
 }
 
@@ -2969,7 +2969,7 @@ static int read_ar_header(int fd, int offset, ArchiveHeader *hdr)
 }
 
 /* load only the objects which resolve undefined symbols */
-static int tcc_load_alacarte(TCCState *s1, int fd, int size, int entrysize)
+static int sugar_load_alacarte(SUGARState *s1, int fd, int size, int entrysize)
 {
     int i, bound, nsyms, sym_index, len, ret = -1;
     unsigned long long off;
@@ -2979,7 +2979,7 @@ static int tcc_load_alacarte(TCCState *s1, int fd, int size, int entrysize)
     ElfW(Sym) *sym;
     ArchiveHeader hdr;
 
-    data = tcc_malloc(size);
+    data = sugar_malloc(size);
     if (full_read(fd, data, size) != size)
         goto the_end;
     nsyms = get_be(data, entrysize);
@@ -2999,25 +2999,25 @@ static int tcc_load_alacarte(TCCState *s1, int fd, int size, int entrysize)
             off = get_be(ar_index + i * entrysize, entrysize);
             len = read_ar_header(fd, off, &hdr);
             if (len <= 0 || memcmp(hdr.ar_fmag, ARFMAG, 2)) {
-                tcc_error_noabort("invalid archive");
+                sugar_error_noabort("invalid archive");
                 goto the_end;
             }
             off += len;
             if (s1->verbose == 2)
                 printf("   -> %s\n", hdr.ar_name);
-            if (tcc_load_object_file(s1, fd, off) < 0)
+            if (sugar_load_object_file(s1, fd, off) < 0)
                 goto the_end;
             ++bound;
         }
     } while(bound);
     ret = 0;
  the_end:
-    tcc_free(data);
+    sugar_free(data);
     return ret;
 }
 
 /* load a '.a' file */
-ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte)
+ST_FUNC int sugar_load_archive(SUGARState *s1, int fd, int alacarte)
 {
     ArchiveHeader hdr;
     /* char magic[8]; */
@@ -3034,7 +3034,7 @@ ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte)
         if (len == 0)
             return 0;
         if (len < 0) {
-            tcc_error_noabort("invalid archive");
+            sugar_error_noabort("invalid archive");
             return -1;
         }
         file_offset += len;
@@ -3044,13 +3044,13 @@ ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte)
         if (alacarte) {
             /* coff symbol table : we handle it */
             if (!strcmp(hdr.ar_name, "/"))
-                return tcc_load_alacarte(s1, fd, size, 4);
+                return sugar_load_alacarte(s1, fd, size, 4);
             if (!strcmp(hdr.ar_name, "/SYM64/"))
-                return tcc_load_alacarte(s1, fd, size, 8);
-        } else if (tcc_object_type(fd, &ehdr) == AFF_BINTYPE_REL) {
+                return sugar_load_alacarte(s1, fd, size, 8);
+        } else if (sugar_object_type(fd, &ehdr) == AFF_BINTYPE_REL) {
             if (s1->verbose == 2)
                 printf("   -> %s\n", hdr.ar_name);
-            if (tcc_load_object_file(s1, fd, file_offset) < 0)
+            if (sugar_load_object_file(s1, fd, file_offset) < 0)
                 return -1;
         }
         file_offset += size;
@@ -3060,10 +3060,10 @@ ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte)
 #ifndef ELF_OBJ_ONLY
 /* Set LV[I] to the global index of sym-version (LIB,VERSION).  Maybe resizes
    LV, maybe create a new entry for (LIB,VERSION).  */
-static void set_ver_to_ver(TCCState *s1, int *n, int **lv, int i, char *lib, char *version)
+static void set_ver_to_ver(SUGARState *s1, int *n, int **lv, int i, char *lib, char *version)
 {
     while (i >= *n) {
-        *lv = tcc_realloc(*lv, (*n + 1) * sizeof(**lv));
+        *lv = sugar_realloc(*lv, (*n + 1) * sizeof(**lv));
         (*lv)[(*n)++] = -1;
     }
     if ((*lv)[i] == -1) {
@@ -3076,10 +3076,10 @@ static void set_ver_to_ver(TCCState *s1, int *n, int **lv, int i, char *lib, cha
               break;
         }
         if (v == nb_sym_versions) {
-            sym_versions = tcc_realloc (sym_versions,
+            sym_versions = sugar_realloc (sym_versions,
                                         (v + 1) * sizeof(*sym_versions));
-            sym_versions[v].lib = tcc_strdup(lib);
-            sym_versions[v].version = tcc_strdup(version);
+            sym_versions[v].lib = sugar_strdup(lib);
+            sym_versions[v].version = sugar_strdup(version);
             sym_versions[v].out_index = 0;
             sym_versions[v].prev_same_lib = prev_same_lib;
             nb_sym_versions++;
@@ -3091,11 +3091,11 @@ static void set_ver_to_ver(TCCState *s1, int *n, int **lv, int i, char *lib, cha
 /* Associates symbol SYM_INDEX (in dynsymtab) with sym-version index
    VERNDX.  */
 static void
-set_sym_version(TCCState *s1, int sym_index, int verndx)
+set_sym_version(SUGARState *s1, int sym_index, int verndx)
 {
     if (sym_index >= nb_sym_to_version) {
         int newelems = sym_index ? sym_index * 2 : 1;
-        sym_to_version = tcc_realloc(sym_to_version,
+        sym_to_version = sugar_realloc(sym_to_version,
                                      newelems * sizeof(*sym_to_version));
         memset(sym_to_version + nb_sym_to_version, -1,
                (newelems - nb_sym_to_version) * sizeof(*sym_to_version));
@@ -3114,7 +3114,7 @@ struct versym_info {
 };
 
 
-static void store_version(TCCState *s1, struct versym_info *v, char *dynstr)
+static void store_version(SUGARState *s1, struct versym_info *v, char *dynstr)
 {
     char *lib, *version;
     uint32_t next;
@@ -3192,7 +3192,7 @@ static void store_version(TCCState *s1, struct versym_info *v, char *dynstr)
 /* load a DLL and all referenced DLLs. 'level = 0' means that the DLL
    is referenced by the user (so it should be added as DT_NEEDED in
    the generated ELF file) */
-ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
+ST_FUNC int sugar_load_dll(SUGARState *s1, int fd, const char *filename, int level)
 {
     ElfW(Ehdr) ehdr;
     ElfW(Shdr) *shdr, *sh, *sh1;
@@ -3210,8 +3210,8 @@ ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
 
     /* test CPU specific stuff */
     if (ehdr.e_ident[5] != ELFDATA2LSB ||
-        ehdr.e_machine != EM_TCC_TARGET) {
-        tcc_error_noabort("bad architecture");
+        ehdr.e_machine != EM_SUGAR_TARGET) {
+        sugar_error_noabort("bad architecture");
         return -1;
     }
 
@@ -3254,7 +3254,7 @@ ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
     }
 
     /* compute the real library name */
-    soname = tcc_basename(filename);
+    soname = sugar_basename(filename);
 
     for(i = 0, dt = dynamic; i < nb_dts; i++, dt++) {
         if (dt->d_tag == DT_SONAME) {
@@ -3275,12 +3275,12 @@ ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
     }
 
     if (v.nb_versyms != nb_syms)
-        tcc_free (v.versym), v.versym = NULL;
+        sugar_free (v.versym), v.versym = NULL;
     else
         store_version(s1, &v, dynstr);
 
     /* add the dll and its level */
-    dllref = tcc_mallocz(sizeof(DLLReference) + strlen(soname));
+    dllref = sugar_mallocz(sizeof(DLLReference) + strlen(soname));
     dllref->level = level;
     strcpy(dllref->name, soname);
     dynarray_add(&s1->loaded_dlls, &s1->nb_loaded_dlls, dllref);
@@ -3310,8 +3310,8 @@ ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
                 if (!strcmp(name, dllref->name))
                     goto already_loaded;
             }
-            if (tcc_add_dll(s1, name, AFF_REFERENCED_DLL) < 0) {
-                tcc_error_noabort("referenced dll '%s' not found", name);
+            if (sugar_add_dll(s1, name, AFF_REFERENCED_DLL) < 0) {
+                sugar_error_noabort("referenced dll '%s' not found", name);
                 ret = -1;
                 goto the_end;
             }
@@ -3321,21 +3321,21 @@ ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
     }
     ret = 0;
  the_end:
-    tcc_free(dynstr);
-    tcc_free(dynsym);
-    tcc_free(dynamic);
-    tcc_free(shdr);
-    tcc_free(v.local_ver);
-    tcc_free(v.verdef);
-    tcc_free(v.verneed);
-    tcc_free(v.versym);
+    sugar_free(dynstr);
+    sugar_free(dynsym);
+    sugar_free(dynamic);
+    sugar_free(shdr);
+    sugar_free(v.local_ver);
+    sugar_free(v.verdef);
+    sugar_free(v.verneed);
+    sugar_free(v.versym);
     return ret;
 }
 
 #define LD_TOK_NAME 256
 #define LD_TOK_EOF  (-1)
 
-static int ld_inp(TCCState *s1)
+static int ld_inp(SUGARState *s1)
 {
     char b;
     if (s1->cc != -1) {
@@ -3349,7 +3349,7 @@ static int ld_inp(TCCState *s1)
 }
 
 /* return next ld script token */
-static int ld_next(TCCState *s1, char *name, int name_size)
+static int ld_next(SUGARState *s1, char *name, int name_size)
 {
     int c, d, ch;
     char *q;
@@ -3465,18 +3465,18 @@ static int ld_next(TCCState *s1, char *name, int name_size)
     return c;
 }
 
-static int ld_add_file(TCCState *s1, const char filename[])
+static int ld_add_file(SUGARState *s1, const char filename[])
 {
     if (filename[0] == '/') {
         if (CONFIG_SYSROOT[0] == '\0'
-            && tcc_add_file_internal(s1, filename, AFF_TYPE_BIN) == 0)
+            && sugar_add_file_internal(s1, filename, AFF_TYPE_BIN) == 0)
             return 0;
-        filename = tcc_basename(filename);
+        filename = sugar_basename(filename);
     }
-    return tcc_add_dll(s1, filename, 0);
+    return sugar_add_dll(s1, filename, 0);
 }
 
-static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
+static int ld_add_file_list(SUGARState *s1, const char *cmd, int as_needed)
 {
     char filename[1024], libname[1024];
     int t, group, nblibs = 0, ret = 0;
@@ -3487,7 +3487,7 @@ static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
         s1->new_undef_sym = 0;
     t = ld_next(s1, filename, sizeof(filename));
     if (t != '(') {
-        tcc_error_noabort("( expected");
+        sugar_error_noabort("( expected");
         ret = -1;
         goto lib_parse_error;
     }
@@ -3495,7 +3495,7 @@ static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
     for(;;) {
         libname[0] = '\0';
         if (t == LD_TOK_EOF) {
-            tcc_error_noabort("unexpected end of file");
+            sugar_error_noabort("unexpected end of file");
             ret = -1;
             goto lib_parse_error;
         } else if (t == ')') {
@@ -3503,7 +3503,7 @@ static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
         } else if (t == '-') {
             t = ld_next(s1, filename, sizeof(filename));
             if ((t != LD_TOK_NAME) || (filename[0] != 'l')) {
-                tcc_error_noabort("library name expected");
+                sugar_error_noabort("library name expected");
                 ret = -1;
                 goto lib_parse_error;
             }
@@ -3514,7 +3514,7 @@ static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
                 snprintf(filename, sizeof filename, "lib%s.so", libname);
             }
         } else if (t != LD_TOK_NAME) {
-            tcc_error_noabort("filename expected");
+            sugar_error_noabort("filename expected");
             ret = -1;
             goto lib_parse_error;
         }
@@ -3530,9 +3530,9 @@ static int ld_add_file_list(TCCState *s1, const char *cmd, int as_needed)
                     goto lib_parse_error;
                 if (group) {
                     /* Add the filename *and* the libname to avoid future conversions */
-                    dynarray_add(&libs, &nblibs, tcc_strdup(filename));
+                    dynarray_add(&libs, &nblibs, sugar_strdup(filename));
                     if (libname[0] != '\0')
-                        dynarray_add(&libs, &nblibs, tcc_strdup(libname));
+                        dynarray_add(&libs, &nblibs, sugar_strdup(libname));
                 }
             }
         }
@@ -3556,7 +3556,7 @@ lib_parse_error:
 
 /* interpret a subset of GNU ldscripts to handle the dummy libc.so
    files */
-ST_FUNC int tcc_load_ldscript(TCCState *s1, int fd)
+ST_FUNC int sugar_load_ldscript(SUGARState *s1, int fd)
 {
     char cmd[64];
     char filename[1024];
@@ -3580,13 +3580,13 @@ ST_FUNC int tcc_load_ldscript(TCCState *s1, int fd)
             /* ignore some commands */
             t = ld_next(s1, cmd, sizeof(cmd));
             if (t != '(') {
-                tcc_error_noabort("( expected");
+                sugar_error_noabort("( expected");
                 return -1;
             }
             for(;;) {
                 t = ld_next(s1, filename, sizeof(filename));
                 if (t == LD_TOK_EOF) {
-                    tcc_error_noabort("unexpected end of file");
+                    sugar_error_noabort("unexpected end of file");
                     return -1;
                 } else if (t == ')') {
                     break;

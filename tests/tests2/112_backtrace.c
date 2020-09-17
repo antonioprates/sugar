@@ -46,10 +46,10 @@ int main(int argc, char **argv)
 }
 
 /* ------------------------------------------------------- */
-#elif defined test_tcc_backtrace_2
+#elif defined test_sugar_backtrace_2
 
 /* test custom backtrace and 'exit()' redirection */
-int tcc_backtrace(const char *fmt, ...);
+int sugar_backtrace(const char *fmt, ...);
 void exit(int);
 
 void f2()
@@ -61,7 +61,7 @@ void f2()
 void f1()
 {
     printf("* f1()\n"), fflush(stdout);
-    tcc_backtrace("Hello from %s!", "f1");
+    sugar_backtrace("Hello from %s!", "f1");
     f2();
 }
 int main(int argc, char **argv)
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 }
 
 /* ------------------------------------------------------- */
-#elif defined test_tcc_backtrace_3
+#elif defined test_sugar_backtrace_3
 
 /* this test should be run despite of the exit(34) above */
 int main(int argc, char **argv)

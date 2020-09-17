@@ -54,13 +54,13 @@ int main(int argc, char **argv)
         if (f < 4) {
             do {
                static const char *sr[] = {
-                   "__x86_64__", "TCC_TARGET_X86_64",
-                   "_WIN64", "TCC_TARGET_PE",
-                   "_WIN32", "TCC_TARGET_PE",         
-                   "__arm__", "TCC_TARGET_ARM",
-                   "__aarch64__", "TCC_TARGET_ARM64",
-                   "__riscv", "TCC_TARGET_RISCV64",
-                   "__i386__", "TCC_TARGET_I386", 0 };
+                   "__x86_64__", "SUGAR_TARGET_X86_64",
+                   "_WIN64", "SUGAR_TARGET_PE",
+                   "_WIN32", "SUGAR_TARGET_PE",         
+                   "__arm__", "SUGAR_TARGET_ARM",
+                   "__aarch64__", "SUGAR_TARGET_ARM64",
+                   "__riscv", "SUGAR_TARGET_RISCV64",
+                   "__i386__", "SUGAR_TARGET_I386", 0 };
                 for (f = 0; sr[f]; f += 2) {
                     c = strlen(sr[f]);
                     if (0 == memcmp(p, sr[f], c)) {

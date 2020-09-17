@@ -206,8 +206,8 @@ extern "C" {
 #define _tcsupr_s _mbsupr_s
 #define _tcsupr_s_l _mbsupr_s_l
 
-#define _tccpy_s _mbccpy_s
-#define _tccpy_s_l _mbccpy_s_l
+#define _sugarpy_s _mbccpy_s
+#define _sugarpy_s_l _mbccpy_s_l
 #else
 
   _CRTIMP char *__cdecl _tcsncat_s(char *_Dst,size_t _DstSizeInChars,const char *_Src,size_t _MaxCount);

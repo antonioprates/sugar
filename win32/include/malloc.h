@@ -82,8 +82,8 @@ extern "C" {
 #undef _alloca
 #define _alloca(x) __builtin_alloca((x))
 #else
-  /* tcc implements alloca internally and exposes it (since commit d778bde7).
-  /* alloca is declared at include/stddef.h (which is distributed with tcc).
+  /* sugar implements alloca internally and exposes it (since commit d778bde7).
+  /* alloca is declared at include/stddef.h (which is distributed with sugar).
    */
 #ifdef _alloca
 #undef _alloca

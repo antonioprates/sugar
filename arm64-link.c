@@ -1,6 +1,6 @@
 #ifdef TARGET_DEFS_ONLY
 
-#define EM_TCC_TARGET EM_AARCH64
+#define EM_SUGAR_TARGET EM_AARCH64
 
 #define R_DATA_32  R_AARCH64_ABS32
 #define R_DATA_PTR R_AARCH64_ABS64
@@ -19,7 +19,7 @@
 
 #else /* !TARGET_DEFS_ONLY */
 
-#include "tcc.h"
+#include "sugar.h"
 
 /* Returns 1 for a code relocation, 0 for a data relocation. For unknown
    relocations, returns -1. */
@@ -51,7 +51,7 @@ int code_reloc (int reloc_type)
 }
 
 /* Returns an enumerator to describe whether and when the relocation needs a
-   GOT and/or PLT entry to be created. See tcc.h for a description of the
+   GOT and/or PLT entry to be created. See sugar.h for a description of the
    different values. */
 int gotplt_entry_type (int reloc_type)
 {
@@ -82,7 +82,7 @@ int gotplt_entry_type (int reloc_type)
     return -1;
 }
 
-ST_FUNC unsigned create_plt_entry(TCCState *s1, unsigned got_offset, struct sym_attr *attr)
+ST_FUNC unsigned create_plt_entry(SUGARState *s1, unsigned got_offset, struct sym_attr *attr)
 {
     Section *plt = s1->plt;
     uint8_t *p;
@@ -101,7 +101,7 @@ ST_FUNC unsigned create_plt_entry(TCCState *s1, unsigned got_offset, struct sym_
 
 /* relocate the PLT: compute addresses and offsets in the PLT now that final
    address for PLT and GOT are known (see fill_program_header) */
-ST_FUNC void relocate_plt(TCCState *s1)
+ST_FUNC void relocate_plt(SUGARState *s1)
 {
     uint8_t *p, *p_end;
 
@@ -116,7 +116,7 @@ ST_FUNC void relocate_plt(TCCState *s1)
         uint64_t got = s1->got->sh_addr;
         uint64_t off = (got >> 12) - (plt >> 12);
         if ((off + ((uint32_t)1 << 20)) >> 21)
-            tcc_error("Failed relocating PLT (off=0x%lx, got=0x%lx, plt=0x%lx)", off, got, plt);
+            sugar_error("Failed relocating PLT (off=0x%lx, got=0x%lx, plt=0x%lx)", off, got, plt);
         write32le(p, 0xa9bf7bf0); // stp x16,x30,[sp,#-16]!
         write32le(p + 4, (0x90000010 | // adrp x16,...
 			  (off & 0x1ffffc) << 3 | (off & 3) << 29));
@@ -134,7 +134,7 @@ ST_FUNC void relocate_plt(TCCState *s1)
             uint64_t addr = got + read64le(p);
             uint64_t off = (addr >> 12) - (pc >> 12);
             if ((off + ((uint32_t)1 << 20)) >> 21)
-                tcc_error("Failed relocating PLT (off=0x%lx, addr=0x%lx, pc=0x%lx)", off, addr, pc);
+                sugar_error("Failed relocating PLT (off=0x%lx, addr=0x%lx, pc=0x%lx)", off, addr, pc);
             write32le(p, (0x90000010 | // adrp x16,...
 			  (off & 0x1ffffc) << 3 | (off & 3) << 29));
             write32le(p + 4, (0xf9400211 | // ldr x17,[x16,#...]
@@ -147,7 +147,7 @@ ST_FUNC void relocate_plt(TCCState *s1)
     }
 }
 
-void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val)
+void relocate(SUGARState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val)
 {
     int sym_index = ELFW(R_SYM)(rel->r_info), esym_index;
 #ifdef DEBUG_RELOC
@@ -156,7 +156,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
 
     switch(type) {
         case R_AARCH64_ABS64:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
                 esym_index = get_sym_attr(s1, sym_index, 0)->dyn_index;
                 qrel->r_offset = rel->r_offset;
                 if (esym_index) {
@@ -173,9 +173,9 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             add64le(ptr, val);
             return;
         case R_AARCH64_ABS32:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
-                /* XXX: this logic may depend on TCC's codegen
-                   now TCC uses R_AARCH64_RELATIVE even for a 64bit pointer */
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
+                /* XXX: this logic may depend on SUGAR's codegen
+                   now SUGAR uses R_AARCH64_RELATIVE even for a 64bit pointer */
                 qrel->r_offset = rel->r_offset;
                 qrel->r_info = ELFW(R_INFO)(0, R_AARCH64_RELATIVE);
                 /* Use sign extension! */
@@ -185,7 +185,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             add32le(ptr, val);
             return;
 	case R_AARCH64_PREL32:
-            if (s1->output_type == TCC_OUTPUT_DLL) {
+            if (s1->output_type == SUGAR_OUTPUT_DLL) {
                 /* DLL relocation */
                 esym_index = get_sym_attr(s1, sym_index, 0)->dyn_index;
                 if (esym_index) {
@@ -218,7 +218,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
         case R_AARCH64_ADR_PREL_PG_HI21: {
             uint64_t off = (val >> 12) - (addr >> 12);
             if ((off + ((uint64_t)1 << 20)) >> 21)
-                tcc_error("R_AARCH64_ADR_PREL_PG_HI21 relocation failed");
+                sugar_error("R_AARCH64_ADR_PREL_PG_HI21 relocation failed");
             write32le(ptr, ((read32le(ptr) & 0x9f00001f) |
                             (off & 0x1ffffc) << 3 | (off & 3) << 29));
             return;
@@ -238,7 +238,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
 		    (char *) symtab_section->link->data + sym->st_name);
 #endif
             if (((val - addr) + ((uint64_t)1 << 27)) & ~(uint64_t)0xffffffc)
-                tcc_error("R_AARCH64_(JUMP|CALL)26 relocation failed"
+                sugar_error("R_AARCH64_(JUMP|CALL)26 relocation failed"
                           " (val=%lx, addr=%lx)", val, addr);
             write32le(ptr, (0x14000000 |
                             (uint32_t)(type == R_AARCH64_CALL26) << 31 |
@@ -249,7 +249,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
                 (((s1->got->sh_addr +
                    get_sym_attr(s1, sym_index, 0)->got_offset) >> 12) - (addr >> 12));
             if ((off + ((uint64_t)1 << 20)) >> 21)
-                tcc_error("R_AARCH64_ADR_GOT_PAGE relocation failed");
+                sugar_error("R_AARCH64_ADR_GOT_PAGE relocation failed");
             write32le(ptr, ((read32le(ptr) & 0x9f00001f) |
                             (off & 0x1ffffc) << 3 | (off & 3) << 29));
             return;
@@ -273,7 +273,7 @@ void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t 
             write64le(ptr, val - rel->r_addend);
             return;
         case R_AARCH64_RELATIVE:
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
             add32le(ptr, val - s1->pe_imagebase);
 #endif
             /* do nothing */

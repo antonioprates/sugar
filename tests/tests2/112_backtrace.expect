@@ -16,7 +16,7 @@
 112_backtrace.c:43: by main
 [returns 255]
 
-[test_tcc_backtrace_2]
+[test_sugar_backtrace_2]
 * main
 * f1()
 112_backtrace.c:64: at f1: Hello from f1!
@@ -25,7 +25,7 @@
 * exit f2
 [returns 34]
 
-[test_tcc_backtrace_3]
+[test_sugar_backtrace_3]
 * main
 [returns 1]
 

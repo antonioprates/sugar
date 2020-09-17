@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# tcc configure script (c) 2003 Fabrice Bellard
+# sugar configure script (c) 2003 Fabrice Bellard
 
 # set temporary file name
 # if test ! -z "$TMPDIR" ; then
@@ -11,7 +11,7 @@
 #     TMPDIR1="/tmp"
 # fi
 #
-# bashism: TMPN="${TMPDIR1}/tcc-conf-${RANDOM}-$$-${RANDOM}.c"
+# bashism: TMPN="${TMPDIR1}/sugar-conf-${RANDOM}-$$-${RANDOM}.c"
 
 TMPN="./conftest-$$"
 TMPH=$TMPN.h
@@ -21,7 +21,7 @@ prefix=""
 execprefix=""
 bindir=""
 libdir=""
-tccdir=""
+sugardir=""
 includedir=""
 mandir=""
 infodir=""
@@ -35,13 +35,13 @@ mingw32="no"
 LIBSUF=".a"
 EXESUF=""
 DLLSUF=".so"
-tcc_usrinclude=""
-tcc_sysincludepaths=""
-tcc_libpaths=""
-tcc_crtprefix=""
-tcc_elfinterp=""
+sugar_usrinclude=""
+sugar_sysincludepaths=""
+sugar_libpaths=""
+sugar_crtprefix=""
+sugar_elfinterp=""
 triplet=
-tcc_lddir=
+sugar_lddir=
 confvars=
 suggest="yes"
 cpu=
@@ -58,7 +58,7 @@ case $targetos in
     confvars="$confvars OSX"
     cc=`which cc`
     cc=`readlink $cc`
-    tcc_usrinclude="`xcrun --show-sdk-path`/usr/include"
+    sugar_usrinclude="`xcrun --show-sdk-path`/usr/include"
     DLLSUF=".dylib"
     ;;
   Windows_NT|MINGW*|MSYS*|CYGWIN*)
@@ -87,7 +87,7 @@ for opt do
   ;;
   --exec-prefix=*) execprefix=`echo $opt | cut -d '=' -f 2`
   ;;
-  --tccdir=*) tccdir=`echo $opt | cut -d '=' -f 2`
+  --sugardir=*) sugardir=`echo $opt | cut -d '=' -f 2`
   ;;
   --bindir=*) bindir=`echo $opt | cut -d '=' -f 2`
   ;;
@@ -119,13 +119,13 @@ for opt do
   ;;
   --extra-libs=*) extralibs="${opt#--extra-libs=}"
   ;;
-  --sysincludepaths=*) tcc_sysincludepaths=`echo $opt | cut -d '=' -f 2`
+  --sysincludepaths=*) sugar_sysincludepaths=`echo $opt | cut -d '=' -f 2`
   ;;
-  --libpaths=*) tcc_libpaths=`echo $opt | cut -d '=' -f 2`
+  --libpaths=*) sugar_libpaths=`echo $opt | cut -d '=' -f 2`
   ;;
-  --crtprefix=*) tcc_crtprefix=`echo $opt | cut -d '=' -f 2`
+  --crtprefix=*) sugar_crtprefix=`echo $opt | cut -d '=' -f 2`
   ;;
-  --elfinterp=*) tcc_elfinterp=`echo $opt | cut -d '=' -f 2`
+  --elfinterp=*) sugar_elfinterp=`echo $opt | cut -d '=' -f 2`
   ;;
   --triplet=*) triplet=`echo $opt | cut -d '=' -f 2`
   ;;
@@ -227,11 +227,11 @@ if test "$mingw32" = "yes" ; then
     if test "$source_path_used" = "no"; then
       source_path="."
     fi
-    test -z "$prefix" && prefix="C:/Program Files/tcc"
-    test -z "$tccdir" && tccdir="${prefix}"
-    test -z "$bindir" && bindir="${tccdir}"
-    test -z "$docdir" && docdir="${tccdir}/doc"
-    test -z "$libdir" && libdir="${tccdir}/libtcc"
+    test -z "$prefix" && prefix="C:/Program Files/sugar"
+    test -z "$sugardir" && sugardir="${prefix}"
+    test -z "$bindir" && bindir="${sugardir}"
+    test -z "$docdir" && docdir="${sugardir}/doc"
+    test -z "$libdir" && libdir="${sugardir}/libsugar"
     confvars="$confvars WIN32"
     LIBSUF=".lib"
     EXESUF=".exe"
@@ -261,8 +261,8 @@ else
     if test x"$infodir" = x""; then
       infodir="${sharedir}/info"
     fi
-    if test x"$tccdir" = x""; then
-      tccdir="${libdir}/tcc"
+    if test x"$sugardir" = x""; then
+      sugardir="${libdir}/sugar"
     fi
     if test x"$includedir" = x""; then
       includedir="${prefix}/include"
@@ -281,10 +281,10 @@ Standard options:
 			   [same as prefix]
   --bindir=DIR             user executables in DIR [EPREFIX/bin]
   --libdir=DIR             object code libraries in DIR [EPREFIX/lib]
-  --tccdir=DIR             installation directory [EPREFIX/lib/tcc]
+  --sugardir=DIR           installation directory [EPREFIX/lib/sugar]
   --includedir=DIR         C header files in DIR [PREFIX/include]
   --sharedir=DIR           documentation root DIR [PREFIX/share]
-  --docdir=DIR             documentation in DIR [SHAREDIR/doc/tcc]
+  --docdir=DIR             documentation in DIR [SHAREDIR/doc/sugar]
   --mandir=DIR             man documentation in DIR [SHAREDIR/man]
   --infodir=DIR            info documentation in DIR [SHAREDIR/info]
 
@@ -299,12 +299,12 @@ Advanced options (experts only):
   --cpu=CPU                CPU [$cpu]
   --strip-binaries         strip symbol tables from resulting binaries
   --debug                  include debug info with resulting binaries
-  --disable-static         make libtcc.so instead of libtcc.a
-  --enable-static          make libtcc.a instead of libtcc.dll (win32)
+  --disable-static         make libsugar.so instead of libsugar.a
+  --enable-static          make libsugar.a instead of libsugar.dll (win32)
   --disable-rpath          disable use of -rpath with the above
-  --with-libgcc            use libgcc_s.so.1 instead of libtcc1.a
+  --with-libgcc            use libgcc_s.so.1 instead of libsugar1.a
   --enable-cross           build cross compilers
-  --with-selinux           use mmap for executable memory (with tcc -run)
+  --with-selinux           use mmap for executable memory (with sugar -run)
   --sysincludepaths=...    specify system include paths, colon separated
   --libpaths=...           specify system library paths, colon separated
   --crtprefix=...          specify locations of crt?.o, colon separated
@@ -338,7 +338,7 @@ if test -z "$cross_prefix" ; then
       if test -z "$triplet"; then
         if test $cpu = "x86_64" -o $cpu = "aarch64" -o $cpu = "riscv64" ; then
           if test -f "/usr/lib64/crti.o" ; then
-            tcc_lddir="lib64"
+            sugar_lddir="lib64"
           fi
         fi
       fi
@@ -380,7 +380,7 @@ if test "$bigendian" = "yes" ; then
 fi
 
 # a final configuration tuning
-if test "$cc_name" != "tcc"; then
+if test "$cc_name" != "sugar"; then
   OPT1="-Wdeclaration-after-statement -fno-strict-aliasing"
   # we want -Wno- but gcc does not always reject unknown -Wno- options
   OPT2="-Wpointer-sign -Wsign-compare -Wunused-result -Wformat-truncation"
@@ -398,21 +398,21 @@ if test "$cc_name" != "tcc"; then
   # cat cc_msg.txt
   # echo $CFLAGS
   rm -f cc_msg.txt a.out
-else # cc is tcc
+else # cc is sugar
   test "$ar_set" || ar="$cc -ar"
 fi
 
 fcho() { if test -n "$2"; then echo "$1$2"; fi }
 
 fcho "Binary directory    " "$bindir"
-fcho "TinyCC directory    " "$tccdir"
+fcho "SugarC directory    " "$sugardir"
 fcho "Library directory   " "$libdir"
 fcho "Include directory   " "$includedir"
 fcho "Manual directory    " "$mandir"
 fcho "Info directory      " "$infodir"
 fcho "Doc directory       " "$docdir"
 fcho "Target root prefix  " "$sysroot"
-fcho "/usr/include dir    " "$tcc_usrinclude"
+fcho "/usr/include dir    " "$sugar_usrinclude"
 echo "Source path         $source_path"
 echo "C compiler          $cc ($gcc_major.$gcc_minor)"
 echo "Target OS           $targetos"
@@ -425,7 +425,7 @@ cat >config.mak <<EOF
 # Automatically generated by configure - do not modify
 prefix=$prefix
 bindir=\$(DESTDIR)$bindir
-tccdir=\$(DESTDIR)$tccdir
+sugardir=\$(DESTDIR)$sugardir
 libdir=\$(DESTDIR)$libdir
 includedir=\$(DESTDIR)$includedir
 mandir=\$(DESTDIR)$mandir
@@ -467,15 +467,15 @@ print_mak_int() {
 echo "/* Automatically generated by configure - do not modify */" > $TMPH
 
 print_inc CONFIG_SYSROOT "$sysroot"
-print_inc CONFIG_TCCDIR "$tccdir"
-print_mak CONFIG_USR_INCLUDE "$tcc_usrinclude"
-print_mak CONFIG_TCC_SYSINCLUDEPATHS "$tcc_sysincludepaths"
-print_mak CONFIG_TCC_LIBPATHS "$tcc_libpaths"
-print_mak CONFIG_TCC_CRTPREFIX "$tcc_crtprefix"
-print_mak CONFIG_TCC_ELFINTERP "$tcc_elfinterp"
-print_mak CONFIG_LDDIR "$tcc_lddir"
+print_inc CONFIG_SUGARDIR "$sugardir"
+print_mak CONFIG_USR_INCLUDE "$sugar_usrinclude"
+print_mak CONFIG_SUGAR_SYSINCLUDEPATHS "$sugar_sysincludepaths"
+print_mak CONFIG_SUGAR_LIBPATHS "$sugar_libpaths"
+print_mak CONFIG_SUGAR_CRTPREFIX "$sugar_crtprefix"
+print_mak CONFIG_SUGAR_ELFINTERP "$sugar_elfinterp"
+print_mak CONFIG_LDDIR "$sugar_lddir"
 print_mak CONFIG_TRIPLET "$triplet"
-print_mak_int TCC_CPU_VERSION "$cpuver"
+print_mak_int SUGAR_CPU_VERSION "$cpuver"
 
 if test "$cpu" = "aarch64" ; then
   echo "ARCH=arm64" >> config.mak
@@ -494,7 +494,7 @@ done
 
 version=`head $source_path/VERSION`
 echo "VERSION = $version" >> config.mak
-echo "#define TCC_VERSION \"$version\"" >> $TMPH
+echo "#define SUGAR_VERSION \"$version\"" >> $TMPH
 echo "@set VERSION $version" > config.texi
 
 if test "$source_path_used" = "yes" ; then

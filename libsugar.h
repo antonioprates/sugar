@@ -1,107 +1,107 @@
-#ifndef LIBTCC_H
-#define LIBTCC_H
+#ifndef LIBSUGAR_H
+#define LIBSUGAR_H
 
-#ifndef LIBTCCAPI
-# define LIBTCCAPI
+#ifndef LIBSUGARAPI
+# define LIBSUGARAPI
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct TCCState;
+struct SUGARState;
 
-typedef struct TCCState TCCState;
+typedef struct SUGARState SUGARState;
 
-typedef void (*TCCErrorFunc)(void *opaque, const char *msg);
+typedef void (*SUGARErrorFunc)(void *opaque, const char *msg);
 
-/* create a new TCC compilation context */
-LIBTCCAPI TCCState *tcc_new(void);
+/* create a new SUGAR compilation context */
+LIBSUGARAPI SUGARState *sugar_new(void);
 
-/* free a TCC compilation context */
-LIBTCCAPI void tcc_delete(TCCState *s);
+/* free a SUGAR compilation context */
+LIBSUGARAPI void sugar_delete(SUGARState *s);
 
-/* set CONFIG_TCCDIR at runtime */
-LIBTCCAPI void tcc_set_lib_path(TCCState *s, const char *path);
+/* set CONFIG_SUGARDIR at runtime */
+LIBSUGARAPI void sugar_set_lib_path(SUGARState *s, const char *path);
 
 /* set error/warning display callback */
-LIBTCCAPI void tcc_set_error_func(TCCState *s, void *error_opaque, TCCErrorFunc error_func);
+LIBSUGARAPI void sugar_set_error_func(SUGARState *s, void *error_opaque, SUGARErrorFunc error_func);
 
 /* return error/warning callback */
-LIBTCCAPI TCCErrorFunc tcc_get_error_func(TCCState *s);
+LIBSUGARAPI SUGARErrorFunc sugar_get_error_func(SUGARState *s);
 
 /* return error/warning callback opaque pointer */
-LIBTCCAPI void *tcc_get_error_opaque(TCCState *s);
+LIBSUGARAPI void *sugar_get_error_opaque(SUGARState *s);
 
 /* set options as from command line (multiple supported) */
-LIBTCCAPI void tcc_set_options(TCCState *s, const char *str);
+LIBSUGARAPI void sugar_set_options(SUGARState *s, const char *str);
 
 /*****************************/
 /* preprocessor */
 
 /* add include path */
-LIBTCCAPI int tcc_add_include_path(TCCState *s, const char *pathname);
+LIBSUGARAPI int sugar_add_include_path(SUGARState *s, const char *pathname);
 
 /* add in system include path */
-LIBTCCAPI int tcc_add_sysinclude_path(TCCState *s, const char *pathname);
+LIBSUGARAPI int sugar_add_sysinclude_path(SUGARState *s, const char *pathname);
 
 /* define preprocessor symbol 'sym'. value can be NULL, sym can be "sym=val" */
-LIBTCCAPI void tcc_define_symbol(TCCState *s, const char *sym, const char *value);
+LIBSUGARAPI void sugar_define_symbol(SUGARState *s, const char *sym, const char *value);
 
 /* undefine preprocess symbol 'sym' */
-LIBTCCAPI void tcc_undefine_symbol(TCCState *s, const char *sym);
+LIBSUGARAPI void sugar_undefine_symbol(SUGARState *s, const char *sym);
 
 /*****************************/
 /* compiling */
 
 /* add a file (C file, dll, object, library, ld script). Return -1 if error. */
-LIBTCCAPI int tcc_add_file(TCCState *s, const char *filename);
+LIBSUGARAPI int sugar_add_file(SUGARState *s, const char *filename);
 
 /* compile a string containing a C source. Return -1 if error. */
-LIBTCCAPI int tcc_compile_string(TCCState *s, const char *buf);
+LIBSUGARAPI int sugar_compile_string(SUGARState *s, const char *buf);
 
 /*****************************/
 /* linking commands */
 
 /* set output type. MUST BE CALLED before any compilation */
-LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type);
-#define TCC_OUTPUT_MEMORY   1 /* output will be run in memory (default) */
-#define TCC_OUTPUT_EXE      2 /* executable file */
-#define TCC_OUTPUT_DLL      3 /* dynamic library */
-#define TCC_OUTPUT_OBJ      4 /* object file */
-#define TCC_OUTPUT_PREPROCESS 5 /* only preprocess (used internally) */
+LIBSUGARAPI int sugar_set_output_type(SUGARState *s, int output_type);
+#define SUGAR_OUTPUT_MEMORY   1 /* output will be run in memory (default) */
+#define SUGAR_OUTPUT_EXE      2 /* executable file */
+#define SUGAR_OUTPUT_DLL      3 /* dynamic library */
+#define SUGAR_OUTPUT_OBJ      4 /* object file */
+#define SUGAR_OUTPUT_PREPROCESS 5 /* only preprocess (used internally) */
 
 /* equivalent to -Lpath option */
-LIBTCCAPI int tcc_add_library_path(TCCState *s, const char *pathname);
+LIBSUGARAPI int sugar_add_library_path(SUGARState *s, const char *pathname);
 
 /* the library name is the same as the argument of the '-l' option */
-LIBTCCAPI int tcc_add_library(TCCState *s, const char *libraryname);
+LIBSUGARAPI int sugar_add_library(SUGARState *s, const char *libraryname);
 
 /* add a symbol to the compiled program */
-LIBTCCAPI int tcc_add_symbol(TCCState *s, const char *name, const void *val);
+LIBSUGARAPI int sugar_add_symbol(SUGARState *s, const char *name, const void *val);
 
 /* output an executable, library or object file. DO NOT call
-   tcc_relocate() before. */
-LIBTCCAPI int tcc_output_file(TCCState *s, const char *filename);
+   sugar_relocate() before. */
+LIBSUGARAPI int sugar_output_file(SUGARState *s, const char *filename);
 
 /* link and run main() function and return its value. DO NOT call
-   tcc_relocate() before. */
-LIBTCCAPI int tcc_run(TCCState *s, int argc, char **argv);
+   sugar_relocate() before. */
+LIBSUGARAPI int sugar_run(SUGARState *s, int argc, char **argv);
 
-/* do all relocations (needed before using tcc_get_symbol()) */
-LIBTCCAPI int tcc_relocate(TCCState *s1, void *ptr);
+/* do all relocations (needed before using sugar_get_symbol()) */
+LIBSUGARAPI int sugar_relocate(SUGARState *s1, void *ptr);
 /* possible values for 'ptr':
-   - TCC_RELOCATE_AUTO : Allocate and manage memory internally
+   - SUGAR_RELOCATE_AUTO : Allocate and manage memory internally
    - NULL              : return required memory size for the step below
    - memory address    : copy code to memory passed by the caller
    returns -1 if error. */
-#define TCC_RELOCATE_AUTO (void*)1
+#define SUGAR_RELOCATE_AUTO (void*)1
 
 /* return symbol value or NULL if not found */
-LIBTCCAPI void *tcc_get_symbol(TCCState *s, const char *name);
+LIBSUGARAPI void *sugar_get_symbol(SUGARState *s, const char *name);
 
 /* return symbol value or NULL if not found */
-LIBTCCAPI void tcc_list_symbols(TCCState *s, void *ctx,
+LIBSUGARAPI void sugar_list_symbols(SUGARState *s, void *ctx,
     void (*symbol_cb)(void *ctx, const char *name, const void *val));
 
 #ifdef __cplusplus

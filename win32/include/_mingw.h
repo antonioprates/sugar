@@ -1,7 +1,7 @@
 /*
  * _mingw.h
  *
- *  This file is for TinyCC and not part of the Mingw32 package.
+ *  This file is for SugarC and not part of the Mingw32 package.
  *
  *  THIS SOFTWARE IS NOT COPYRIGHTED
  *

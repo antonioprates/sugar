@@ -1,5 +1,5 @@
 /*
- *  TCC runtime library for arm64.
+ *  SUGAR runtime library for arm64.
  *
  *  Copyright (c) 2015 Edmund Grimley Evans
  *
@@ -9,7 +9,7 @@
  * without any warranty.
  */
 
-#ifdef __TINYC__
+#ifdef __SUGARC__
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef short int16_t;

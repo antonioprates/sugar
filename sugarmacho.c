@@ -1,5 +1,5 @@
 /*
- * Mach-O file handling for TCC
+ * Mach-O file handling for SUGAR
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#include "tcc.h"
+#include "sugar.h"
 
 /* In order to make life easy for us we are generating Mach-O files which
    don't make use of some modern features, but which aren't entirely classic
@@ -251,10 +251,10 @@ struct macho {
 
 static void * add_lc(struct macho *mo, uint32_t cmd, uint32_t cmdsize)
 {
-    struct load_command *lc = tcc_mallocz(cmdsize);
+    struct load_command *lc = sugar_mallocz(cmdsize);
     lc->cmd = cmd;
     lc->cmdsize = cmdsize;
-    mo->lc = tcc_realloc(mo->lc, sizeof(mo->lc[0]) * (mo->nlc + 1));
+    mo->lc = sugar_realloc(mo->lc, sizeof(mo->lc[0]) * (mo->nlc + 1));
     mo->lc[mo->nlc++] = lc;
     return lc;
 }
@@ -279,7 +279,7 @@ static int add_section(struct macho *mo, struct segment_command_64 **_seg, char 
     struct section_64 *sec;
     seg->nsects++;
     seg->cmdsize += sizeof(*sec);
-    seg = tcc_realloc(seg, sizeof(*seg) + seg->nsects * sizeof(*sec));
+    seg = sugar_realloc(seg, sizeof(*seg) + seg->nsects * sizeof(*sec));
     sec = (struct section_64*)((char*)seg + sizeof(*seg)) + ret;
     memset(sec, 0, sizeof(*sec));
     strncpy(sec->sectname, name, 16);
@@ -306,7 +306,7 @@ static void * add_dylib(struct macho *mo, char *name)
     return lc;
 }
 
-static void check_relocs(TCCState *s1, struct macho *mo)
+static void check_relocs(SUGARState *s1, struct macho *mo)
 {
     Section *s;
     ElfW_Rel *rel;
@@ -340,7 +340,7 @@ static void check_relocs(TCCState *s1, struct macho *mo)
                     section_ptr_add(s1->got, PTR_SIZE);
                     if (ELFW(ST_BIND)(sym->st_info) == STB_LOCAL) {
                         if (sym->st_shndx == SHN_UNDEF)
-                          tcc_error("undefined local symbol???");
+                          sugar_error("undefined local symbol???");
                         *pi = INDIRECT_SYMBOL_LOCAL;
                         /* The pointer slot we generated must point to the
                            symbol, whose address is only known after layout,
@@ -369,7 +369,7 @@ static void check_relocs(TCCState *s1, struct macho *mo)
     }
 }
 
-static int check_symbols(TCCState *s1, struct macho *mo)
+static int check_symbols(SUGARState *s1, struct macho *mo)
 {
     int sym_index, sym_end;
     int ret = 0;
@@ -391,12 +391,12 @@ static int check_symbols(TCCState *s1, struct macho *mo)
             if (mo->ilocal == -1)
               mo->ilocal = sym_index - 1;
             if (mo->iextdef != -1 || mo->iundef != -1)
-              tcc_error("local syms after global ones");
+              sugar_error("local syms after global ones");
         } else if (sym->st_shndx != SHN_UNDEF) {
             if (mo->iextdef == -1)
               mo->iextdef = sym_index - 1;
             if (mo->iundef != -1)
-              tcc_error("external defined symbol after undefined");
+              sugar_error("external defined symbol after undefined");
         } else if (sym->st_shndx == SHN_UNDEF) {
             if (mo->iundef == -1)
               mo->iundef = sym_index - 1;
@@ -410,14 +410,14 @@ static int check_symbols(TCCState *s1, struct macho *mo)
                 sym->st_shndx = SHN_FROMDLL;
                 continue;
             }
-            tcc_error_noabort("undefined symbol '%s'", name);
+            sugar_error_noabort("undefined symbol '%s'", name);
             ret = -1;
         }
     }
     return ret;
 }
 
-static void convert_symbol(TCCState *s1, struct macho *mo, struct nlist_64 *pn)
+static void convert_symbol(SUGARState *s1, struct macho *mo, struct nlist_64 *pn)
 {
     struct nlist_64 n = *pn;
     ElfSym *sym = (ElfW(Sym) *)symtab_section->data + pn->n_value;
@@ -433,19 +433,19 @@ static void convert_symbol(TCCState *s1, struct macho *mo, struct nlist_64 *pn)
         n.n_type = N_ABS;
         break;
     default:
-        tcc_error("unhandled ELF symbol type %d %s",
+        sugar_error("unhandled ELF symbol type %d %s",
                   ELFW(ST_TYPE)(sym->st_info), name);
     }
     if (sym->st_shndx == SHN_UNDEF)
-      tcc_error("should have been rewritten to SHN_FROMDLL: %s", name);
+      sugar_error("should have been rewritten to SHN_FROMDLL: %s", name);
     else if (sym->st_shndx == SHN_FROMDLL)
       n.n_type = N_UNDF, n.n_sect = 0;
     else if (sym->st_shndx == SHN_ABS)
       n.n_type = N_ABS, n.n_sect = 0;
     else if (sym->st_shndx >= SHN_LORESERVE)
-      tcc_error("unhandled ELF symbol section %d %s", sym->st_shndx, name);
+      sugar_error("unhandled ELF symbol section %d %s", sym->st_shndx, name);
     else if (!mo->elfsectomacho[sym->st_shndx])
-      tcc_error("ELF section %d not mapped into Mach-O for symbol %s",
+      sugar_error("ELF section %d not mapped into Mach-O for symbol %s",
                 sym->st_shndx, name);
     else
       n.n_sect = mo->elfsectomacho[sym->st_shndx];
@@ -458,7 +458,7 @@ static void convert_symbol(TCCState *s1, struct macho *mo, struct nlist_64 *pn)
     *pn = n;
 }
 
-static void convert_symbols(TCCState *s1, struct macho *mo)
+static void convert_symbols(SUGARState *s1, struct macho *mo)
 {
     struct nlist_64 *pn;
     for_each_elem(mo->symtab, 0, pn, struct nlist_64)
@@ -467,7 +467,7 @@ static void convert_symbols(TCCState *s1, struct macho *mo)
 
 static int machosymcmp(const void *_a, const void *_b)
 {
-    TCCState *s1 = tcc_state;
+    SUGARState *s1 = sugar_state;
     int ea = ((struct nlist_64 *)_a)->n_value;
     int eb = ((struct nlist_64 *)_b)->n_value;
     ElfSym *sa = (ElfSym *)symtab_section->data + ea;
@@ -492,7 +492,7 @@ static int machosymcmp(const void *_a, const void *_b)
     return ea - eb;
 }
 
-static void create_symtab(TCCState *s1, struct macho *mo)
+static void create_symtab(SUGARState *s1, struct macho *mo)
 {
     int sym_index, sym_end;
     struct nlist_64 *pn;
@@ -515,10 +515,10 @@ static void create_symtab(TCCState *s1, struct macho *mo)
         pn[sym_index - 1].n_strx = put_elf_str(mo->strtab, name);
         pn[sym_index - 1].n_value = sym_index;
     }
-    tcc_enter_state(s1);  /* qsort needs global state */
+    sugar_enter_state(s1);  /* qsort needs global state */
     qsort(pn, sym_end - 1, sizeof(*pn), machosymcmp);
-    tcc_exit_state();
-    mo->e2msym = tcc_malloc(sym_end * sizeof(*mo->e2msym));
+    sugar_exit_state();
+    mo->e2msym = sugar_malloc(sym_end * sizeof(*mo->e2msym));
     mo->e2msym[0] = -1;
     for (sym_index = 1; sym_index < sym_end; ++sym_index) {
         mo->e2msym[pn[sym_index - 1].n_value] = sym_index - 1;
@@ -546,7 +546,7 @@ struct {
     /*[sk_linkedit] =*/ { 3, S_REGULAR, NULL },
 };
 
-static void collect_sections(TCCState *s1, struct macho *mo)
+static void collect_sections(SUGARState *s1, struct macho *mo)
 {
     int i, sk, numsec;
     uint64_t curaddr, fileofs;
@@ -634,7 +634,7 @@ static void collect_sections(TCCState *s1, struct macho *mo)
     curaddr += 4096;
     seg = NULL;
     numsec = 0;
-    mo->elfsectomacho = tcc_mallocz(sizeof(*mo->elfsectomacho) * s1->nb_sections);
+    mo->elfsectomacho = sugar_mallocz(sizeof(*mo->elfsectomacho) * s1->nb_sections);
     for (sk = sk_unknown; sk < sk_last; sk++) {
         struct section_64 *sec = NULL;
         if (seg) {
@@ -670,7 +670,7 @@ static void collect_sections(TCCState *s1, struct macho *mo)
               sec->align = al;
             al = 1ULL << al;
             if (al > 4096)
-              tcc_warning("alignment > 4096"), sec->align = 12, al = 4096;
+              sugar_warning("alignment > 4096"), sec->align = 12, al = 4096;
             curaddr = (curaddr + al - 1) & -al;
             fileofs = (fileofs + al - 1) & -al;
             if (sec) {
@@ -739,7 +739,7 @@ static void collect_sections(TCCState *s1, struct macho *mo)
     dysymlc->nindirectsyms = mo->indirsyms->data_offset / sizeof(uint32_t);
 }
 
-static void macho_write(TCCState *s1, struct macho *mo, FILE *fp)
+static void macho_write(SUGARState *s1, struct macho *mo, FILE *fp)
 {
     int i, sk;
     uint64_t fileofs = 0;
@@ -779,7 +779,7 @@ static void macho_write(TCCState *s1, struct macho *mo, FILE *fp)
     }
 }
 
-ST_FUNC int macho_output_file(TCCState *s1, const char *filename)
+ST_FUNC int macho_output_file(SUGARState *s1, const char *filename)
 {
     int fd, mode, file_type;
     FILE *fp;
@@ -789,21 +789,21 @@ ST_FUNC int macho_output_file(TCCState *s1, const char *filename)
     (void)memset(&mo, 0, sizeof(mo));
 
     file_type = s1->output_type;
-    if (file_type == TCC_OUTPUT_OBJ)
+    if (file_type == SUGAR_OUTPUT_OBJ)
         mode = 0666;
     else
         mode = 0777;
     unlink(filename);
     fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, mode);
     if (fd < 0) {
-        tcc_error_noabort("could not write '%s: %s'", filename, strerror(errno));
+        sugar_error_noabort("could not write '%s: %s'", filename, strerror(errno));
         return -1;
     }
     fp = fdopen(fd, "wb");
     if (s1->verbose)
         printf("<- %s\n", filename);
 
-    tcc_add_runtime(s1);
+    sugar_add_runtime(s1);
     resolve_common_syms(s1);
     create_symtab(s1, &mo);
     check_relocs(s1, &mo);
@@ -830,10 +830,10 @@ ST_FUNC int macho_output_file(TCCState *s1, const char *filename)
 
  do_ret:
     for (i = 0; i < mo.nlc; i++)
-      tcc_free(mo.lc[i]);
-    tcc_free(mo.lc);
-    tcc_free(mo.elfsectomacho);
-    tcc_free(mo.e2msym);
+      sugar_free(mo.lc[i]);
+    sugar_free(mo.lc);
+    sugar_free(mo.elfsectomacho);
+    sugar_free(mo.e2msym);
 
     fclose(fp);
     return ret;
@@ -845,7 +845,7 @@ static uint32_t swap32(uint32_t x)
 }
 #define SWAP(x) (swap ? swap32(x) : (x))
 
-ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev)
+ST_FUNC int macho_load_dll(SUGARState *s1, int fd, const char *filename, int lev)
 {
     unsigned char buf[sizeof(struct mach_header_64)];
     void *buf2;
@@ -876,15 +876,15 @@ ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev)
               && SWAP(fa[i].cpusubtype) == 3)   /* CPU_SUBTYPE_X86_ALL */
             break;
         if (i == SWAP(fh.nfat_arch)) {
-            tcc_free(fa);
+            sugar_free(fa);
             return -1;
         }
         machofs = SWAP(fa[i].offset);
-        tcc_free(fa);
+        sugar_free(fa);
         lseek(fd, machofs, SEEK_SET);
         goto again;
     } else if (fh.magic == FAT_MAGIC_64 || fh.magic == FAT_CIGAM_64) {
-        tcc_warning("%s: Mach-O fat 64bit files of type 0x%x not handled",
+        sugar_warning("%s: Mach-O fat 64bit files of type 0x%x not handled",
                     filename, fh.magic);
         return -1;
     }
@@ -922,7 +922,7 @@ ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev)
             int subfd = open(name, O_RDONLY | O_BINARY);
             dprintf(" REEXPORT %s\n", name);
             if (subfd < 0)
-              tcc_warning("can't open %s (reexported from %s)", name, filename);
+              sugar_warning("can't open %s (reexported from %s)", name, filename);
             else {
                 /* Hopefully the REEXPORTs never form a cycle, we don't check
                    for that!  */
@@ -952,13 +952,13 @@ ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev)
             goto the_end;
         }
     }
-    dllref = tcc_mallocz(sizeof(DLLReference) + strlen(soname));
+    dllref = sugar_mallocz(sizeof(DLLReference) + strlen(soname));
     dllref->level = lev;
     strcpy(dllref->name, soname);
     dynarray_add(&s1->loaded_dlls, &s1->nb_loaded_dlls, dllref);
 
     if (!nsyms || !nextdef)
-      tcc_warning("%s doesn't export any symbols?", filename);
+      sugar_warning("%s doesn't export any symbols?", filename);
 
     //dprintf("symbols (all):\n");
     dprintf("symbols (exported):\n");
@@ -975,8 +975,8 @@ ST_FUNC int macho_load_dll(TCCState *s1, int fd, const char *filename, int lev)
     }
 
   the_end:
-    tcc_free(strtab);
-    tcc_free(symtab);
-    tcc_free(buf2);
+    sugar_free(strtab);
+    sugar_free(symtab);
+    sugar_free(buf2);
     return 0;
 }

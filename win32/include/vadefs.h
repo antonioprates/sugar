@@ -6,6 +6,6 @@
 #ifndef _INC_VADEFS
 #define _INC_VADEFS
 
-//!__TINYC__: GNUC specific stuff removed
+//!__SUGARC__: GNUC specific stuff removed
 
 #endif

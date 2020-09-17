@@ -1,4 +1,4 @@
-/* va_list.c - tinycc support for va_list on X86_64 */
+/* va_list.c - sucarc support for va_list on X86_64 */
 
 #if defined __x86_64__
 
@@ -11,7 +11,7 @@ enum __va_arg_type {
 };
 
 /* GCC compatible definition of va_list. */
-/*predefined by TCC (tcc_predefs.h):
+/*predefined by SUGAR (sugar_predefs.h):
 typedef struct {
     unsigned int gp_offset;
     unsigned int fp_offset;

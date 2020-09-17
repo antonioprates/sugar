@@ -1,6 +1,6 @@
 The tests in this directory are either directly copied from the picoc project or
-are subsequently modified and added to for the purpose of TinyCC project. All
-these modifications are licensed under the same terms as TinyCC as specified in
+are subsequently modified and added to for the purpose of SugarC project. All
+these modifications are licensed under the same terms as SugarC as specified in
 the file COPYING.
 
 === picoc license ===

@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  SUGAR - Sugar C Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -19,55 +19,55 @@
  */
 
 #if !defined ONE_SOURCE || ONE_SOURCE
-#include "tccpp.c"
-#include "tccgen.c"
-#include "tccelf.c"
-#include "tccrun.c"
-#ifdef TCC_TARGET_I386
+#include "sugarpp.c"
+#include "sugargen.c"
+#include "sugarelf.c"
+#include "sugarrun.c"
+#ifdef SUGAR_TARGET_I386
 #include "i386-gen.c"
 #include "i386-link.c"
 #include "i386-asm.c"
-#elif defined(TCC_TARGET_ARM)
+#elif defined(SUGAR_TARGET_ARM)
 #include "arm-gen.c"
 #include "arm-link.c"
 #include "arm-asm.c"
-#elif defined(TCC_TARGET_ARM64)
+#elif defined(SUGAR_TARGET_ARM64)
 #include "arm64-gen.c"
 #include "arm64-link.c"
 #include "arm-asm.c"
-#elif defined(TCC_TARGET_C67)
+#elif defined(SUGAR_TARGET_C67)
 #include "c67-gen.c"
 #include "c67-link.c"
-#include "tcccoff.c"
-#elif defined(TCC_TARGET_X86_64)
+#include "sugarcoff.c"
+#elif defined(SUGAR_TARGET_X86_64)
 #include "x86_64-gen.c"
 #include "x86_64-link.c"
 #include "i386-asm.c"
-#elif defined(TCC_TARGET_RISCV64)
+#elif defined(SUGAR_TARGET_RISCV64)
 #include "riscv64-gen.c"
 #include "riscv64-link.c"
 #include "riscv64-asm.c"
 #else
 #error unknown target
 #endif
-#ifdef CONFIG_TCC_ASM
-#include "tccasm.c"
+#ifdef CONFIG_SUGAR_ASM
+#include "sugarasm.c"
 #endif
-#ifdef TCC_TARGET_PE
-#include "tccpe.c"
+#ifdef SUGAR_TARGET_PE
+#include "sugarpe.c"
 #endif
-#ifdef TCC_TARGET_MACHO
-#include "tccmacho.c"
+#ifdef SUGAR_TARGET_MACHO
+#include "sugarmacho.c"
 #endif
 #endif /* ONE_SOURCE */
 
-#include "tcc.h"
+#include "sugar.h"
 
 /********************************************************/
 /* global variables */
 
 /* XXX: get rid of this ASAP (or maybe not) */
-ST_DATA struct TCCState *tcc_state;
+ST_DATA struct SUGARState *sugar_state;
 
 #ifdef MEM_DEBUG
 static int nb_states;
@@ -84,80 +84,80 @@ ST_FUNC char *normalize_slashes(char *path)
     return path;
 }
 
-static HMODULE tcc_module;
+static HMODULE sugar_module;
 
-/* on win32, we suppose the lib and includes are at the location of 'tcc.exe' */
-static void tcc_set_lib_path_w32(TCCState *s)
+/* on win32, we suppose the lib and includes are at the location of 'sugar.exe' */
+static void sugar_set_lib_path_w32(SUGARState *s)
 {
     char path[1024], *p;
-    GetModuleFileNameA(tcc_module, path, sizeof path);
-    p = tcc_basename(normalize_slashes(strlwr(path)));
+    GetModuleFileNameA(sugar_module, path, sizeof path);
+    p = sugar_basename(normalize_slashes(strlwr(path)));
     if (p > path)
         --p;
     *p = 0;
-    tcc_set_lib_path(s, path);
+    sugar_set_lib_path(s, path);
 }
 
-#ifdef TCC_TARGET_PE
-static void tcc_add_systemdir(TCCState *s)
+#ifdef SUGAR_TARGET_PE
+static void sugar_add_systemdir(SUGARState *s)
 {
     char buf[1000];
     GetSystemDirectory(buf, sizeof buf);
-    tcc_add_library_path(s, normalize_slashes(buf));
+    sugar_add_library_path(s, normalize_slashes(buf));
 }
 #endif
 
-#ifdef LIBTCC_AS_DLL
+#ifdef LIBSUGAR_AS_DLL
 BOOL WINAPI DllMain (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
 {
     if (DLL_PROCESS_ATTACH == dwReason)
-        tcc_module = hDll;
+        sugar_module = hDll;
     return TRUE;
 }
 #endif
 #endif
 
 /********************************************************/
-#ifndef CONFIG_TCC_SEMLOCK
+#ifndef CONFIG_SUGAR_SEMLOCK
 #define WAIT_SEM()
 #define POST_SEM()
 #elif defined _WIN32
-static int tcc_sem_init;
-static CRITICAL_SECTION tcc_cr;
+static int sugar_sem_init;
+static CRITICAL_SECTION sugar_cr;
 static void wait_sem(void)
 {
-    if (!tcc_sem_init)
-        InitializeCriticalSection(&tcc_cr), tcc_sem_init = 1;
-    EnterCriticalSection(&tcc_cr);
+    if (!sugar_sem_init)
+        InitializeCriticalSection(&sugar_cr), sugar_sem_init = 1;
+    EnterCriticalSection(&sugar_cr);
 }
 #define WAIT_SEM() wait_sem()
-#define POST_SEM() LeaveCriticalSection(&tcc_cr);
+#define POST_SEM() LeaveCriticalSection(&sugar_cr);
 #elif defined __APPLE__
 /* Half-compatible MacOS doesn't have non-shared (process local)
    semaphores.  Use the dispatch framework for lightweight locks.  */
 #include <dispatch/dispatch.h>
-static int tcc_sem_init;
-static dispatch_semaphore_t tcc_sem;
+static int sugar_sem_init;
+static dispatch_semaphore_t sugar_sem;
 static void wait_sem(void)
 {
-    if (!tcc_sem_init)
-      tcc_sem = dispatch_semaphore_create(1), tcc_sem_init = 1;
-    dispatch_semaphore_wait(tcc_sem, DISPATCH_TIME_FOREVER);
+    if (!sugar_sem_init)
+      sugar_sem = dispatch_semaphore_create(1), sugar_sem_init = 1;
+    dispatch_semaphore_wait(sugar_sem, DISPATCH_TIME_FOREVER);
 }
 #define WAIT_SEM() wait_sem()
-#define POST_SEM() dispatch_semaphore_signal(tcc_sem)
+#define POST_SEM() dispatch_semaphore_signal(sugar_sem)
 #else
 #include <semaphore.h>
-static int tcc_sem_init;
-static sem_t tcc_sem;
+static int sugar_sem_init;
+static sem_t sugar_sem;
 static void wait_sem(void)
 {
-    if (!tcc_sem_init)
-        sem_init(&tcc_sem, 0, 1), tcc_sem_init = 1;
-    while (sem_wait (&tcc_sem) < 0 && errno == EINTR);
+    if (!sugar_sem_init)
+        sem_init(&sugar_sem, 0, 1), sugar_sem_init = 1;
+    while (sem_wait (&sugar_sem) < 0 && errno == EINTR);
 }
 #define WAIT_SEM() wait_sem()
-#define POST_SEM() sem_post(&tcc_sem)
+#define POST_SEM() sem_post(&sugar_sem)
 #endif
 
 /********************************************************/
@@ -199,7 +199,7 @@ ST_FUNC char *pstrncpy(char *out, const char *in, size_t num)
 }
 
 /* extract the basename of a file */
-PUB_FUNC char *tcc_basename(const char *name)
+PUB_FUNC char *sugar_basename(const char *name)
 {
     char *p = strchr(name, 0);
     while (p > name && !IS_DIRSEP(p[-1]))
@@ -211,9 +211,9 @@ PUB_FUNC char *tcc_basename(const char *name)
  *
  * (if no extension, return pointer to end-of-string)
  */
-PUB_FUNC char *tcc_fileextension (const char *name)
+PUB_FUNC char *sugar_fileextension (const char *name)
 {
-    char *b = tcc_basename(name);
+    char *b = sugar_basename(name);
     char *e = strrchr(b, '.');
     return e ? e : strchr(b, 0);
 }
@@ -227,41 +227,41 @@ PUB_FUNC char *tcc_fileextension (const char *name)
 
 #ifndef MEM_DEBUG
 
-PUB_FUNC void tcc_free(void *ptr)
+PUB_FUNC void sugar_free(void *ptr)
 {
     free(ptr);
 }
 
-PUB_FUNC void *tcc_malloc(unsigned long size)
+PUB_FUNC void *sugar_malloc(unsigned long size)
 {
     void *ptr;
     ptr = malloc(size);
     if (!ptr && size)
-        _tcc_error("memory full (malloc)");
+        _sugar_error("memory full (malloc)");
     return ptr;
 }
 
-PUB_FUNC void *tcc_mallocz(unsigned long size)
+PUB_FUNC void *sugar_mallocz(unsigned long size)
 {
     void *ptr;
-    ptr = tcc_malloc(size);
+    ptr = sugar_malloc(size);
     memset(ptr, 0, size);
     return ptr;
 }
 
-PUB_FUNC void *tcc_realloc(void *ptr, unsigned long size)
+PUB_FUNC void *sugar_realloc(void *ptr, unsigned long size)
 {
     void *ptr1;
     ptr1 = realloc(ptr, size);
     if (!ptr1 && size)
-        _tcc_error("memory full (realloc)");
+        _sugar_error("memory full (realloc)");
     return ptr1;
 }
 
-PUB_FUNC char *tcc_strdup(const char *str)
+PUB_FUNC char *sugar_strdup(const char *str)
 {
     char *ptr;
-    ptr = tcc_malloc(strlen(str) + 1);
+    ptr = sugar_malloc(strlen(str) + 1);
     strcpy(ptr, str);
     return ptr;
 }
@@ -312,14 +312,14 @@ static mem_debug_header_t *malloc_check(void *ptr, const char *msg)
     return header;
 }
 
-PUB_FUNC void *tcc_malloc_debug(unsigned long size, const char *file, int line)
+PUB_FUNC void *sugar_malloc_debug(unsigned long size, const char *file, int line)
 {
     int ofs;
     mem_debug_header_t *header;
 
     header = malloc(sizeof(mem_debug_header_t) + size);
     if (!header)
-        _tcc_error("memory full (malloc)");
+        _sugar_error("memory full (malloc)");
 
     header->magic1 = MEM_DEBUG_MAGIC1;
     header->magic2 = MEM_DEBUG_MAGIC2;
@@ -343,12 +343,12 @@ PUB_FUNC void *tcc_malloc_debug(unsigned long size, const char *file, int line)
     return MEM_USER_PTR(header);
 }
 
-PUB_FUNC void tcc_free_debug(void *ptr)
+PUB_FUNC void sugar_free_debug(void *ptr)
 {
     mem_debug_header_t *header;
     if (!ptr)
         return;
-    header = malloc_check(ptr, "tcc_free");
+    header = malloc_check(ptr, "sugar_free");
     mem_cur_size -= header->size;
     header->size = (unsigned)-1;
     if (header->next)
@@ -360,26 +360,26 @@ PUB_FUNC void tcc_free_debug(void *ptr)
     free(header);
 }
 
-PUB_FUNC void *tcc_mallocz_debug(unsigned long size, const char *file, int line)
+PUB_FUNC void *sugar_mallocz_debug(unsigned long size, const char *file, int line)
 {
     void *ptr;
-    ptr = tcc_malloc_debug(size,file,line);
+    ptr = sugar_malloc_debug(size,file,line);
     memset(ptr, 0, size);
     return ptr;
 }
 
-PUB_FUNC void *tcc_realloc_debug(void *ptr, unsigned long size, const char *file, int line)
+PUB_FUNC void *sugar_realloc_debug(void *ptr, unsigned long size, const char *file, int line)
 {
     mem_debug_header_t *header;
     int mem_debug_chain_update = 0;
     if (!ptr)
-        return tcc_malloc_debug(size, file, line);
-    header = malloc_check(ptr, "tcc_realloc");
+        return sugar_malloc_debug(size, file, line);
+    header = malloc_check(ptr, "sugar_realloc");
     mem_cur_size -= header->size;
     mem_debug_chain_update = (header == mem_debug_chain);
     header = realloc(header, sizeof(mem_debug_header_t) + size);
     if (!header)
-        _tcc_error("memory full (realloc)");
+        _sugar_error("memory full (realloc)");
     header->size = size;
     MEM_DEBUG_CHECK3(header) = MEM_DEBUG_MAGIC3;
     if (header->next)
@@ -394,15 +394,15 @@ PUB_FUNC void *tcc_realloc_debug(void *ptr, unsigned long size, const char *file
     return MEM_USER_PTR(header);
 }
 
-PUB_FUNC char *tcc_strdup_debug(const char *str, const char *file, int line)
+PUB_FUNC char *sugar_strdup_debug(const char *str, const char *file, int line)
 {
     char *ptr;
-    ptr = tcc_malloc_debug(strlen(str) + 1, file, line);
+    ptr = sugar_malloc_debug(strlen(str) + 1, file, line);
     strcpy(ptr, str);
     return ptr;
 }
 
-PUB_FUNC void tcc_memcheck(void)
+PUB_FUNC void sugar_memcheck(void)
 {
     if (mem_cur_size) {
         mem_debug_header_t *header = mem_debug_chain;
@@ -420,9 +420,9 @@ PUB_FUNC void tcc_memcheck(void)
 }
 #endif /* MEM_DEBUG */
 
-#define free(p) use_tcc_free(p)
-#define malloc(s) use_tcc_malloc(s)
-#define realloc(p, s) use_tcc_realloc(p, s)
+#define free(p) use_sugar_free(p)
+#define malloc(s) use_sugar_malloc(s)
+#define realloc(p, s) use_sugar_realloc(p, s)
 
 /********************************************************/
 /* dynarrays */
@@ -440,7 +440,7 @@ ST_FUNC void dynarray_add(void *ptab, int *nb_ptr, void *data)
             nb_alloc = 1;
         else
             nb_alloc = nb * 2;
-        pp = tcc_realloc(pp, nb_alloc * sizeof(void *));
+        pp = sugar_realloc(pp, nb_alloc * sizeof(void *));
         *(void***)ptab = pp;
     }
     pp[nb++] = data;
@@ -452,12 +452,12 @@ ST_FUNC void dynarray_reset(void *pp, int *n)
     void **p;
     for (p = *(void***)pp; *n; ++p, --*n)
         if (*p)
-            tcc_free(*p);
-    tcc_free(*(void**)pp);
+            sugar_free(*p);
+    sugar_free(*(void**)pp);
     *(void**)pp = NULL;
 }
 
-static void tcc_split_path(TCCState *s, void *p_ary, int *p_nb_ary, const char *in)
+static void sugar_split_path(SUGARState *s, void *p_ary, int *p_nb_ary, const char *in)
 {
     const char *p;
     do {
@@ -469,11 +469,11 @@ static void tcc_split_path(TCCState *s, void *p_ary, int *p_nb_ary, const char *
             if (c == '{' && p[1] && p[2] == '}') {
                 c = p[1], p += 2;
                 if (c == 'B')
-                    cstr_cat(&str, s->tcc_lib_path, -1);
+                    cstr_cat(&str, s->sugar_lib_path, -1);
                 if (c == 'f' && file) {
                     /* substitute current file's dir */
                     const char *f = file->true_filename;
-                    const char *b = tcc_basename(f);
+                    const char *b = sugar_basename(f);
                     if (b > f)
                         cstr_cat(&str, f, b - f - 1);
                     else
@@ -485,7 +485,7 @@ static void tcc_split_path(TCCState *s, void *p_ary, int *p_nb_ary, const char *
         }
         if (str.size) {
             cstr_ccat(&str, '\0');
-            dynarray_add(p_ary, p_nb_ary, tcc_strdup(str.data));
+            dynarray_add(p_ary, p_nb_ary, sugar_strdup(str.data));
         }
         cstr_free(&str);
         in = p+1;
@@ -513,15 +513,15 @@ static void strcat_printf(char *buf, int buf_size, const char *fmt, ...)
 #define ERROR_NOABORT 1
 #define ERROR_ERROR 2
 
-PUB_FUNC void tcc_enter_state(TCCState *s1)
+PUB_FUNC void sugar_enter_state(SUGARState *s1)
 {
     WAIT_SEM();
-    tcc_state = s1;
+    sugar_state = s1;
 }
 
-PUB_FUNC void tcc_exit_state(void)
+PUB_FUNC void sugar_exit_state(void)
 {
-    tcc_state = NULL;
+    sugar_state = NULL;
     POST_SEM();
 }
 
@@ -529,16 +529,16 @@ static void error1(int mode, const char *fmt, va_list ap)
 {
     char buf[2048];
     BufferedFile **pf, *f;
-    TCCState *s1 = tcc_state;
+    SUGARState *s1 = sugar_state;
 
     buf[0] = '\0';
     if (s1 == NULL)
-        /* can happen only if called from tcc_malloc(): 'out of memory' */
+        /* can happen only if called from sugar_malloc(): 'out of memory' */
         goto no_file;
 
     if (s1 && !s1->error_set_jmp_enabled)
-        /* tcc_state just was set by tcc_enter_state() */
-        tcc_exit_state();
+        /* sugar_state just was set by sugar_enter_state() */
+        sugar_exit_state();
 
     if (mode == ERROR_WARN) {
         if (s1->warn_none)
@@ -565,7 +565,7 @@ static void error1(int mode, const char *fmt, va_list ap)
 
 no_file:
     if (0 == buf[0])
-        strcat_printf(buf, sizeof(buf), "tcc: ");
+        strcat_printf(buf, sizeof(buf), "sugar: ");
     if (mode == ERROR_WARN)
         strcat_printf(buf, sizeof(buf), "warning: ");
     else
@@ -573,8 +573,8 @@ no_file:
     strcat_vprintf(buf, sizeof(buf), fmt, ap);
     if (!s1 || !s1->error_func) {
         /* default case: stderr */
-        if (s1 && s1->output_type == TCC_OUTPUT_PREPROCESS && s1->ppfp == stdout)
-            /* print a newline during tcc -E */
+        if (s1 && s1->output_type == SUGAR_OUTPUT_PREPROCESS && s1->ppfp == stdout)
+            /* print a newline during sugar -E */
             printf("\n"), fflush(stdout);
         fflush(stdout); /* flush -v output */
         fprintf(stderr, "%s\n", buf);
@@ -593,24 +593,24 @@ no_file:
     exit(1);
 }
 
-LIBTCCAPI void tcc_set_error_func(TCCState *s, void *error_opaque, TCCErrorFunc error_func)
+LIBSUGARAPI void sugar_set_error_func(SUGARState *s, void *error_opaque, SUGARErrorFunc error_func)
 {
     s->error_opaque = error_opaque;
     s->error_func = error_func;
 }
 
-LIBTCCAPI TCCErrorFunc tcc_get_error_func(TCCState *s)
+LIBSUGARAPI SUGARErrorFunc sugar_get_error_func(SUGARState *s)
 {
     return s->error_func;
 }
 
-LIBTCCAPI void *tcc_get_error_opaque(TCCState *s)
+LIBSUGARAPI void *sugar_get_error_opaque(SUGARState *s)
 {
     return s->error_opaque;
 }
 
 /* error without aborting current compilation */
-PUB_FUNC void _tcc_error_noabort(const char *fmt, ...)
+PUB_FUNC void _sugar_error_noabort(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -618,14 +618,14 @@ PUB_FUNC void _tcc_error_noabort(const char *fmt, ...)
     va_end(ap);
 }
 
-PUB_FUNC void _tcc_error(const char *fmt, ...)
+PUB_FUNC void _sugar_error(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     for (;;) error1(ERROR_ERROR, fmt, ap);
 }
 
-PUB_FUNC void _tcc_warning(const char *fmt, ...)
+PUB_FUNC void _sugar_warning(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -636,12 +636,12 @@ PUB_FUNC void _tcc_warning(const char *fmt, ...)
 /********************************************************/
 /* I/O layer */
 
-ST_FUNC void tcc_open_bf(TCCState *s1, const char *filename, int initlen)
+ST_FUNC void sugar_open_bf(SUGARState *s1, const char *filename, int initlen)
 {
     BufferedFile *bf;
     int buflen = initlen ? initlen : IO_BUF_SIZE;
 
-    bf = tcc_mallocz(sizeof(BufferedFile) + buflen);
+    bf = sugar_mallocz(sizeof(BufferedFile) + buflen);
     bf->buf_ptr = bf->buffer;
     bf->buf_end = bf->buffer + initlen;
     bf->buf_end[0] = CH_EOB; /* put eob symbol */
@@ -658,21 +658,21 @@ ST_FUNC void tcc_open_bf(TCCState *s1, const char *filename, int initlen)
     tok_flags = TOK_FLAG_BOL | TOK_FLAG_BOF;
 }
 
-ST_FUNC void tcc_close(void)
+ST_FUNC void sugar_close(void)
 {
-    TCCState *s1 = tcc_state;
+    SUGARState *s1 = sugar_state;
     BufferedFile *bf = file;
     if (bf->fd > 0) {
         close(bf->fd);
         total_lines += bf->line_num;
     }
     if (bf->true_filename != bf->filename)
-        tcc_free(bf->true_filename);
+        sugar_free(bf->true_filename);
     file = bf->prev;
-    tcc_free(bf);
+    sugar_free(bf);
 }
 
-static int _tcc_open(TCCState *s1, const char *filename)
+static int _sugar_open(SUGARState *s1, const char *filename)
 {
     int fd;
     if (strcmp(filename, "-") == 0)
@@ -685,27 +685,27 @@ static int _tcc_open(TCCState *s1, const char *filename)
     return fd;
 }
 
-ST_FUNC int tcc_open(TCCState *s1, const char *filename)
+ST_FUNC int sugar_open(SUGARState *s1, const char *filename)
 {
-    int fd = _tcc_open(s1, filename);
+    int fd = _sugar_open(s1, filename);
     if (fd < 0)
         return -1;
-    tcc_open_bf(s1, filename, 0);
+    sugar_open_bf(s1, filename, 0);
     file->fd = fd;
     return 0;
 }
 
 /* compile the file opened in 'file'. Return non zero if errors. */
-static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
+static int sugar_compile(SUGARState *s1, int filetype, const char *str, int fd)
 {
     /* Here we enter the code section where we use the global variables for
-       parsing and code generation (tccpp.c, tccgen.c, <target>-gen.c).
+       parsing and code generation (sugarpp.c, sugargen.c, <target>-gen.c).
        Other threads need to wait until we're done.
 
        Alternatively we could use thread local storage for those global
        variables, which may or may not have advantages */
 
-    tcc_enter_state(s1);
+    sugar_enter_state(s1);
 
     if (setjmp(s1->error_jmp_buf) == 0) {
         s1->error_set_jmp_enabled = 1;
@@ -713,44 +713,44 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
 
         if (fd == -1) {
             int len = strlen(str);
-            tcc_open_bf(s1, "<string>", len);
+            sugar_open_bf(s1, "<string>", len);
             memcpy(file->buffer, str, len);
         } else {
-            tcc_open_bf(s1, str, 0);
+            sugar_open_bf(s1, str, 0);
             file->fd = fd;
         }
 
-        tccelf_begin_file(s1);
+        sugarelf_begin_file(s1);
         preprocess_start(s1, filetype);
-        tccgen_init(s1);
-        if (s1->output_type == TCC_OUTPUT_PREPROCESS) {
-            tcc_preprocess(s1);
+        sugargen_init(s1);
+        if (s1->output_type == SUGAR_OUTPUT_PREPROCESS) {
+            sugar_preprocess(s1);
         } else if (filetype & (AFF_TYPE_ASM | AFF_TYPE_ASMPP)) {
-#ifdef CONFIG_TCC_ASM
-            tcc_assemble(s1, !!(filetype & AFF_TYPE_ASMPP));
+#ifdef CONFIG_SUGAR_ASM
+            sugar_assemble(s1, !!(filetype & AFF_TYPE_ASMPP));
 #else
-            tcc_error_noabort("asm not supported");
+            sugar_error_noabort("asm not supported");
 #endif
         } else {
-            tccgen_compile(s1);
+            sugargen_compile(s1);
         }
     }
     s1->error_set_jmp_enabled = 0;
-    tccgen_finish(s1);
+    sugargen_finish(s1);
     preprocess_end(s1);
-    tcc_exit_state();
+    sugar_exit_state();
 
-    tccelf_end_file(s1);
+    sugarelf_end_file(s1);
     return s1->nb_errors != 0 ? -1 : 0;
 }
 
-LIBTCCAPI int tcc_compile_string(TCCState *s, const char *str)
+LIBSUGARAPI int sugar_compile_string(SUGARState *s, const char *str)
 {
-    return tcc_compile(s, s->filetype, str, -1);
+    return sugar_compile(s, s->filetype, str, -1);
 }
 
 /* define a preprocessor symbol. value can be NULL, sym can be "sym=val" */
-LIBTCCAPI void tcc_define_symbol(TCCState *s1, const char *sym, const char *value)
+LIBSUGARAPI void sugar_define_symbol(SUGARState *s1, const char *sym, const char *value)
 {
     const char *eq;
     if (NULL == (eq = strchr(sym, '=')))
@@ -761,17 +761,17 @@ LIBTCCAPI void tcc_define_symbol(TCCState *s1, const char *sym, const char *valu
 }
 
 /* undefine a preprocessor symbol */
-LIBTCCAPI void tcc_undefine_symbol(TCCState *s1, const char *sym)
+LIBSUGARAPI void sugar_undefine_symbol(SUGARState *s1, const char *sym)
 {
     cstr_printf(&s1->cmdline_defs, "#undef %s\n", sym);
 }
 
 
-LIBTCCAPI TCCState *tcc_new(void)
+LIBSUGARAPI SUGARState *sugar_new(void)
 {
-    TCCState *s;
+    SUGARState *s;
 
-    s = tcc_mallocz(sizeof(TCCState));
+    s = sugar_mallocz(sizeof(SUGARState));
     if (!s)
         return NULL;
 #ifdef MEM_DEBUG
@@ -781,7 +781,7 @@ LIBTCCAPI TCCState *tcc_new(void)
 #undef gnu_ext
 
     s->gnu_ext = 1;
-    s->tcc_ext = 1;
+    s->sugar_ext = 1;
     s->nocommon = 1;
     s->dollars_in_identifiers = 1; /*on by default like in gcc/clang*/
     s->cversion = 199901; /* default unless -std=c11 is supplied */
@@ -791,203 +791,203 @@ LIBTCCAPI TCCState *tcc_new(void)
 #ifdef CHAR_IS_UNSIGNED
     s->char_is_unsigned = 1;
 #endif
-#ifdef TCC_TARGET_I386
+#ifdef SUGAR_TARGET_I386
     s->seg_size = 32;
 #endif
     /* enable this if you want symbols with leading underscore on windows: */
-#if defined TCC_TARGET_MACHO /* || defined TCC_TARGET_PE */
+#if defined SUGAR_TARGET_MACHO /* || defined SUGAR_TARGET_PE */
     s->leading_underscore = 1;
 #endif
     s->ppfp = stdout;
     /* might be used in error() before preprocess_start() */
     s->include_stack_ptr = s->include_stack;
 
-    tccelf_new(s);
+    sugarelf_new(s);
 
 #ifdef _WIN32
-    tcc_set_lib_path_w32(s);
+    sugar_set_lib_path_w32(s);
 #else
-    tcc_set_lib_path(s, CONFIG_TCCDIR);
+    sugar_set_lib_path(s, CONFIG_SUGARDIR);
 #endif
 
     {
-        /* define __TINYC__ 92X  */
+        /* define __SUGARC__ 92X  */
         char buffer[32]; int a,b,c;
-        sscanf(TCC_VERSION, "%d.%d.%d", &a, &b, &c);
+        sscanf(SUGAR_VERSION, "%d.%d.%d", &a, &b, &c);
         sprintf(buffer, "%d", a*10000 + b*100 + c);
-        tcc_define_symbol(s, "__TINYC__", buffer);
+        sugar_define_symbol(s, "__SUGARC__", buffer);
     }
 
     /* standard defines */
-    tcc_define_symbol(s, "__STDC__", NULL);
-    tcc_define_symbol(s, "__STDC_VERSION__", "199901L");
-    tcc_define_symbol(s, "__STDC_HOSTED__", NULL);
+    sugar_define_symbol(s, "__STDC__", NULL);
+    sugar_define_symbol(s, "__STDC_VERSION__", "199901L");
+    sugar_define_symbol(s, "__STDC_HOSTED__", NULL);
 
     /* target defines */
-#if defined(TCC_TARGET_I386)
-    tcc_define_symbol(s, "__i386__", NULL);
-    tcc_define_symbol(s, "__i386", NULL);
-    tcc_define_symbol(s, "i386", NULL);
-#elif defined(TCC_TARGET_X86_64)
-    tcc_define_symbol(s, "__x86_64__", NULL);
-#elif defined(TCC_TARGET_ARM)
-    tcc_define_symbol(s, "__ARM_ARCH_4__", NULL);
-    tcc_define_symbol(s, "__arm_elf__", NULL);
-    tcc_define_symbol(s, "__arm_elf", NULL);
-    tcc_define_symbol(s, "arm_elf", NULL);
-    tcc_define_symbol(s, "__arm__", NULL);
-    tcc_define_symbol(s, "__arm", NULL);
-    tcc_define_symbol(s, "arm", NULL);
-    tcc_define_symbol(s, "__APCS_32__", NULL);
-    tcc_define_symbol(s, "__ARMEL__", NULL);
-#if defined(TCC_ARM_EABI)
-    tcc_define_symbol(s, "__ARM_EABI__", NULL);
+#if defined(SUGAR_TARGET_I386)
+    sugar_define_symbol(s, "__i386__", NULL);
+    sugar_define_symbol(s, "__i386", NULL);
+    sugar_define_symbol(s, "i386", NULL);
+#elif defined(SUGAR_TARGET_X86_64)
+    sugar_define_symbol(s, "__x86_64__", NULL);
+#elif defined(SUGAR_TARGET_ARM)
+    sugar_define_symbol(s, "__ARM_ARCH_4__", NULL);
+    sugar_define_symbol(s, "__arm_elf__", NULL);
+    sugar_define_symbol(s, "__arm_elf", NULL);
+    sugar_define_symbol(s, "arm_elf", NULL);
+    sugar_define_symbol(s, "__arm__", NULL);
+    sugar_define_symbol(s, "__arm", NULL);
+    sugar_define_symbol(s, "arm", NULL);
+    sugar_define_symbol(s, "__APCS_32__", NULL);
+    sugar_define_symbol(s, "__ARMEL__", NULL);
+#if defined(SUGAR_ARM_EABI)
+    sugar_define_symbol(s, "__ARM_EABI__", NULL);
 #endif
-#if defined(TCC_ARM_HARDFLOAT)
+#if defined(SUGAR_ARM_HARDFLOAT)
     s->float_abi = ARM_HARD_FLOAT;
-    tcc_define_symbol(s, "__ARM_PCS_VFP", NULL);
+    sugar_define_symbol(s, "__ARM_PCS_VFP", NULL);
 #else
     s->float_abi = ARM_SOFTFP_FLOAT;
 #endif
-#elif defined(TCC_TARGET_ARM64)
-    tcc_define_symbol(s, "__aarch64__", NULL);
-#elif defined TCC_TARGET_C67
-    tcc_define_symbol(s, "__C67__", NULL);
-#elif defined TCC_TARGET_RISCV64
-    tcc_define_symbol(s, "__riscv", NULL);
-    tcc_define_symbol(s, "__riscv_xlen", "64");
-    tcc_define_symbol(s, "__riscv_flen", "64");
-    tcc_define_symbol(s, "__riscv_div", NULL);
-    tcc_define_symbol(s, "__riscv_mul", NULL);
-    tcc_define_symbol(s, "__riscv_fdiv", NULL);
-    tcc_define_symbol(s, "__riscv_fsqrt", NULL);
-    tcc_define_symbol(s, "__riscv_float_abi_double", NULL);
+#elif defined(SUGAR_TARGET_ARM64)
+    sugar_define_symbol(s, "__aarch64__", NULL);
+#elif defined SUGAR_TARGET_C67
+    sugar_define_symbol(s, "__C67__", NULL);
+#elif defined SUGAR_TARGET_RISCV64
+    sugar_define_symbol(s, "__riscv", NULL);
+    sugar_define_symbol(s, "__riscv_xlen", "64");
+    sugar_define_symbol(s, "__riscv_flen", "64");
+    sugar_define_symbol(s, "__riscv_div", NULL);
+    sugar_define_symbol(s, "__riscv_mul", NULL);
+    sugar_define_symbol(s, "__riscv_fdiv", NULL);
+    sugar_define_symbol(s, "__riscv_fsqrt", NULL);
+    sugar_define_symbol(s, "__riscv_float_abi_double", NULL);
 #endif
 
-#ifdef TCC_TARGET_PE
-    tcc_define_symbol(s, "_WIN32", NULL);
-    tcc_define_symbol(s, "__declspec(x)", "__attribute__((x))");
-    tcc_define_symbol(s, "__cdecl", "");
-# ifdef TCC_TARGET_X86_64
-    tcc_define_symbol(s, "_WIN64", NULL);
+#ifdef SUGAR_TARGET_PE
+    sugar_define_symbol(s, "_WIN32", NULL);
+    sugar_define_symbol(s, "__declspec(x)", "__attribute__((x))");
+    sugar_define_symbol(s, "__cdecl", "");
+# ifdef SUGAR_TARGET_X86_64
+    sugar_define_symbol(s, "_WIN64", NULL);
 # endif
 #else
-    tcc_define_symbol(s, "__unix__", NULL);
-    tcc_define_symbol(s, "__unix", NULL);
-    tcc_define_symbol(s, "unix", NULL);
+    sugar_define_symbol(s, "__unix__", NULL);
+    sugar_define_symbol(s, "__unix", NULL);
+    sugar_define_symbol(s, "unix", NULL);
 # if defined(__linux__)
-    tcc_define_symbol(s, "__linux__", NULL);
-    tcc_define_symbol(s, "__linux", NULL);
+    sugar_define_symbol(s, "__linux__", NULL);
+    sugar_define_symbol(s, "__linux", NULL);
 # endif
 # if defined(__FreeBSD__)
-    tcc_define_symbol(s, "__FreeBSD__", "__FreeBSD__");
-    /* No 'Thread Storage Local' on FreeBSD with tcc */
-    tcc_define_symbol(s, "__NO_TLS", NULL);
+    sugar_define_symbol(s, "__FreeBSD__", "__FreeBSD__");
+    /* No 'Thread Storage Local' on FreeBSD with sugar */
+    sugar_define_symbol(s, "__NO_TLS", NULL);
 # endif
 # if defined(__FreeBSD_kernel__)
-    tcc_define_symbol(s, "__FreeBSD_kernel__", NULL);
+    sugar_define_symbol(s, "__FreeBSD_kernel__", NULL);
 # endif
 # if defined(__NetBSD__)
-    tcc_define_symbol(s, "__NetBSD__", "__NetBSD__");
+    sugar_define_symbol(s, "__NetBSD__", "__NetBSD__");
 # endif
 # if defined(__OpenBSD__)
-    tcc_define_symbol(s, "__OpenBSD__", "__OpenBSD__");
+    sugar_define_symbol(s, "__OpenBSD__", "__OpenBSD__");
 # endif
 #endif
 
-    /* TinyCC & gcc defines */
+    /* SugarC & gcc defines */
 #if PTR_SIZE == 4
     /* 32bit systems. */
-    tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned int");
-    tcc_define_symbol(s, "__PTRDIFF_TYPE__", "int");
-    tcc_define_symbol(s, "__ILP32__", NULL);
+    sugar_define_symbol(s, "__SIZE_TYPE__", "unsigned int");
+    sugar_define_symbol(s, "__PTRDIFF_TYPE__", "int");
+    sugar_define_symbol(s, "__ILP32__", NULL);
 #elif LONG_SIZE == 4
     /* 64bit Windows. */
-    tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned long long");
-    tcc_define_symbol(s, "__PTRDIFF_TYPE__", "long long");
-    tcc_define_symbol(s, "__LLP64__", NULL);
+    sugar_define_symbol(s, "__SIZE_TYPE__", "unsigned long long");
+    sugar_define_symbol(s, "__PTRDIFF_TYPE__", "long long");
+    sugar_define_symbol(s, "__LLP64__", NULL);
 #else
     /* Other 64bit systems. */
-    tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned long");
-    tcc_define_symbol(s, "__PTRDIFF_TYPE__", "long");
-    tcc_define_symbol(s, "__LP64__", NULL);
+    sugar_define_symbol(s, "__SIZE_TYPE__", "unsigned long");
+    sugar_define_symbol(s, "__PTRDIFF_TYPE__", "long");
+    sugar_define_symbol(s, "__LP64__", NULL);
 #endif
-    tcc_define_symbol(s, "__SIZEOF_POINTER__", PTR_SIZE == 4 ? "4" : "8");
+    sugar_define_symbol(s, "__SIZEOF_POINTER__", PTR_SIZE == 4 ? "4" : "8");
 
-#ifdef TCC_TARGET_PE
-    tcc_define_symbol(s, "__WCHAR_TYPE__", "unsigned short");
-    tcc_define_symbol(s, "__WINT_TYPE__", "unsigned short");
+#ifdef SUGAR_TARGET_PE
+    sugar_define_symbol(s, "__WCHAR_TYPE__", "unsigned short");
+    sugar_define_symbol(s, "__WINT_TYPE__", "unsigned short");
 #else
-    tcc_define_symbol(s, "__WCHAR_TYPE__", "int");
+    sugar_define_symbol(s, "__WCHAR_TYPE__", "int");
     /* wint_t is unsigned int by default, but (signed) int on BSDs
        and unsigned short on windows.  Other OSes might have still
        other conventions, sigh.  */
 # if defined(__FreeBSD__) || defined (__FreeBSD_kernel__) \
   || defined(__NetBSD__) || defined(__OpenBSD__)
-    tcc_define_symbol(s, "__WINT_TYPE__", "int");
+    sugar_define_symbol(s, "__WINT_TYPE__", "int");
 #  ifdef __FreeBSD__
     /* define __GNUC__ to have some useful stuff from sys/cdefs.h
        that are unconditionally used in FreeBSDs other system headers :/ */
-    tcc_define_symbol(s, "__GNUC__", "2");
-    tcc_define_symbol(s, "__GNUC_MINOR__", "7");
-    tcc_define_symbol(s, "__builtin_alloca", "alloca");
+    sugar_define_symbol(s, "__GNUC__", "2");
+    sugar_define_symbol(s, "__GNUC_MINOR__", "7");
+    sugar_define_symbol(s, "__builtin_alloca", "alloca");
 #  endif
 # else
-    tcc_define_symbol(s, "__WINT_TYPE__", "unsigned int");
+    sugar_define_symbol(s, "__WINT_TYPE__", "unsigned int");
     /* glibc defines */
-    tcc_define_symbol(s, "__REDIRECT(name, proto, alias)",
+    sugar_define_symbol(s, "__REDIRECT(name, proto, alias)",
         "name proto __asm__ (#alias)");
-    tcc_define_symbol(s, "__REDIRECT_NTH(name, proto, alias)",
+    sugar_define_symbol(s, "__REDIRECT_NTH(name, proto, alias)",
         "name proto __asm__ (#alias) __THROW");
 # endif
     /* Some GCC builtins that are simple to express as macros.  */
-    tcc_define_symbol(s, "__builtin_extract_return_addr(x)", "x");
-#endif /* ndef TCC_TARGET_PE */
-#ifdef TCC_TARGET_MACHO
+    sugar_define_symbol(s, "__builtin_extract_return_addr(x)", "x");
+#endif /* ndef SUGAR_TARGET_PE */
+#ifdef SUGAR_TARGET_MACHO
     /* emulate APPLE-GCC to make libc's headerfiles compile: */
-    tcc_define_symbol(s, "__APPLE__", "1");
-    tcc_define_symbol(s, "__GNUC__", "4");   /* darwin emits warning on GCC<4 */
-    tcc_define_symbol(s, "__APPLE_CC__", "1"); /* for <TargetConditionals.h> */
-    tcc_define_symbol(s, "_DONT_USE_CTYPE_INLINE_", "1");
-    tcc_define_symbol(s, "__builtin_alloca", "alloca"); /* as we claim GNUC */
+    sugar_define_symbol(s, "__APPLE__", "1");
+    sugar_define_symbol(s, "__GNUC__", "4");   /* darwin emits warning on GCC<4 */
+    sugar_define_symbol(s, "__APPLE_CC__", "1"); /* for <TargetConditionals.h> */
+    sugar_define_symbol(s, "_DONT_USE_CTYPE_INLINE_", "1");
+    sugar_define_symbol(s, "__builtin_alloca", "alloca"); /* as we claim GNUC */
     /* used by math.h */
-    tcc_define_symbol(s, "__builtin_huge_val()", "1e500");
-    tcc_define_symbol(s, "__builtin_huge_valf()", "1e50f");
-    tcc_define_symbol(s, "__builtin_huge_vall()", "1e5000L");
-    tcc_define_symbol(s, "__builtin_nanf(ignored_string)", "__nan()");
+    sugar_define_symbol(s, "__builtin_huge_val()", "1e500");
+    sugar_define_symbol(s, "__builtin_huge_valf()", "1e50f");
+    sugar_define_symbol(s, "__builtin_huge_vall()", "1e5000L");
+    sugar_define_symbol(s, "__builtin_nanf(ignored_string)", "__nan()");
     /* used by _fd_def.h */
-    tcc_define_symbol(s, "__builtin_bzero(p, ignored_size)", "bzero(p, sizeof(*(p)))");
+    sugar_define_symbol(s, "__builtin_bzero(p, ignored_size)", "bzero(p, sizeof(*(p)))");
     /* used by floats.h to implement FLT_ROUNDS C99 macro. 1 == to nearest */
-    tcc_define_symbol(s, "__builtin_flt_rounds()", "1");
+    sugar_define_symbol(s, "__builtin_flt_rounds()", "1");
 
     /* avoids usage of GCC/clang specific builtins in libc-headerfiles: */
-    tcc_define_symbol(s, "__FINITE_MATH_ONLY__", "1");
-    tcc_define_symbol(s, "_FORTIFY_SOURCE", "0");
-#endif /* ndef TCC_TARGET_MACHO */
+    sugar_define_symbol(s, "__FINITE_MATH_ONLY__", "1");
+    sugar_define_symbol(s, "_FORTIFY_SOURCE", "0");
+#endif /* ndef SUGAR_TARGET_MACHO */
 
 #if LONG_SIZE == 4
-    tcc_define_symbol(s, "__SIZEOF_LONG__", "4");
-    tcc_define_symbol(s, "__LONG_MAX__", "0x7fffffffL");
+    sugar_define_symbol(s, "__SIZEOF_LONG__", "4");
+    sugar_define_symbol(s, "__LONG_MAX__", "0x7fffffffL");
 #else
-    tcc_define_symbol(s, "__SIZEOF_LONG__", "8");
-    tcc_define_symbol(s, "__LONG_MAX__", "0x7fffffffffffffffL");
+    sugar_define_symbol(s, "__SIZEOF_LONG__", "8");
+    sugar_define_symbol(s, "__LONG_MAX__", "0x7fffffffffffffffL");
 #endif
-    tcc_define_symbol(s, "__SIZEOF_INT__", "4");
-    tcc_define_symbol(s, "__SIZEOF_LONG_LONG__", "8");
-    tcc_define_symbol(s, "__CHAR_BIT__", "8");
-    tcc_define_symbol(s, "__ORDER_LITTLE_ENDIAN__", "1234");
-    tcc_define_symbol(s, "__ORDER_BIG_ENDIAN__", "4321");
-    tcc_define_symbol(s, "__BYTE_ORDER__", "__ORDER_LITTLE_ENDIAN__");
-    tcc_define_symbol(s, "__INT_MAX__", "0x7fffffff");
-    tcc_define_symbol(s, "__LONG_LONG_MAX__", "0x7fffffffffffffffLL");
-    tcc_define_symbol(s, "__builtin_offsetof(type,field)", "((__SIZE_TYPE__) &((type *)0)->field)");
+    sugar_define_symbol(s, "__SIZEOF_INT__", "4");
+    sugar_define_symbol(s, "__SIZEOF_LONG_LONG__", "8");
+    sugar_define_symbol(s, "__CHAR_BIT__", "8");
+    sugar_define_symbol(s, "__ORDER_LITTLE_ENDIAN__", "1234");
+    sugar_define_symbol(s, "__ORDER_BIG_ENDIAN__", "4321");
+    sugar_define_symbol(s, "__BYTE_ORDER__", "__ORDER_LITTLE_ENDIAN__");
+    sugar_define_symbol(s, "__INT_MAX__", "0x7fffffff");
+    sugar_define_symbol(s, "__LONG_LONG_MAX__", "0x7fffffffffffffffLL");
+    sugar_define_symbol(s, "__builtin_offsetof(type,field)", "((__SIZE_TYPE__) &((type *)0)->field)");
     return s;
 }
 
-LIBTCCAPI void tcc_delete(TCCState *s1)
+LIBSUGARAPI void sugar_delete(SUGARState *s1)
 {
     /* free sections */
-    tccelf_delete(s1);
+    sugarelf_delete(s1);
 
     /* free library paths */
     dynarray_reset(&s1->library_paths, &s1->nb_library_paths);
@@ -997,13 +997,13 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
     dynarray_reset(&s1->include_paths, &s1->nb_include_paths);
     dynarray_reset(&s1->sysinclude_paths, &s1->nb_sysinclude_paths);
 
-    tcc_free(s1->tcc_lib_path);
-    tcc_free(s1->soname);
-    tcc_free(s1->rpath);
-    tcc_free(s1->init_symbol);
-    tcc_free(s1->fini_symbol);
-    tcc_free(s1->outfile);
-    tcc_free(s1->deps_outfile);
+    sugar_free(s1->sugar_lib_path);
+    sugar_free(s1->soname);
+    sugar_free(s1->rpath);
+    sugar_free(s1->init_symbol);
+    sugar_free(s1->fini_symbol);
+    sugar_free(s1->outfile);
+    sugar_free(s1->deps_outfile);
     dynarray_reset(&s1->files, &s1->nb_files);
     dynarray_reset(&s1->target_deps, &s1->nb_target_deps);
     dynarray_reset(&s1->pragma_libs, &s1->nb_pragma_libs);
@@ -1011,117 +1011,117 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
 
     cstr_free(&s1->cmdline_defs);
     cstr_free(&s1->cmdline_incl);
-#ifdef TCC_IS_NATIVE
+#ifdef SUGAR_IS_NATIVE
     /* free runtime memory */
-    tcc_run_free(s1);
+    sugar_run_free(s1);
 #endif
 
-    tcc_free(s1);
+    sugar_free(s1);
 #ifdef MEM_DEBUG
     if (0 == --nb_states)
-        tcc_memcheck();
+        sugar_memcheck();
 #endif
 }
 
-LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type)
+LIBSUGARAPI int sugar_set_output_type(SUGARState *s, int output_type)
 {
     s->output_type = output_type;
 
     /* always elf for objects */
-    if (output_type == TCC_OUTPUT_OBJ)
-        s->output_format = TCC_OUTPUT_FORMAT_ELF;
+    if (output_type == SUGAR_OUTPUT_OBJ)
+        s->output_format = SUGAR_OUTPUT_FORMAT_ELF;
 
     if (s->char_is_unsigned)
-        tcc_define_symbol(s, "__CHAR_UNSIGNED__", NULL);
+        sugar_define_symbol(s, "__CHAR_UNSIGNED__", NULL);
 
     if (s->cversion == 201112) {
-        tcc_undefine_symbol(s, "__STDC_VERSION__");
-        tcc_define_symbol(s, "__STDC_VERSION__", "201112L");
-        tcc_define_symbol(s, "__STDC_NO_ATOMICS__", NULL);
-        tcc_define_symbol(s, "__STDC_NO_COMPLEX__", NULL);
-        tcc_define_symbol(s, "__STDC_NO_THREADS__", NULL);
-#ifndef TCC_TARGET_PE
+        sugar_undefine_symbol(s, "__STDC_VERSION__");
+        sugar_define_symbol(s, "__STDC_VERSION__", "201112L");
+        sugar_define_symbol(s, "__STDC_NO_ATOMICS__", NULL);
+        sugar_define_symbol(s, "__STDC_NO_COMPLEX__", NULL);
+        sugar_define_symbol(s, "__STDC_NO_THREADS__", NULL);
+#ifndef SUGAR_TARGET_PE
         /* on Linux, this conflicts with a define introduced by
            /usr/include/stdc-predef.h included by glibc libs
-        tcc_define_symbol(s, "__STDC_ISO_10646__", "201605L"); */
-        tcc_define_symbol(s, "__STDC_UTF_16__", NULL);
-        tcc_define_symbol(s, "__STDC_UTF_32__", NULL);
+        sugar_define_symbol(s, "__STDC_ISO_10646__", "201605L"); */
+        sugar_define_symbol(s, "__STDC_UTF_16__", NULL);
+        sugar_define_symbol(s, "__STDC_UTF_32__", NULL);
 #endif
     }
 
     if (s->optimize > 0)
-        tcc_define_symbol(s, "__OPTIMIZE__", NULL);
+        sugar_define_symbol(s, "__OPTIMIZE__", NULL);
 
     if (s->option_pthread)
-        tcc_define_symbol(s, "_REENTRANT", NULL);
+        sugar_define_symbol(s, "_REENTRANT", NULL);
 
     if (s->leading_underscore)
-        tcc_define_symbol(s, "__leading_underscore", NULL);
+        sugar_define_symbol(s, "__leading_underscore", NULL);
 
     if (!s->nostdinc) {
         /* default include paths */
         /* -isystem paths have already been handled */
-        tcc_add_sysinclude_path(s, CONFIG_TCC_SYSINCLUDEPATHS);
+        sugar_add_sysinclude_path(s, CONFIG_SUGAR_SYSINCLUDEPATHS);
     }
 
-#ifdef CONFIG_TCC_BCHECK
+#ifdef CONFIG_SUGAR_BCHECK
     if (s->do_bounds_check) {
         /* if bound checking, then add corresponding sections */
-        tccelf_bounds_new(s);
+        sugarelf_bounds_new(s);
         /* define symbol */
-        tcc_define_symbol(s, "__BOUNDS_CHECKING_ON", NULL);
+        sugar_define_symbol(s, "__BOUNDS_CHECKING_ON", NULL);
     }
 #endif
     if (s->do_debug) {
         /* add debug sections */
-        tccelf_stab_new(s);
+        sugarelf_stab_new(s);
     }
 
-    tcc_add_library_path(s, CONFIG_TCC_LIBPATHS);
+    sugar_add_library_path(s, CONFIG_SUGAR_LIBPATHS);
 
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
 # ifdef _WIN32
-    if (!s->nostdlib && output_type != TCC_OUTPUT_OBJ)
-        tcc_add_systemdir(s);
+    if (!s->nostdlib && output_type != SUGAR_OUTPUT_OBJ)
+        sugar_add_systemdir(s);
 # endif
 #else
     /* paths for crt objects */
-    tcc_split_path(s, &s->crt_paths, &s->nb_crt_paths, CONFIG_TCC_CRTPREFIX);
+    sugar_split_path(s, &s->crt_paths, &s->nb_crt_paths, CONFIG_SUGAR_CRTPREFIX);
     /* add libc crt1/crti objects */
-    if ((output_type == TCC_OUTPUT_EXE || output_type == TCC_OUTPUT_DLL) &&
+    if ((output_type == SUGAR_OUTPUT_EXE || output_type == SUGAR_OUTPUT_DLL) &&
         !s->nostdlib) {
-#ifndef TCC_TARGET_MACHO
+#ifndef SUGAR_TARGET_MACHO
         /* Mach-O with LC_MAIN doesn't need any crt startup code.  */
-        if (output_type != TCC_OUTPUT_DLL)
-            tcc_add_crt(s, "crt1.o");
-        tcc_add_crt(s, "crti.o");
+        if (output_type != SUGAR_OUTPUT_DLL)
+            sugar_add_crt(s, "crt1.o");
+        sugar_add_crt(s, "crti.o");
 #endif
     }
 #endif
     return 0;
 }
 
-LIBTCCAPI int tcc_add_include_path(TCCState *s, const char *pathname)
+LIBSUGARAPI int sugar_add_include_path(SUGARState *s, const char *pathname)
 {
-    tcc_split_path(s, &s->include_paths, &s->nb_include_paths, pathname);
+    sugar_split_path(s, &s->include_paths, &s->nb_include_paths, pathname);
     return 0;
 }
 
-LIBTCCAPI int tcc_add_sysinclude_path(TCCState *s, const char *pathname)
+LIBSUGARAPI int sugar_add_sysinclude_path(SUGARState *s, const char *pathname)
 {
-    tcc_split_path(s, &s->sysinclude_paths, &s->nb_sysinclude_paths, pathname);
+    sugar_split_path(s, &s->sysinclude_paths, &s->nb_sysinclude_paths, pathname);
     return 0;
 }
 
-ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
+ST_FUNC int sugar_add_file_internal(SUGARState *s1, const char *filename, int flags)
 {
     int fd, ret;
 
     /* open the file */
-    fd = _tcc_open(s1, filename);
+    fd = _sugar_open(s1, filename);
     if (fd < 0) {
         if (flags & AFF_PRINT_ERROR)
-            tcc_error_noabort("file '%s' not found", filename);
+            sugar_error_noabort("file '%s' not found", filename);
         return -1;
     }
 
@@ -1130,29 +1130,29 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
         ElfW(Ehdr) ehdr;
         int obj_type;
 
-        obj_type = tcc_object_type(fd, &ehdr);
+        obj_type = sugar_object_type(fd, &ehdr);
         lseek(fd, 0, SEEK_SET);
 
-#ifdef TCC_TARGET_MACHO
-        if (0 == obj_type && 0 == strcmp(tcc_fileextension(filename), ".dylib"))
+#ifdef SUGAR_TARGET_MACHO
+        if (0 == obj_type && 0 == strcmp(sugar_fileextension(filename), ".dylib"))
             obj_type = AFF_BINTYPE_DYN;
 #endif
 
         switch (obj_type) {
         case AFF_BINTYPE_REL:
-            ret = tcc_load_object_file(s1, fd, 0);
+            ret = sugar_load_object_file(s1, fd, 0);
             break;
-#ifndef TCC_TARGET_PE
+#ifndef SUGAR_TARGET_PE
         case AFF_BINTYPE_DYN:
-            if (s1->output_type == TCC_OUTPUT_MEMORY) {
+            if (s1->output_type == SUGAR_OUTPUT_MEMORY) {
                 ret = 0;
-#ifdef TCC_IS_NATIVE
+#ifdef SUGAR_IS_NATIVE
                 if (NULL == dlopen(filename, RTLD_GLOBAL | RTLD_LAZY))
                     ret = -1;
 #endif
             } else {
-#ifndef TCC_TARGET_MACHO
-                ret = tcc_load_dll(s1, fd, filename,
+#ifndef SUGAR_TARGET_MACHO
+                ret = sugar_load_dll(s1, fd, filename,
                                    (flags & AFF_REFERENCED_DLL) != 0);
 #else
                 ret = macho_load_dll(s1, fd, filename,
@@ -1162,43 +1162,43 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
             break;
 #endif
         case AFF_BINTYPE_AR:
-            ret = tcc_load_archive(s1, fd, !(flags & AFF_WHOLE_ARCHIVE));
+            ret = sugar_load_archive(s1, fd, !(flags & AFF_WHOLE_ARCHIVE));
             break;
-#ifdef TCC_TARGET_COFF
+#ifdef SUGAR_TARGET_COFF
         case AFF_BINTYPE_C67:
-            ret = tcc_load_coff(s1, fd);
+            ret = sugar_load_coff(s1, fd);
             break;
 #endif
         default:
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
             ret = pe_load_file(s1, filename, fd);
-#elif defined(TCC_TARGET_MACHO)
+#elif defined(SUGAR_TARGET_MACHO)
             ret = -1;
 #else
             /* as GNU ld, consider it is an ld script if not recognized */
-            ret = tcc_load_ldscript(s1, fd);
+            ret = sugar_load_ldscript(s1, fd);
 #endif
             if (ret < 0)
-                tcc_error_noabort("%s: unrecognized file type %d", filename,
+                sugar_error_noabort("%s: unrecognized file type %d", filename,
                                   obj_type);
             break;
         }
         close(fd);
     } else {
         /* update target deps */
-        dynarray_add(&s1->target_deps, &s1->nb_target_deps, tcc_strdup(filename));
-        ret = tcc_compile(s1, flags, filename, fd);
+        dynarray_add(&s1->target_deps, &s1->nb_target_deps, sugar_strdup(filename));
+        ret = sugar_compile(s1, flags, filename, fd);
     }
     s1->current_filename = NULL;
     return ret;
 }
 
-LIBTCCAPI int tcc_add_file(TCCState *s, const char *filename)
+LIBSUGARAPI int sugar_add_file(SUGARState *s, const char *filename)
 {
     int filetype = s->filetype;
     if (0 == (filetype & AFF_TYPE_MASK)) {
         /* use a file extension to detect a filetype */
-        const char *ext = tcc_fileextension(filename);
+        const char *ext = sugar_fileextension(filename);
         if (ext[0]) {
             ext++;
             if (!strcmp(ext, "S"))
@@ -1213,16 +1213,16 @@ LIBTCCAPI int tcc_add_file(TCCState *s, const char *filename)
             filetype = AFF_TYPE_C;
         }
     }
-    return tcc_add_file_internal(s, filename, filetype | AFF_PRINT_ERROR);
+    return sugar_add_file_internal(s, filename, filetype | AFF_PRINT_ERROR);
 }
 
-LIBTCCAPI int tcc_add_library_path(TCCState *s, const char *pathname)
+LIBSUGARAPI int sugar_add_library_path(SUGARState *s, const char *pathname)
 {
-    tcc_split_path(s, &s->library_paths, &s->nb_library_paths, pathname);
+    sugar_split_path(s, &s->library_paths, &s->nb_library_paths, pathname);
     return 0;
 }
 
-static int tcc_add_library_internal(TCCState *s, const char *fmt,
+static int sugar_add_library_internal(SUGARState *s, const char *fmt,
     const char *filename, int flags, char **paths, int nb_paths)
 {
     char buf[1024];
@@ -1230,39 +1230,39 @@ static int tcc_add_library_internal(TCCState *s, const char *fmt,
 
     for(i = 0; i < nb_paths; i++) {
         snprintf(buf, sizeof(buf), fmt, paths[i], filename);
-        if (tcc_add_file_internal(s, buf, flags | AFF_TYPE_BIN) == 0)
+        if (sugar_add_file_internal(s, buf, flags | AFF_TYPE_BIN) == 0)
             return 0;
     }
     return -1;
 }
 
-#ifndef TCC_TARGET_MACHO
+#ifndef SUGAR_TARGET_MACHO
 /* find and load a dll. Return non zero if not found */
 /* XXX: add '-rpath' option support ? */
-ST_FUNC int tcc_add_dll(TCCState *s, const char *filename, int flags)
+ST_FUNC int sugar_add_dll(SUGARState *s, const char *filename, int flags)
 {
-    return tcc_add_library_internal(s, "%s/%s", filename, flags,
+    return sugar_add_library_internal(s, "%s/%s", filename, flags,
         s->library_paths, s->nb_library_paths);
 }
 #endif
 
-#if !defined TCC_TARGET_PE && !defined TCC_TARGET_MACHO
-ST_FUNC int tcc_add_crt(TCCState *s1, const char *filename)
+#if !defined SUGAR_TARGET_PE && !defined SUGAR_TARGET_MACHO
+ST_FUNC int sugar_add_crt(SUGARState *s1, const char *filename)
 {
-    if (-1 == tcc_add_library_internal(s1, "%s/%s",
+    if (-1 == sugar_add_library_internal(s1, "%s/%s",
         filename, 0, s1->crt_paths, s1->nb_crt_paths))
-        tcc_error_noabort("file '%s' not found", filename);
+        sugar_error_noabort("file '%s' not found", filename);
     return 0;
 }
 #endif
 
 /* the library name is the same as the argument of the '-l' option */
-LIBTCCAPI int tcc_add_library(TCCState *s, const char *libraryname)
+LIBSUGARAPI int sugar_add_library(SUGARState *s, const char *libraryname)
 {
-#if defined TCC_TARGET_PE
+#if defined SUGAR_TARGET_PE
     const char *libs[] = { "%s/%s.def", "%s/lib%s.def", "%s/%s.dll", "%s/lib%s.dll", "%s/lib%s.a", NULL };
     const char **pp = s->static_link ? libs + 4 : libs;
-#elif defined TCC_TARGET_MACHO
+#elif defined SUGAR_TARGET_MACHO
     const char *libs[] = { "%s/lib%s.dylib", "%s/lib%s.a", NULL };
     const char **pp = s->static_link ? libs + 1 : libs;
 #else
@@ -1271,7 +1271,7 @@ LIBTCCAPI int tcc_add_library(TCCState *s, const char *libraryname)
 #endif
     int flags = s->filetype & AFF_WHOLE_ARCHIVE;
     while (*pp) {
-        if (0 == tcc_add_library_internal(s, *pp,
+        if (0 == sugar_add_library_internal(s, *pp,
             libraryname, flags, s->library_paths, s->nb_library_paths))
             return 0;
         ++pp;
@@ -1279,25 +1279,25 @@ LIBTCCAPI int tcc_add_library(TCCState *s, const char *libraryname)
     return -1;
 }
 
-PUB_FUNC int tcc_add_library_err(TCCState *s1, const char *libname)
+PUB_FUNC int sugar_add_library_err(SUGARState *s1, const char *libname)
 {
-    int ret = tcc_add_library(s1, libname);
+    int ret = sugar_add_library(s1, libname);
     if (ret < 0)
-        tcc_error_noabort("library '%s' not found", libname);
+        sugar_error_noabort("library '%s' not found", libname);
     return ret;
 }
 
 /* handle #pragma comment(lib,) */
-ST_FUNC void tcc_add_pragma_libs(TCCState *s1)
+ST_FUNC void sugar_add_pragma_libs(SUGARState *s1)
 {
     int i;
     for (i = 0; i < s1->nb_pragma_libs; i++)
-        tcc_add_library_err(s1, s1->pragma_libs[i]);
+        sugar_add_library_err(s1, s1->pragma_libs[i]);
 }
 
-LIBTCCAPI int tcc_add_symbol(TCCState *s1, const char *name, const void *val)
+LIBSUGARAPI int sugar_add_symbol(SUGARState *s1, const char *name, const void *val)
 {
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
     /* On x86_64 'val' might not be reachable with a 32bit offset.
        So it is handled here as if it were in a DLL. */
     pe_putimport(s1, 0, name, (uintptr_t)val);
@@ -1313,10 +1313,10 @@ LIBTCCAPI int tcc_add_symbol(TCCState *s1, const char *name, const void *val)
     return 0;
 }
 
-LIBTCCAPI void tcc_set_lib_path(TCCState *s, const char *path)
+LIBSUGARAPI void sugar_set_lib_path(SUGARState *s, const char *path)
 {
-    tcc_free(s->tcc_lib_path);
-    s->tcc_lib_path = tcc_strdup(path);
+    sugar_free(s->sugar_lib_path);
+    s->sugar_lib_path = sugar_strdup(path);
 }
 
 #define WD_ALL    0x0001 /* warning is activated when using -Wall */
@@ -1337,7 +1337,7 @@ static int no_flag(const char **pp)
     return 1;
 }
 
-ST_FUNC int set_flag(TCCState *s, const FlagDef *flags, const char *name)
+ST_FUNC int set_flag(SUGARState *s, const FlagDef *flags, const char *name)
 {
     int value, ret;
     const FlagDef *p;
@@ -1450,13 +1450,13 @@ static void copy_linker_arg(char **pp, const char *s, int sep)
     if (p && sep)
         p[l = strlen(p)] = sep, ++l;
     skip_linker_arg(&q);
-    pstrncpy(l + (*pp = tcc_realloc(p, q - s + l + 1)), s, q - s);
+    pstrncpy(l + (*pp = sugar_realloc(p, q - s + l + 1)), s, q - s);
 }
 
 /* set linker options */
-static int tcc_set_linker(TCCState *s, const char *option)
+static int sugar_set_linker(SUGARState *s, const char *option)
 {
-    TCCState *s1 = s;
+    SUGARState *s1 = s;
     while (*option) {
 
         const char *p = NULL;
@@ -1479,19 +1479,19 @@ static int tcc_set_linker(TCCState *s, const char *option)
             copy_linker_arg(&s->init_symbol, p, 0);
             ignoring = 1;
         } else if (link_option(option, "oformat=", &p)) {
-#if defined(TCC_TARGET_PE)
+#if defined(SUGAR_TARGET_PE)
             if (strstart("pe-", &p)) {
 #elif PTR_SIZE == 8
             if (strstart("elf64-", &p)) {
 #else
             if (strstart("elf32-", &p)) {
 #endif
-                s->output_format = TCC_OUTPUT_FORMAT_ELF;
+                s->output_format = SUGAR_OUTPUT_FORMAT_ELF;
             } else if (!strcmp(p, "binary")) {
-                s->output_format = TCC_OUTPUT_FORMAT_BINARY;
-#ifdef TCC_TARGET_COFF
+                s->output_format = SUGAR_OUTPUT_FORMAT_BINARY;
+#ifdef SUGAR_TARGET_COFF
             } else if (!strcmp(p, "coff")) {
-                s->output_format = TCC_OUTPUT_FORMAT_COFF;
+                s->output_format = SUGAR_OUTPUT_FORMAT_COFF;
 #endif
             } else
                 goto err;
@@ -1512,7 +1512,7 @@ static int tcc_set_linker(TCCState *s, const char *option)
             s->section_align = strtoul(p, &end, 16);
         } else if (link_option(option, "soname=", &p)) {
             copy_linker_arg(&s->soname, p, 0);
-#ifdef TCC_TARGET_PE
+#ifdef SUGAR_TARGET_PE
         } else if (link_option(option, "large-address-aware", &p)) {
             s->pe_characteristics |= 0x20;
         } else if (link_option(option, "file-alignment=", &p)) {
@@ -1520,7 +1520,7 @@ static int tcc_set_linker(TCCState *s, const char *option)
         } else if (link_option(option, "stack=", &p)) {
             s->pe_stack_size = strtoul(p, &end, 10);
         } else if (link_option(option, "subsystem=", &p)) {
-#if defined(TCC_TARGET_I386) || defined(TCC_TARGET_X86_64)
+#if defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_X86_64)
             if (!strcmp(p, "native")) {
                 s->pe_subsystem = 1;
             } else if (!strcmp(p, "console")) {
@@ -1537,7 +1537,7 @@ static int tcc_set_linker(TCCState *s, const char *option)
                 s->pe_subsystem = 12;
             } else if (!strcmp(p, "efirom")) {
                 s->pe_subsystem = 13;
-#elif defined(TCC_TARGET_ARM)
+#elif defined(SUGAR_TARGET_ARM)
             if (!strcmp(p, "wince")) {
                 s->pe_subsystem = 9;
 #endif
@@ -1553,180 +1553,180 @@ static int tcc_set_linker(TCCState *s, const char *option)
             return 0;
         } else {
     err:
-            tcc_error("unsupported linker option '%s'", option);
+            sugar_error("unsupported linker option '%s'", option);
         }
 
         if (ignoring && s->warn_unsupported)
-            tcc_warning("unsupported linker option '%s'", option);
+            sugar_warning("unsupported linker option '%s'", option);
 
         option = skip_linker_arg(&p);
     }
     return 1;
 }
 
-typedef struct TCCOption {
+typedef struct SUGAROption {
     const char *name;
     uint16_t index;
     uint16_t flags;
-} TCCOption;
+} SUGAROption;
 
 enum {
-    TCC_OPTION_HELP,
-    TCC_OPTION_HELP2,
-    TCC_OPTION_v,
-    TCC_OPTION_I,
-    TCC_OPTION_D,
-    TCC_OPTION_U,
-    TCC_OPTION_P,
-    TCC_OPTION_L,
-    TCC_OPTION_B,
-    TCC_OPTION_l,
-    TCC_OPTION_bench,
-    TCC_OPTION_bt,
-    TCC_OPTION_b,
-    TCC_OPTION_ba,
-    TCC_OPTION_g,
-    TCC_OPTION_c,
-    TCC_OPTION_dumpversion,
-    TCC_OPTION_d,
-    TCC_OPTION_static,
-    TCC_OPTION_std,
-    TCC_OPTION_shared,
-    TCC_OPTION_soname,
-    TCC_OPTION_o,
-    TCC_OPTION_r,
-    TCC_OPTION_s,
-    TCC_OPTION_traditional,
-    TCC_OPTION_Wl,
-    TCC_OPTION_Wp,
-    TCC_OPTION_W,
-    TCC_OPTION_O,
-    TCC_OPTION_mfloat_abi,
-    TCC_OPTION_m,
-    TCC_OPTION_f,
-    TCC_OPTION_isystem,
-    TCC_OPTION_iwithprefix,
-    TCC_OPTION_include,
-    TCC_OPTION_nostdinc,
-    TCC_OPTION_nostdlib,
-    TCC_OPTION_print_search_dirs,
-    TCC_OPTION_rdynamic,
-    TCC_OPTION_param,
-    TCC_OPTION_pedantic,
-    TCC_OPTION_pthread,
-    TCC_OPTION_run,
-    TCC_OPTION_w,
-    TCC_OPTION_pipe,
-    TCC_OPTION_E,
-    TCC_OPTION_MD,
-    TCC_OPTION_MF,
-    TCC_OPTION_x,
-    TCC_OPTION_ar,
-    TCC_OPTION_impdef,
-    TCC_OPTION_C
+    SUGAR_OPTION_HELP,
+    SUGAR_OPTION_HELP2,
+    SUGAR_OPTION_v,
+    SUGAR_OPTION_I,
+    SUGAR_OPTION_D,
+    SUGAR_OPTION_U,
+    SUGAR_OPTION_P,
+    SUGAR_OPTION_L,
+    SUGAR_OPTION_B,
+    SUGAR_OPTION_l,
+    SUGAR_OPTION_bench,
+    SUGAR_OPTION_bt,
+    SUGAR_OPTION_b,
+    SUGAR_OPTION_ba,
+    SUGAR_OPTION_g,
+    SUGAR_OPTION_c,
+    SUGAR_OPTION_dumpversion,
+    SUGAR_OPTION_d,
+    SUGAR_OPTION_static,
+    SUGAR_OPTION_std,
+    SUGAR_OPTION_shared,
+    SUGAR_OPTION_soname,
+    SUGAR_OPTION_o,
+    SUGAR_OPTION_r,
+    SUGAR_OPTION_s,
+    SUGAR_OPTION_traditional,
+    SUGAR_OPTION_Wl,
+    SUGAR_OPTION_Wp,
+    SUGAR_OPTION_W,
+    SUGAR_OPTION_O,
+    SUGAR_OPTION_mfloat_abi,
+    SUGAR_OPTION_m,
+    SUGAR_OPTION_f,
+    SUGAR_OPTION_isystem,
+    SUGAR_OPTION_iwithprefix,
+    SUGAR_OPTION_include,
+    SUGAR_OPTION_nostdinc,
+    SUGAR_OPTION_nostdlib,
+    SUGAR_OPTION_print_search_dirs,
+    SUGAR_OPTION_rdynamic,
+    SUGAR_OPTION_param,
+    SUGAR_OPTION_pedantic,
+    SUGAR_OPTION_pthread,
+    SUGAR_OPTION_run,
+    SUGAR_OPTION_w,
+    SUGAR_OPTION_pipe,
+    SUGAR_OPTION_E,
+    SUGAR_OPTION_MD,
+    SUGAR_OPTION_MF,
+    SUGAR_OPTION_x,
+    SUGAR_OPTION_ar,
+    SUGAR_OPTION_impdef,
+    SUGAR_OPTION_C
 };
 
-#define TCC_OPTION_HAS_ARG 0x0001
-#define TCC_OPTION_NOSEP   0x0002 /* cannot have space before option and arg */
+#define SUGAR_OPTION_HAS_ARG 0x0001
+#define SUGAR_OPTION_NOSEP   0x0002 /* cannot have space before option and arg */
 
-static const TCCOption tcc_options[] = {
-    { "h", TCC_OPTION_HELP, 0 },
-    { "-help", TCC_OPTION_HELP, 0 },
-    { "?", TCC_OPTION_HELP, 0 },
-    { "hh", TCC_OPTION_HELP2, 0 },
-    { "v", TCC_OPTION_v, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "-version", TCC_OPTION_v, 0 }, /* handle as verbose, also prints version*/
-    { "I", TCC_OPTION_I, TCC_OPTION_HAS_ARG },
-    { "D", TCC_OPTION_D, TCC_OPTION_HAS_ARG },
-    { "U", TCC_OPTION_U, TCC_OPTION_HAS_ARG },
-    { "P", TCC_OPTION_P, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "L", TCC_OPTION_L, TCC_OPTION_HAS_ARG },
-    { "B", TCC_OPTION_B, TCC_OPTION_HAS_ARG },
-    { "l", TCC_OPTION_l, TCC_OPTION_HAS_ARG },
-    { "bench", TCC_OPTION_bench, 0 },
-#ifdef CONFIG_TCC_BACKTRACE
-    { "bt", TCC_OPTION_bt, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+static const SUGAROption sugar_options[] = {
+    { "h", SUGAR_OPTION_HELP, 0 },
+    { "-help", SUGAR_OPTION_HELP, 0 },
+    { "?", SUGAR_OPTION_HELP, 0 },
+    { "hh", SUGAR_OPTION_HELP2, 0 },
+    { "v", SUGAR_OPTION_v, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "-version", SUGAR_OPTION_v, 0 }, /* handle as verbose, also prints version*/
+    { "I", SUGAR_OPTION_I, SUGAR_OPTION_HAS_ARG },
+    { "D", SUGAR_OPTION_D, SUGAR_OPTION_HAS_ARG },
+    { "U", SUGAR_OPTION_U, SUGAR_OPTION_HAS_ARG },
+    { "P", SUGAR_OPTION_P, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "L", SUGAR_OPTION_L, SUGAR_OPTION_HAS_ARG },
+    { "B", SUGAR_OPTION_B, SUGAR_OPTION_HAS_ARG },
+    { "l", SUGAR_OPTION_l, SUGAR_OPTION_HAS_ARG },
+    { "bench", SUGAR_OPTION_bench, 0 },
+#ifdef CONFIG_SUGAR_BACKTRACE
+    { "bt", SUGAR_OPTION_bt, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
 #endif
-#ifdef CONFIG_TCC_BCHECK
-    { "b", TCC_OPTION_b, 0 },
+#ifdef CONFIG_SUGAR_BCHECK
+    { "b", SUGAR_OPTION_b, 0 },
 #endif
-    { "g", TCC_OPTION_g, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "c", TCC_OPTION_c, 0 },
-    { "dumpversion", TCC_OPTION_dumpversion, 0},
-    { "d", TCC_OPTION_d, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "static", TCC_OPTION_static, 0 },
-    { "std", TCC_OPTION_std, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "shared", TCC_OPTION_shared, 0 },
-    { "soname", TCC_OPTION_soname, TCC_OPTION_HAS_ARG },
-    { "o", TCC_OPTION_o, TCC_OPTION_HAS_ARG },
-    { "-param", TCC_OPTION_param, TCC_OPTION_HAS_ARG },
-    { "pedantic", TCC_OPTION_pedantic, 0},
-    { "pthread", TCC_OPTION_pthread, 0},
-    { "run", TCC_OPTION_run, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "rdynamic", TCC_OPTION_rdynamic, 0 },
-    { "r", TCC_OPTION_r, 0 },
-    { "s", TCC_OPTION_s, 0 },
-    { "traditional", TCC_OPTION_traditional, 0 },
-    { "Wl,", TCC_OPTION_Wl, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "Wp,", TCC_OPTION_Wp, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "W", TCC_OPTION_W, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "O", TCC_OPTION_O, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-#ifdef TCC_TARGET_ARM
-    { "mfloat-abi", TCC_OPTION_mfloat_abi, TCC_OPTION_HAS_ARG },
+    { "g", SUGAR_OPTION_g, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "c", SUGAR_OPTION_c, 0 },
+    { "dumpversion", SUGAR_OPTION_dumpversion, 0},
+    { "d", SUGAR_OPTION_d, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "static", SUGAR_OPTION_static, 0 },
+    { "std", SUGAR_OPTION_std, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "shared", SUGAR_OPTION_shared, 0 },
+    { "soname", SUGAR_OPTION_soname, SUGAR_OPTION_HAS_ARG },
+    { "o", SUGAR_OPTION_o, SUGAR_OPTION_HAS_ARG },
+    { "-param", SUGAR_OPTION_param, SUGAR_OPTION_HAS_ARG },
+    { "pedantic", SUGAR_OPTION_pedantic, 0},
+    { "pthread", SUGAR_OPTION_pthread, 0},
+    { "run", SUGAR_OPTION_run, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "rdynamic", SUGAR_OPTION_rdynamic, 0 },
+    { "r", SUGAR_OPTION_r, 0 },
+    { "s", SUGAR_OPTION_s, 0 },
+    { "traditional", SUGAR_OPTION_traditional, 0 },
+    { "Wl,", SUGAR_OPTION_Wl, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "Wp,", SUGAR_OPTION_Wp, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "W", SUGAR_OPTION_W, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "O", SUGAR_OPTION_O, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+#ifdef SUGAR_TARGET_ARM
+    { "mfloat-abi", SUGAR_OPTION_mfloat_abi, SUGAR_OPTION_HAS_ARG },
 #endif
-    { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-    { "isystem", TCC_OPTION_isystem, TCC_OPTION_HAS_ARG },
-    { "include", TCC_OPTION_include, TCC_OPTION_HAS_ARG },
-    { "nostdinc", TCC_OPTION_nostdinc, 0 },
-    { "nostdlib", TCC_OPTION_nostdlib, 0 },
-    { "print-search-dirs", TCC_OPTION_print_search_dirs, 0 },
-    { "w", TCC_OPTION_w, 0 },
-    { "pipe", TCC_OPTION_pipe, 0},
-    { "E", TCC_OPTION_E, 0},
-    { "MD", TCC_OPTION_MD, 0},
-    { "MF", TCC_OPTION_MF, TCC_OPTION_HAS_ARG },
-    { "x", TCC_OPTION_x, TCC_OPTION_HAS_ARG },
-    { "ar", TCC_OPTION_ar, 0},
-#ifdef TCC_TARGET_PE
-    { "impdef", TCC_OPTION_impdef, 0},
+    { "m", SUGAR_OPTION_m, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "f", SUGAR_OPTION_f, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
+    { "isystem", SUGAR_OPTION_isystem, SUGAR_OPTION_HAS_ARG },
+    { "include", SUGAR_OPTION_include, SUGAR_OPTION_HAS_ARG },
+    { "nostdinc", SUGAR_OPTION_nostdinc, 0 },
+    { "nostdlib", SUGAR_OPTION_nostdlib, 0 },
+    { "print-search-dirs", SUGAR_OPTION_print_search_dirs, 0 },
+    { "w", SUGAR_OPTION_w, 0 },
+    { "pipe", SUGAR_OPTION_pipe, 0},
+    { "E", SUGAR_OPTION_E, 0},
+    { "MD", SUGAR_OPTION_MD, 0},
+    { "MF", SUGAR_OPTION_MF, SUGAR_OPTION_HAS_ARG },
+    { "x", SUGAR_OPTION_x, SUGAR_OPTION_HAS_ARG },
+    { "ar", SUGAR_OPTION_ar, 0},
+#ifdef SUGAR_TARGET_PE
+    { "impdef", SUGAR_OPTION_impdef, 0},
 #endif
-    { "C", TCC_OPTION_C, 0},
+    { "C", SUGAR_OPTION_C, 0},
     { NULL, 0, 0 },
 };
 
 static const FlagDef options_W[] = {
     { 0, 0, "all" },
-    { offsetof(TCCState, warn_unsupported), 0, "unsupported" },
-    { offsetof(TCCState, warn_write_strings), 0, "write-strings" },
-    { offsetof(TCCState, warn_error), 0, "error" },
-    { offsetof(TCCState, warn_gcc_compat), 0, "gcc-compat" },
-    { offsetof(TCCState, warn_implicit_function_declaration), WD_ALL,
+    { offsetof(SUGARState, warn_unsupported), 0, "unsupported" },
+    { offsetof(SUGARState, warn_write_strings), 0, "write-strings" },
+    { offsetof(SUGARState, warn_error), 0, "error" },
+    { offsetof(SUGARState, warn_gcc_compat), 0, "gcc-compat" },
+    { offsetof(SUGARState, warn_implicit_function_declaration), WD_ALL,
       "implicit-function-declaration" },
     { 0, 0, NULL }
 };
 
 static const FlagDef options_f[] = {
-    { offsetof(TCCState, char_is_unsigned), 0, "unsigned-char" },
-    { offsetof(TCCState, char_is_unsigned), FD_INVERT, "signed-char" },
-    { offsetof(TCCState, nocommon), FD_INVERT, "common" },
-    { offsetof(TCCState, leading_underscore), 0, "leading-underscore" },
-    { offsetof(TCCState, ms_extensions), 0, "ms-extensions" },
-    { offsetof(TCCState, dollars_in_identifiers), 0, "dollars-in-identifiers" },
+    { offsetof(SUGARState, char_is_unsigned), 0, "unsigned-char" },
+    { offsetof(SUGARState, char_is_unsigned), FD_INVERT, "signed-char" },
+    { offsetof(SUGARState, nocommon), FD_INVERT, "common" },
+    { offsetof(SUGARState, leading_underscore), 0, "leading-underscore" },
+    { offsetof(SUGARState, ms_extensions), 0, "ms-extensions" },
+    { offsetof(SUGARState, dollars_in_identifiers), 0, "dollars-in-identifiers" },
     { 0, 0, NULL }
 };
 
 static const FlagDef options_m[] = {
-    { offsetof(TCCState, ms_bitfields), 0, "ms-bitfields" },
-#ifdef TCC_TARGET_X86_64
-    { offsetof(TCCState, nosse), FD_INVERT, "sse" },
+    { offsetof(SUGARState, ms_bitfields), 0, "ms-bitfields" },
+#ifdef SUGAR_TARGET_X86_64
+    { offsetof(SUGARState, nosse), FD_INVERT, "sse" },
 #endif
     { 0, 0, NULL }
 };
 
-static void args_parser_add_file(TCCState *s, const char* filename, int filetype)
+static void args_parser_add_file(SUGARState *s, const char* filename, int filetype)
 {
-    struct filespec *f = tcc_malloc(sizeof *f + strlen(filename));
+    struct filespec *f = sugar_malloc(sizeof *f + strlen(filename));
     f->type = filetype;
     strcpy(f->name, filename);
     dynarray_add(&s->files, &s->nb_files, f);
@@ -1757,7 +1757,7 @@ static int args_parser_make_argv(const char *r, int *argc, char ***argv)
         }
         cstr_ccat(&str, 0);
         //printf("<%s>\n", str.data), fflush(stdout);
-        dynarray_add(argv, argc, tcc_strdup(str.data));
+        dynarray_add(argv, argc, sugar_strdup(str.data));
         cstr_free(&str);
         ++ret;
     }
@@ -1765,10 +1765,10 @@ static int args_parser_make_argv(const char *r, int *argc, char ***argv)
 }
 
 /* read list file */
-static void args_parser_listfile(TCCState *s,
+static void args_parser_listfile(SUGARState *s,
     const char *filename, int optind, int *pargc, char ***pargv)
 {
-    TCCState *s1 = s;
+    SUGARState *s1 = s;
     int fd, i;
     size_t len;
     char *p;
@@ -1777,27 +1777,27 @@ static void args_parser_listfile(TCCState *s,
 
     fd = open(filename, O_RDONLY | O_BINARY);
     if (fd < 0)
-        tcc_error("listfile '%s' not found", filename);
+        sugar_error("listfile '%s' not found", filename);
 
     len = lseek(fd, 0, SEEK_END);
-    p = tcc_malloc(len + 1), p[len] = 0;
+    p = sugar_malloc(len + 1), p[len] = 0;
     lseek(fd, 0, SEEK_SET), read(fd, p, len), close(fd);
 
     for (i = 0; i < *pargc; ++i)
         if (i == optind)
             args_parser_make_argv(p, &argc, &argv);
         else
-            dynarray_add(&argv, &argc, tcc_strdup((*pargv)[i]));
+            dynarray_add(&argv, &argc, sugar_strdup((*pargv)[i]));
 
-    tcc_free(p);
+    sugar_free(p);
     dynarray_reset(&s->argv, &s->argc);
     *pargc = s->argc = argc, *pargv = s->argv = argv;
 }
 
-PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv, int optind)
+PUB_FUNC int sugar_parse_args(SUGARState *s, int *pargc, char ***pargv, int optind)
 {
-    TCCState *s1 = s;
-    const TCCOption *popt;
+    SUGARState *s1 = s;
+    const SUGAROption *popt;
     const char *optarg, *r;
     const char *run = NULL;
     int x;
@@ -1822,10 +1822,10 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv, int optind)
         }
 reparse:
         if (r[0] != '-' || r[1] == '\0') {
-            if (r[0] != '@') /* allow "tcc file(s) -run @ args ..." */
+            if (r[0] != '@') /* allow "sugar file(s) -run @ args ..." */
                 args_parser_add_file(s, r, s->filetype);
             if (run) {
-                tcc_set_options(s, run);
+                sugar_set_options(s, run);
                 arg_start = optind - 1;
                 break;
             }
@@ -1833,19 +1833,19 @@ reparse:
         }
 
         /* find option in table */
-        for(popt = tcc_options; ; ++popt) {
+        for(popt = sugar_options; ; ++popt) {
             const char *p1 = popt->name;
             const char *r1 = r + 1;
             if (p1 == NULL)
-                tcc_error("invalid option -- '%s'", r);
+                sugar_error("invalid option -- '%s'", r);
             if (!strstart(p1, &r1))
                 continue;
             optarg = r1;
-            if (popt->flags & TCC_OPTION_HAS_ARG) {
-                if (*r1 == '\0' && !(popt->flags & TCC_OPTION_NOSEP)) {
+            if (popt->flags & SUGAR_OPTION_HAS_ARG) {
+                if (*r1 == '\0' && !(popt->flags & SUGAR_OPTION_NOSEP)) {
                     if (optind >= argc)
                 arg_err:
-                        tcc_error("argument to '%s' is missing", r);
+                        sugar_error("argument to '%s' is missing", r);
                     optarg = argv[optind++];
                 }
             } else if (*r1 != '\0')
@@ -1854,63 +1854,63 @@ reparse:
         }
 
         switch(popt->index) {
-        case TCC_OPTION_HELP:
+        case SUGAR_OPTION_HELP:
             x = OPT_HELP;
             goto extra_action;
-        case TCC_OPTION_HELP2:
+        case SUGAR_OPTION_HELP2:
             x = OPT_HELP2;
             goto extra_action;
-        case TCC_OPTION_I:
-            tcc_add_include_path(s, optarg);
+        case SUGAR_OPTION_I:
+            sugar_add_include_path(s, optarg);
             break;
-        case TCC_OPTION_D:
-            tcc_define_symbol(s, optarg, NULL);
+        case SUGAR_OPTION_D:
+            sugar_define_symbol(s, optarg, NULL);
             break;
-        case TCC_OPTION_U:
-            tcc_undefine_symbol(s, optarg);
+        case SUGAR_OPTION_U:
+            sugar_undefine_symbol(s, optarg);
             break;
-        case TCC_OPTION_L:
-            tcc_add_library_path(s, optarg);
+        case SUGAR_OPTION_L:
+            sugar_add_library_path(s, optarg);
             break;
-        case TCC_OPTION_B:
-            /* set tcc utilities path (mainly for tcc development) */
-            tcc_set_lib_path(s, optarg);
+        case SUGAR_OPTION_B:
+            /* set sugar utilities path (mainly for sugar development) */
+            sugar_set_lib_path(s, optarg);
             break;
-        case TCC_OPTION_l:
+        case SUGAR_OPTION_l:
             args_parser_add_file(s, optarg, AFF_TYPE_LIB | (s->filetype & ~AFF_TYPE_MASK));
             s->nb_libraries++;
             break;
-        case TCC_OPTION_pthread:
+        case SUGAR_OPTION_pthread:
             s->option_pthread = 1;
             break;
-        case TCC_OPTION_bench:
+        case SUGAR_OPTION_bench:
             s->do_bench = 1;
             break;
-#ifdef CONFIG_TCC_BACKTRACE
-        case TCC_OPTION_bt:
+#ifdef CONFIG_SUGAR_BACKTRACE
+        case SUGAR_OPTION_bt:
             s->rt_num_callers = atoi(optarg);
             s->do_backtrace = 1;
             s->do_debug = 1;
             break;
 #endif
-#ifdef CONFIG_TCC_BCHECK
-        case TCC_OPTION_b:
+#ifdef CONFIG_SUGAR_BCHECK
+        case SUGAR_OPTION_b:
             s->do_bounds_check = 1;
             s->do_backtrace = 1;
             s->do_debug = 1;
             break;
 #endif
-        case TCC_OPTION_g:
+        case SUGAR_OPTION_g:
             s->do_debug = 1;
             break;
-        case TCC_OPTION_c:
-            x = TCC_OUTPUT_OBJ;
+        case SUGAR_OPTION_c:
+            x = SUGAR_OUTPUT_OBJ;
         set_output_type:
             if (s->output_type)
-                tcc_warning("-%s: overriding compiler action already specified", popt->name);
+                sugar_warning("-%s: overriding compiler action already specified", popt->name);
             s->output_type = x;
             break;
-        case TCC_OPTION_d:
+        case SUGAR_OPTION_d:
             if (*optarg == 'D')
                 s->dflag = 3;
             else if (*optarg == 'M')
@@ -1922,71 +1922,71 @@ reparse:
             else
                 goto unsupported_option;
             break;
-        case TCC_OPTION_static:
+        case SUGAR_OPTION_static:
             s->static_link = 1;
             break;
-        case TCC_OPTION_std:
+        case SUGAR_OPTION_std:
             if (strcmp(optarg, "=c11") == 0)
                 s->cversion = 201112;
             break;
-        case TCC_OPTION_shared:
-            x = TCC_OUTPUT_DLL;
+        case SUGAR_OPTION_shared:
+            x = SUGAR_OUTPUT_DLL;
             goto set_output_type;
-        case TCC_OPTION_soname:
-            s->soname = tcc_strdup(optarg);
+        case SUGAR_OPTION_soname:
+            s->soname = sugar_strdup(optarg);
             break;
-        case TCC_OPTION_o:
+        case SUGAR_OPTION_o:
             if (s->outfile) {
-                tcc_warning("multiple -o option");
-                tcc_free(s->outfile);
+                sugar_warning("multiple -o option");
+                sugar_free(s->outfile);
             }
-            s->outfile = tcc_strdup(optarg);
+            s->outfile = sugar_strdup(optarg);
             break;
-        case TCC_OPTION_r:
+        case SUGAR_OPTION_r:
             /* generate a .o merging several output files */
             s->option_r = 1;
-            x = TCC_OUTPUT_OBJ;
+            x = SUGAR_OUTPUT_OBJ;
             goto set_output_type;
-        case TCC_OPTION_isystem:
-            tcc_add_sysinclude_path(s, optarg);
+        case SUGAR_OPTION_isystem:
+            sugar_add_sysinclude_path(s, optarg);
             break;
-        case TCC_OPTION_include:
+        case SUGAR_OPTION_include:
             cstr_printf(&s->cmdline_incl, "#include \"%s\"\n", optarg);
             break;
-        case TCC_OPTION_nostdinc:
+        case SUGAR_OPTION_nostdinc:
             s->nostdinc = 1;
             break;
-        case TCC_OPTION_nostdlib:
+        case SUGAR_OPTION_nostdlib:
             s->nostdlib = 1;
             break;
-        case TCC_OPTION_run:
-#ifndef TCC_IS_NATIVE
-            tcc_error("-run is not available in a cross compiler");
+        case SUGAR_OPTION_run:
+#ifndef SUGAR_IS_NATIVE
+            sugar_error("-run is not available in a cross compiler");
 #endif
             run = optarg;
-            x = TCC_OUTPUT_MEMORY;
+            x = SUGAR_OUTPUT_MEMORY;
             goto set_output_type;
-        case TCC_OPTION_v:
+        case SUGAR_OPTION_v:
             do ++s->verbose; while (*optarg++ == 'v');
             ++noaction;
             break;
-        case TCC_OPTION_f:
+        case SUGAR_OPTION_f:
             if (set_flag(s, options_f, optarg) < 0)
                 goto unsupported_option;
             break;
-#ifdef TCC_TARGET_ARM
-        case TCC_OPTION_mfloat_abi:
-            /* tcc doesn't support soft float yet */
+#ifdef SUGAR_TARGET_ARM
+        case SUGAR_OPTION_mfloat_abi:
+            /* sugar doesn't support soft float yet */
             if (!strcmp(optarg, "softfp")) {
                 s->float_abi = ARM_SOFTFP_FLOAT;
-                tcc_undefine_symbol(s, "__ARM_PCS_VFP");
+                sugar_undefine_symbol(s, "__ARM_PCS_VFP");
             } else if (!strcmp(optarg, "hard"))
                 s->float_abi = ARM_HARD_FLOAT;
             else
-                tcc_error("unsupported float abi '%s'", optarg);
+                sugar_error("unsupported float abi '%s'", optarg);
             break;
 #endif
-        case TCC_OPTION_m:
+        case SUGAR_OPTION_m:
             if (set_flag(s, options_m, optarg) < 0) {
                 if (x = atoi(optarg), x != 32 && x != 64)
                     goto unsupported_option;
@@ -1995,44 +1995,44 @@ reparse:
                 ++noaction;
             }
             break;
-        case TCC_OPTION_W:
+        case SUGAR_OPTION_W:
             s->warn_none = 0;
             if (optarg[0] && set_flag(s, options_W, optarg) < 0)
                 goto unsupported_option;
             break;
-        case TCC_OPTION_w:
+        case SUGAR_OPTION_w:
             s->warn_none = 1;
             break;
-        case TCC_OPTION_rdynamic:
+        case SUGAR_OPTION_rdynamic:
             s->rdynamic = 1;
             break;
-        case TCC_OPTION_Wl:
+        case SUGAR_OPTION_Wl:
             if (linker_arg.size)
                 --linker_arg.size, cstr_ccat(&linker_arg, ',');
             cstr_cat(&linker_arg, optarg, 0);
-            if (tcc_set_linker(s, linker_arg.data))
+            if (sugar_set_linker(s, linker_arg.data))
                 cstr_free(&linker_arg);
             break;
-        case TCC_OPTION_Wp:
+        case SUGAR_OPTION_Wp:
             r = optarg;
             goto reparse;
-        case TCC_OPTION_E:
-            x = TCC_OUTPUT_PREPROCESS;
+        case SUGAR_OPTION_E:
+            x = SUGAR_OUTPUT_PREPROCESS;
             goto set_output_type;
-        case TCC_OPTION_P:
+        case SUGAR_OPTION_P:
             s->Pflag = atoi(optarg) + 1;
             break;
-        case TCC_OPTION_MD:
+        case SUGAR_OPTION_MD:
             s->gen_deps = 1;
             break;
-        case TCC_OPTION_MF:
-            s->deps_outfile = tcc_strdup(optarg);
+        case SUGAR_OPTION_MF:
+            s->deps_outfile = sugar_strdup(optarg);
             break;
-        case TCC_OPTION_dumpversion:
-            printf ("%s\n", TCC_VERSION);
+        case SUGAR_OPTION_dumpversion:
+            printf ("%s\n", SUGAR_VERSION);
             exit(0);
             break;
-        case TCC_OPTION_x:
+        case SUGAR_OPTION_x:
             x = 0;
             if (*optarg == 'c')
                 x = AFF_TYPE_C;
@@ -2043,37 +2043,37 @@ reparse:
             else if (*optarg == 'n')
                 x = AFF_TYPE_NONE;
             else
-                tcc_warning("unsupported language '%s'", optarg);
+                sugar_warning("unsupported language '%s'", optarg);
             s->filetype = x | (s->filetype & ~AFF_TYPE_MASK);
             break;
-        case TCC_OPTION_O:
+        case SUGAR_OPTION_O:
             s->optimize = atoi(optarg);
             break;
-        case TCC_OPTION_print_search_dirs:
+        case SUGAR_OPTION_print_search_dirs:
             x = OPT_PRINT_DIRS;
             goto extra_action;
-        case TCC_OPTION_impdef:
+        case SUGAR_OPTION_impdef:
             x = OPT_IMPDEF;
             goto extra_action;
-        case TCC_OPTION_ar:
+        case SUGAR_OPTION_ar:
             x = OPT_AR;
         extra_action:
             arg_start = optind - 1;
             if (arg_start != noaction)
-                tcc_error("cannot parse %s here", r);
+                sugar_error("cannot parse %s here", r);
             tool = x;
             break;
-        case TCC_OPTION_traditional:
-        case TCC_OPTION_pedantic:
-        case TCC_OPTION_pipe:
-        case TCC_OPTION_s:
-        case TCC_OPTION_C:
+        case SUGAR_OPTION_traditional:
+        case SUGAR_OPTION_pedantic:
+        case SUGAR_OPTION_pipe:
+        case SUGAR_OPTION_s:
+        case SUGAR_OPTION_C:
             /* ignored */
             break;
         default:
 unsupported_option:
             if (s->warn_unsupported)
-                tcc_warning("unsupported option '%s'", r);
+                sugar_warning("unsupported option '%s'", r);
             break;
         }
     }
@@ -2094,16 +2094,16 @@ unsupported_option:
     return OPT_HELP;
 }
 
-LIBTCCAPI void tcc_set_options(TCCState *s, const char *r)
+LIBSUGARAPI void sugar_set_options(SUGARState *s, const char *r)
 {
     char **argv = NULL;
     int argc = 0;
     args_parser_make_argv(r, &argc, &argv);
-    tcc_parse_args(s, &argc, &argv, 0);
+    sugar_parse_args(s, &argc, &argv, 0);
     dynarray_reset(&argv, &argc);
 }
 
-PUB_FUNC void tcc_print_stats(TCCState *s1, unsigned total_time)
+PUB_FUNC void sugar_print_stats(SUGARState *s1, unsigned total_time)
 {
     if (total_time < 1)
         total_time = 1;

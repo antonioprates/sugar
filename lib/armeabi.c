@@ -1,4 +1,4 @@
-/* TCC ARM runtime EABI
+/* SUGAR ARM runtime EABI
    Copyright (C) 2013 Thomas Preud'homme
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.*/
 
-#ifdef __TINYC__
+#ifdef __SUGARC__
 #define INT_MIN (-2147483647 - 1)
 #define INT_MAX 2147483647
 #define UINT_MAX 0xffffffff

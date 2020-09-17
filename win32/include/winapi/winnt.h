@@ -1161,7 +1161,7 @@ typedef DWORD LCID;
     VOID __faststorefence(VOID);
     VOID _m_prefetchw(volatile CONST VOID *Source);
 
-//!__TINYC__: #include <intrin.h>
+//!__SUGARC__: #include <intrin.h>
 
 #define YieldProcessor _mm_pause
 #define MemoryBarrier __faststorefence

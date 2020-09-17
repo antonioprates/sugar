@@ -3,7 +3,7 @@
 	.global	alloca
 	.type	alloca, %function
 alloca:
-#ifdef __TINYC__
+#ifdef __SUGARC__
         .int 0xe060d00d
         .int 0xe3cdd007
         .int 0xe1a0000d

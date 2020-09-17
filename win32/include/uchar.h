@@ -1,6 +1,6 @@
 /**
  * This file has no copyright assigned and is placed in the Public Domain.
- * This file is part of the TinyCC package.
+ * This file is part of the SugarC package.
  * No warranty is given; refer to the file DISCLAIMER within this package.
  */
 

@@ -19,13 +19,13 @@ FILTER = 2>&1 | sed 's,$(SRC)/,,g'
 
 %.test: %.c %.expect
 	@echo PPTest $* ...
-	-@$(TCC) -E -P $< $(FILTER) >$*.output 2>&1 ; \
+	-@$(SUGAR) -E -P $< $(FILTER) >$*.output 2>&1 ; \
 	    diff $(DIFF_OPTS) $(SRC)/$*.expect $*.output \
 	    && rm -f $*.output
 
 %.test: %.S %.expect
 	@echo PPTest $* ...
-	-@$(TCC) -E -P $< $(FILTER) >$*.output 2>&1 ; \
+	-@$(SUGAR) -E -P $< $(FILTER) >$*.output 2>&1 ; \
 	    diff $(DIFF_OPTS) $(SRC)/$*.expect $*.output \
 	    && rm -f $*.output
 

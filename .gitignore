@@ -60,10 +60,10 @@ dkms.conf
 *.zip
 .gdb_history
 a.out
-tcc_g
-tcc
-*-tcc
-libtcc*.def
+sugar_g
+sugar
+*-sugar
+libsugar*.def
 
 config*.h
 config*.mak
@@ -72,13 +72,13 @@ conftest*
 !conftest.c
 tags
 TAGS
-tcc.1
-tcc.pod
-tcc-doc.html
-tcc-doc.info
+sugar.1
+sugar.pod
+sugar-doc.html
+sugar-doc.info
 
 win32/doc
-win32/libtcc
+win32/libsugar
 win32/lib/32
 win32/lib/64
 win32/include/float.h
@@ -86,21 +86,24 @@ win32/include/stdarg.h
 win32/include/stdbool.h
 win32/include/stddef.h
 win32/include/varargs.h
-win32/include/tcclib.h
+win32/include/sugarlib.h
 
-tests/tcctest[1234]
-tests/tcctest.gcc
+tests/sugartest[1234]
+tests/sugartest.gcc
 tests/*.out*
 tests/*.ref
 tests/*.txt
 tests/*.gcc
 tests/*-cc*
-tests/*-tcc*
-tests/libtcc_test
-tests/libtcc_test_mt
+tests/*-sugar*
+tests/libsugar_test
+tests/libsugar_test_mt
 tests/asm-c-connect
 tests/asm-c-connect-sep
 tests/vla_test
 tests/hello
 tests/tests2/fred.txt
-libtcc.dylib
+libsugar.dylib
+
+# OSX crap
+.DS_Store

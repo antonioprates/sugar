@@ -3,7 +3,7 @@
 // Number of registers available to allocator:
 #define NB_REGS 19 // x10-x17 aka a0-a7, f10-f17 aka fa0-fa7, xxx, ra, sp
 #define NB_ASM_REGS 32
-#define CONFIG_TCC_ASM
+#define CONFIG_SUGAR_ASM
 
 #define TREG_R(x) (x) // x = 0..7
 #define TREG_F(x) (x + 8) // x = 0..7
@@ -33,7 +33,7 @@
 
 #else
 #define USING_GLOBALS
-#include "tcc.h"
+#include "sugar.h"
 #include <assert.h>
 
 #define XLEN 8
@@ -63,7 +63,7 @@ ST_DATA const int reg_classes[NB_REGS] = {
   1 << TREG_SP
 };
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 static addr_t func_bound_offset;
 static unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
@@ -76,7 +76,7 @@ static int ireg(int r)
     if (r == TREG_SP)
       return 2; // sp
     assert(r >= 0 && r < 8);
-    return r + 10;  // tccrX --> aX == x(10+X)
+    return r + 10;  // sugarrX --> aX == x(10+X)
 }
 
 static int is_ireg(int r)
@@ -87,7 +87,7 @@ static int is_ireg(int r)
 static int freg(int r)
 {
     assert(r >= 8 && r < 16);
-    return r - 8 + 10;  // tccfX --> faX == f(10+X)
+    return r - 8 + 10;  // sugarfX --> faX == f(10+X)
 }
 
 static int is_freg(int r)
@@ -143,7 +143,7 @@ ST_FUNC void gsym_addr(int t_, int a_)
         uint32_t next = read32le(ptr);
         uint32_t r = a - t, imm;
         if ((r + (1 << 21)) & ~((1U << 22) - 2))
-          tcc_error("out-of-range branch chain");
+          sugar_error("out-of-range branch chain");
         imm =   (((r >> 12) &  0xff) << 12)
             | (((r >> 11) &     1) << 20)
             | (((r >>  1) & 0x3ff) << 21)
@@ -166,7 +166,7 @@ static int load_symofs(int r, SValue *sv, int forstore)
             sv->c.i = 0;
         } else {
             if (((unsigned)fc + (1 << 11)) >> 12)
-              tcc_error("unimp: large addend for global address (0x%llx)", (long long)sv->c.i);
+              sugar_error("unimp: large addend for global address (0x%llx)", (long long)sv->c.i);
             greloca(cur_text_section, sv->sym, ind,
                     R_RISCV_GOT_HI20, 0);
             doload = 1;
@@ -188,7 +188,7 @@ static int load_symofs(int r, SValue *sv, int forstore)
     } else if (v == VT_LOCAL || v == VT_LLOCAL) {
         rr = 8; // s0
         if (fc != sv->c.i)
-          tcc_error("unimp: store(giant local off) (0x%llx)", (long long)sv->c.i);
+          sugar_error("unimp: store(giant local off) (0x%llx)", (long long)sv->c.i);
         if (((unsigned)fc + (1 << 11)) >> 12) {
             rr = is_ireg(r) ? ireg(r) : 5; // t0
             o(0x37 | (rr << 7) | ((0x800 + fc) & 0xfffff000)); //lui RR, upper(fc)
@@ -196,7 +196,7 @@ static int load_symofs(int r, SValue *sv, int forstore)
             sv->c.i = fc << 20 >> 20;
         }
     } else
-      tcc_error("uhh");
+      sugar_error("uhh");
     return rr;
 }
 
@@ -223,7 +223,7 @@ ST_FUNC void load(int r, SValue *sv)
         } else if (v < VT_CONST) {
             br = ireg(v);
             /*if (((unsigned)fc + (1 << 11)) >> 12)
-              tcc_error("unimp: load(large addend) (0x%x)", fc);*/
+              sugar_error("unimp: load(large addend) (0x%x)", fc);*/
             fc = 0; // XXX store ofs in LVAL(reg)
         } else if (v == VT_LLOCAL) {
             br = load_symofs(r, sv, 0);
@@ -232,7 +232,7 @@ ST_FUNC void load(int r, SValue *sv)
             br = rr;
             fc = 0;
         } else {
-            tcc_error("unimp: load(non-local lval)");
+            sugar_error("unimp: load(non-local lval)");
         }
         EI(opcode, func3, rr, br, fc); // l[bhwd][u] / fl[wd] RR, fc(BR)
     } else if (v == VT_CONST) {
@@ -244,7 +244,7 @@ ST_FUNC void load(int r, SValue *sv)
             do32bit = 0;
         }
         if (is_float(sv->type.t) && bt != VT_LDOUBLE)
-          tcc_error("unimp: load(float)");
+          sugar_error("unimp: load(float)");
         if (fc != sv->c.i) {
             int64_t si = sv->c.i;
             uint32_t pi;
@@ -342,7 +342,7 @@ ST_FUNC void load(int r, SValue *sv)
         gsym(fc);
         EI(0x13, 0, rr, 0, t ^ 1);  // addi RR, x0, !t
     } else
-      tcc_error("unimp: load(non-const)");
+      sugar_error("unimp: load(non-const)");
 }
 
 ST_FUNC void store(int r, SValue *sv)
@@ -358,9 +358,9 @@ ST_FUNC void store(int r, SValue *sv)
     if (bt == VT_LDOUBLE)
       size = align = 8;
     if (bt == VT_STRUCT)
-      tcc_error("unimp: store(struct)");
+      sugar_error("unimp: store(struct)");
     if (size > 8)
-      tcc_error("unimp: large sized store");
+      sugar_error("unimp: large sized store");
     assert(sv->r & VT_LVAL);
     if (fr == VT_LOCAL || (sv->r & VT_SYM)) {
         ptrreg = load_symofs(-1, sv, 1);
@@ -368,10 +368,10 @@ ST_FUNC void store(int r, SValue *sv)
     } else if (fr < VT_CONST) {
         ptrreg = ireg(fr);
         /*if (((unsigned)fc + (1 << 11)) >> 12)
-          tcc_error("unimp: store(large addend) (0x%x)", fc);*/
+          sugar_error("unimp: store(large addend) (0x%x)", fc);*/
         fc = 0; // XXX support offsets regs
     } else
-      tcc_error("implement me: %s(!local)", __FUNCTION__);
+      sugar_error("implement me: %s(!local)", __FUNCTION__);
     ES(is_freg(r) ? 0x27 : 0x23,                          // fs... | s...
        size == 1 ? 0 : size == 2 ? 1 : size == 4 ? 2 : 3, // ... [wd] | [bhwd]
        ptrreg, rr, fc);                                   // RR, fc(base)
@@ -398,7 +398,7 @@ static void gcall_or_jmp(int docall)
     }
 }
 
-#if defined(CONFIG_TCC_BCHECK)
+#if defined(CONFIG_SUGAR_BCHECK)
 
 static void gen_bounds_call(int v)
 {
@@ -520,13 +520,13 @@ static void reg_pass(CType *type, int *prc, int *fieldofs, int named)
 ST_FUNC void gfunc_call(int nb_args)
 {
     int i, align, size, areg[2];
-    int *info = tcc_malloc((nb_args + 1) * sizeof (int));
+    int *info = sugar_malloc((nb_args + 1) * sizeof (int));
     int stack_adj = 0, tempspace = 0, stack_add, ofs, splitofs = 0;
     SValue *sv;
     Sym *sa;
 
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gbound_args(nb_args);
 #endif
 
@@ -537,7 +537,7 @@ ST_FUNC void gfunc_call(int nb_args)
         int nregs, byref = 0, tempofs;
         int prc[3], fieldofs[3];
         sv = &vtop[1 + i - nb_args];
-        sv->type.t &= ~VT_ARRAY; // XXX this should be done in tccgen.c
+        sv->type.t &= ~VT_ARRAY; // XXX this should be done in sugargen.c
         size = type_size(&sv->type, &align);
         if (size > 16) {
             if (align < XLEN)
@@ -717,7 +717,7 @@ ST_FUNC void gfunc_call(int nb_args)
         else
             EI(0x13, 0, 2, 2, stack_add);      // addi sp, sp, adj
    }
-   tcc_free(info);
+   sugar_free(info);
 }
 
 static int func_sub_sp_offset, num_va_regs, func_va_list_ofs;
@@ -796,8 +796,8 @@ ST_FUNC void gfunc_prolog(Sym *func_sym)
             ES(0x23, 3, 8, 10 + areg[0], -8 + num_va_regs * 8); // sd aX, loc(s0)
         }
     }
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gen_bounds_prolog();
 #endif
 }
@@ -841,8 +841,8 @@ ST_FUNC void gfunc_epilog(void)
 {
     int v, saved_ind, d, large_ofs_ind;
 
-#ifdef CONFIG_TCC_BCHECK
-    if (tcc_state->do_bounds_check)
+#ifdef CONFIG_SUGAR_BCHECK
+    if (sugar_state->do_bounds_check)
         gen_bounds_epilog();
 #endif
 
@@ -891,7 +891,7 @@ ST_FUNC void gen_va_start(void)
 ST_FUNC void gen_fill_nops(int bytes)
 {
     if ((bytes & 3))
-      tcc_error("alignment of code section not multiple of 4");
+      sugar_error("alignment of code section not multiple of 4");
     while (bytes > 0) {
         EI(0x13, 0, 0, 0, 0);      // addi x0, x0, 0 == nop
         bytes -= 4;
@@ -1044,7 +1044,7 @@ static void gen_opil(int op, int ll)
             vtop->cmp_r = a | b << 8;
             break;
         }
-        tcc_error("implement me: %s(%s)", __FUNCTION__, get_tok_str(op, NULL));
+        sugar_error("implement me: %s(%s)", __FUNCTION__, get_tok_str(op, NULL));
         break;
 
     case '+':
@@ -1317,8 +1317,8 @@ ST_FUNC void gen_vla_sp_restore(int addr)
 ST_FUNC void gen_vla_alloc(CType *type, int align)
 {
     int rr;
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check)
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check)
         vpushv(vtop);
 #endif
     rr = ireg(gv(RC_INT));
@@ -1326,8 +1326,8 @@ ST_FUNC void gen_vla_alloc(CType *type, int align)
     EI(0x13, 7, rr, rr, -16);  // andi, RR, RR, -16
     ER(0x33, 0, 2, 2, rr, 0x20); // sub sp, sp, rr
     vpop();
-#if defined(CONFIG_TCC_BCHECK)
-    if (tcc_state->do_bounds_check) {
+#if defined(CONFIG_SUGAR_BCHECK)
+    if (sugar_state->do_bounds_check) {
         vpushi(0);
         vtop->r = TREG_R(0);
         o(0x00010513); /* mv a0,sp */

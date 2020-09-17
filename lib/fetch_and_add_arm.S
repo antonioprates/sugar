@@ -3,7 +3,7 @@
         .global fetch_and_add_arm
         .type   fetch_and_add_arm, %function
 fetch_and_add_arm:
-#ifdef __TINYC__
+#ifdef __SUGARC__
         .int 0xee070fba
         .int 0xe1903f9f
         .int 0xe0833001

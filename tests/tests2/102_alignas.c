@@ -5,7 +5,7 @@ _Alignas(16) i3;
 int _Alignas(double) i4;
 int _Alignas(int) i5;
 #if 0
-/* The following are currently wrongly accepted by TCC but really shouldn't.  */
+/* The following are currently wrongly accepted by SUGAR but really shouldn't.  */
 int _Alignas(int _Alignas(16)) i6; //wrong, 'int _Alignas(16)' is no type-name
 typedef int _Alignas(16) int16aligned_t; //wrong, _Alignas invalid on typedef
 int16aligned_t i7;

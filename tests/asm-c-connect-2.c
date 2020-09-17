@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#if (defined _WIN32 || defined __APPLE__) && (!defined __TINYC__ || defined __leading_underscore)
+#if (defined _WIN32 || defined __APPLE__) && (!defined __SUGARC__ || defined __leading_underscore)
 # define _ "_"
 #else
 # define _
@@ -20,10 +20,10 @@ int x3(void)
 }
 
 /* That callx4 is defined globally (as if ".globl callx4")
-   is a TCC extension.  GCC doesn't behave like this.  */
+   is a SUGAR extension.  GCC doesn't behave like this.  */
 void callx4(void);
 __asm__(_"callx4: call "_"x4; ret;"
-#ifndef __TINYC__
+#ifndef __SUGARC__
     " .global "_"callx4"
 #endif
 );
