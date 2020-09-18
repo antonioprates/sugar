@@ -18,11 +18,17 @@ You might need to make-install Sugar C to get it properly working on your system
 For linux and osx should be as simple as pasting this line into your terminal:
 
 ```sh
-$ git clone https://github.com/antonioprates/sugar.git && cd sugar && ./install.sh && cd ..
+$ git clone https://github.com/antonioprates/sugar.git && cd sugar && ./install.sh
+```
+
+If you get permission issues, you can try to `sudo` the install script also:
+
+```sh
+$ sudo ./install.sh
 ```
 
 If you don't need the source, you can remove the it afterwards:
 
 ```sh
-$ rm -rf sugar
+$ cd .. && rm -rf sugar
 ```
