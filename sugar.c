@@ -148,31 +148,31 @@ static const char help2[] =
     ;
 
 static const char version[] =
-    "sugar version "SUGAR_VERSION" ("
+    "Sugar C Compiler version "SUGAR_VERSION"\n(tcc-"TINYC_VERSION"-"
 #ifdef SUGAR_TARGET_I386
         "i386"
 #elif defined SUGAR_TARGET_X86_64
-        "x86_64"
+        "x86-64"
 #elif defined SUGAR_TARGET_C67
-        "C67"
+        "c67"
 #elif defined SUGAR_TARGET_ARM
-        "ARM"
+        "arm"
 #elif defined SUGAR_TARGET_ARM64
-        "AArch64"
+        "arm64"
 #elif defined SUGAR_TARGET_RISCV64
         "riscv64"
 #endif
 #ifdef SUGAR_ARM_HARDFLOAT
-        " Hard Float"
+        "-hardfloat"
 #endif
 #ifdef SUGAR_TARGET_PE
-        " Windows"
+        "-win"
 #elif defined(SUGAR_TARGET_MACHO)
-        " Darwin"
+        "-osx"
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-        " FreeBSD"
+        "-bsd"
 #else
-        " Linux"
+        "-linux"
 #endif
     ")\n"
     ;
