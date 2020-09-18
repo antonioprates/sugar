@@ -1,4 +1,3 @@
 #define a() YES
 #define b() a
-b()
-b()()
+b() b()()

@@ -34,41 +34,44 @@
 
 #define __STRUCT__ struct
 #define STDMETHOD(method) virtual HRESULT WINAPI method
-#define STDMETHOD_(type,method) virtual type WINAPI method
+#define STDMETHOD_(type, method) virtual type WINAPI method
 #define STDMETHODV(method) virtual HRESULT STDMETHODVCALLTYPE method
-#define STDMETHODV_(type,method) virtual type STDMETHODVCALLTYPE method
+#define STDMETHODV_(type, method) virtual type STDMETHODVCALLTYPE method
 #define PURE = 0
 #define THIS_
 #define THIS void
 #define DECLARE_INTERFACE(iface) __STRUCT__ iface
-#define DECLARE_INTERFACE_(iface,baseiface) __STRUCT__ iface : public baseiface
+#define DECLARE_INTERFACE_(iface, baseiface) __STRUCT__ iface : public baseiface
 #else
 
 #ifndef __OBJC__
 #define interface struct
 #endif
 
-#define STDMETHOD(method) HRESULT (WINAPI *method)
-#define STDMETHOD_(type,method) type (WINAPI *method)
-#define STDMETHODV(method) HRESULT (STDMETHODVCALLTYPE *method)
-#define STDMETHODV_(type,method) type (STDMETHODVCALLTYPE *method)
+#define STDMETHOD(method) HRESULT(WINAPI* method)
+#define STDMETHOD_(type, method) type(WINAPI* method)
+#define STDMETHODV(method) HRESULT(STDMETHODVCALLTYPE* method)
+#define STDMETHODV_(type, method) type(STDMETHODVCALLTYPE* method)
 
 #define PURE
 #define THIS_ INTERFACE *This,
-#define THIS INTERFACE *This
+#define THIS INTERFACE* This
 #ifdef CONST_VTABLE
-#define DECLARE_INTERFACE(iface) typedef struct iface { \
-  const struct iface##Vtbl *lpVtbl; } iface; \
+#define DECLARE_INTERFACE(iface)                \
+  typedef struct iface {                        \
+    const struct iface##Vtbl* lpVtbl;           \
+  } iface;                                      \
   typedef const struct iface##Vtbl iface##Vtbl; \
   const struct iface##Vtbl
 #else
-#define DECLARE_INTERFACE(iface) typedef struct iface { \
-    struct iface##Vtbl *lpVtbl; \
-  } iface; \
+#define DECLARE_INTERFACE(iface)          \
+  typedef struct iface {                  \
+    struct iface##Vtbl* lpVtbl;           \
+  } iface;                                \
   typedef struct iface##Vtbl iface##Vtbl; \
   struct iface##Vtbl
 #endif
-#define DECLARE_INTERFACE_(iface,baseiface) DECLARE_INTERFACE(iface)
+#define DECLARE_INTERFACE_(iface, baseiface) DECLARE_INTERFACE(iface)
 #endif
 
 #include <guiddef.h>

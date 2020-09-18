@@ -1,5 +1,3 @@
-#define X(a,b, \
-	c,d) \
-	foo
+#define X(a, b, c, d) foo
 
-X(1,2,3,4)
+X(1, 2, 3, 4)

@@ -1,5 +1,12 @@
 TODO list:
 
+Wishlist:
+
+- potential memory leak tracker, do some alloc/free bookkeeping,
+  to be able to run program in debug mode, and let compiler tell
+  at the end of run, which pointers were allocated but
+  never freed...
+
 Bugs:
 
 - i386 fastcall is mostly wrong

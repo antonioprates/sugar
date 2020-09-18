@@ -1,93 +1,91 @@
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 float fd;
 
-int
-test()
-{
-   // was an internal sugar compiler error with arm64 backend until 2019-11-08
-   if (fd < 5.5) {
-     return 1;
-   } else {
-     return 0;
-   }
+int test() {
+  // was an internal sugar compiler error with arm64 backend until 2019-11-08
+  if (fd < 5.5) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
-double coerce(double x)
-{
-	x++;
-	return x;
+double coerce(double x) {
+  x++;
+  return x;
 }
 
-int main()
-{
-   // variables
-   float a = 12.34 + 56.78;
-   printf("%f\n", a);
+int main() {
+  // variables
+  float a = 12.34 + 56.78;
+  printf("%f\n", a);
 
-   // infix operators
-   printf("%f\n", 12.34 + 56.78);
-   printf("%f\n", 12.34 - 56.78);
-   printf("%f\n", 12.34 * 56.78);
-   printf("%f\n", 12.34 / 56.78);
+  // infix operators
+  printf("%f\n", 12.34 + 56.78);
+  printf("%f\n", 12.34 - 56.78);
+  printf("%f\n", 12.34 * 56.78);
+  printf("%f\n", 12.34 / 56.78);
 
-   // comparison operators
-   printf("%d %d %d %d %d %d\n", 12.34 < 56.78, 12.34 <= 56.78, 12.34 == 56.78, 12.34 >= 56.78, 12.34 > 56.78, 12.34 != 56.78);
-   printf("%d %d %d %d %d %d\n", 12.34 < 12.34, 12.34 <= 12.34, 12.34 == 12.34, 12.34 >= 12.34, 12.34 > 12.34, 12.34 != 12.34);
-   printf("%d %d %d %d %d %d\n", 56.78 < 12.34, 56.78 <= 12.34, 56.78 == 12.34, 56.78 >= 12.34, 56.78 > 12.34, 56.78 != 12.34);
+  // comparison operators
+  printf("%d %d %d %d %d %d\n", 12.34 < 56.78, 12.34 <= 56.78, 12.34 == 56.78,
+         12.34 >= 56.78, 12.34 > 56.78, 12.34 != 56.78);
+  printf("%d %d %d %d %d %d\n", 12.34 < 12.34, 12.34 <= 12.34, 12.34 == 12.34,
+         12.34 >= 12.34, 12.34 > 12.34, 12.34 != 12.34);
+  printf("%d %d %d %d %d %d\n", 56.78 < 12.34, 56.78 <= 12.34, 56.78 == 12.34,
+         56.78 >= 12.34, 56.78 > 12.34, 56.78 != 12.34);
 
-   // assignment operators
-   a = 12.34;
-   a += 56.78;
-   printf("%f\n", a);
+  // assignment operators
+  a = 12.34;
+  a += 56.78;
+  printf("%f\n", a);
 
-   a = 12.34;
-   a -= 56.78;
-   printf("%f\n", a);
+  a = 12.34;
+  a -= 56.78;
+  printf("%f\n", a);
 
-   a = 12.34;
-   a *= 56.78;
-   printf("%f\n", a);
+  a = 12.34;
+  a *= 56.78;
+  printf("%f\n", a);
 
-   a = 12.34;
-   a /= 56.78;
-   printf("%f\n", a);
+  a = 12.34;
+  a /= 56.78;
+  printf("%f\n", a);
 
-   // prefix operators
-   printf("%f\n", +12.34);
-   printf("%f\n", -12.34);
+  // prefix operators
+  printf("%f\n", +12.34);
+  printf("%f\n", -12.34);
 
-   // type coercion
-   a = 2;
-   printf("%f\n", a);
-   printf("%f\n", coerce(2));
+  // type coercion
+  a = 2;
+  printf("%f\n", a);
+  printf("%f\n", coerce(2));
 
-   //type conversion to unsigned long int
-   float f = 3421.439;
-   double d = 7855.332231;
-   long double ld = 2469.346786989643234;
+  // type conversion to unsigned long int
+  float f = 3421.439;
+  double d = 7855.332231;
+  long double ld = 2469.346786989643234;
 
-   unsigned long int i;
-   i = f;
-   printf("%lu\n", i);
-   i = d;
-   printf("%lu\n", i);
-   i = ld;
-   printf("%lu\n", i);
+  unsigned long int i;
+  i = f;
+  printf("%lu\n", i);
+  i = d;
+  printf("%lu\n", i);
+  i = ld;
+  printf("%lu\n", i);
 
-   f = -3421.439;
-   d = -7855.332231;
-   ld = -2469.346786989643234;
-   i = f;
-   printf("%lu\n", i);
-   i = d;
-   printf("%lu\n", i);
-   i = ld;
-   printf("%lu\n", i);
+  f = -3421.439;
+  d = -7855.332231;
+  ld = -2469.346786989643234;
+  i = f;
+  printf("%lu\n", i);
+  i = d;
+  printf("%lu\n", i);
+  i = ld;
+  printf("%lu\n", i);
 
-
-   return 0;
+  return 0;
 }
 
 /* vim: set expandtab ts=4 sw=3 sts=3 tw=80 :*/

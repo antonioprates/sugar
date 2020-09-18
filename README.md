@@ -27,7 +27,7 @@ If you get permission issues, you can try to `sudo` the install script also:
 $ sudo ./install.sh
 ```
 
-If you don't need the source, you can remove the it afterwards:
+If you don't need the source, you can remove the folder afterwards:
 
 ```sh
 $ cd .. && rm -rf sugar

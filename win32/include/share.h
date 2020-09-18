@@ -17,7 +17,7 @@
 #define _SH_DENYNO 0x40
 #define _SH_SECURE 0x80
 
-#ifndef	NO_OLDNAMES
+#ifndef NO_OLDNAMES
 #define SH_COMPAT _SH_COMPAT
 #define SH_DENYRW _SH_DENYRW
 #define SH_DENYWR _SH_DENYWR

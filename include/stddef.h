@@ -9,7 +9,10 @@ typedef __PTRDIFF_TYPE__ intptr_t;
 typedef __SIZE_TYPE__ uintptr_t;
 
 #if __STDC_VERSION__ >= 201112L
-typedef union { long long __ll; long double __ld; } max_align_t;
+typedef union {
+  long long __ll;
+  long double __ld;
+} max_align_t;
 #endif
 
 #ifndef __int8_t_defined
@@ -37,9 +40,9 @@ typedef unsigned long long int uint64_t;
 #endif
 
 #undef offsetof
-#define offsetof(type, field) ((size_t)&((type *)0)->field)
+#define offsetof(type, field) ((size_t) & ((type*)0)->field)
 
-void *alloca(size_t size);
+void* alloca(size_t size);
 
 #endif
 
@@ -50,7 +53,7 @@ void *alloca(size_t size);
    already (without requiring wint_t).  Some other libs define _WINT_T
    if they've already provided that type, so we can use that as guard.
    SUGAR defines __WINT_TYPE__ for us.  */
-#if defined (__need_wint_t)
+#if defined(__need_wint_t)
 #ifndef _WINT_T
 #define _WINT_T
 typedef __WINT_TYPE__ wint_t;

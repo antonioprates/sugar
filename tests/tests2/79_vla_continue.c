@@ -1,15 +1,13 @@
 #include <stdio.h>
 
-int f(void)
-{
+int f(void) {
   return 5;
 }
 
-void test1()
-{
+void test1() {
   int count = 10;
-  void *addr[10];
-  for(;count--;) {
+  void* addr[10];
+  for (; count--;) {
     int a[f()];
 
     addr[count] = a;
@@ -17,18 +15,17 @@ void test1()
     continue;
   }
 
-  if(addr[9] == addr[0]) {
+  if (addr[9] == addr[0]) {
     printf("OK\n");
   } else {
     printf("NOT OK\n");
   }
 }
 
-void test2()
-{
+void test2() {
   int count = 10;
-  void *addr[count];
-  for(;count--;) {
+  void* addr[count];
+  for (; count--;) {
     int a[f()];
 
     addr[count] = a;
@@ -36,18 +33,17 @@ void test2()
     continue;
   }
 
-  if(addr[9] == addr[0]) {
+  if (addr[9] == addr[0]) {
     printf("OK\n");
   } else {
     printf("NOT OK\n");
   }
 }
 
-void test3()
-{
+void test3() {
   int count = 10;
-  void *addr[count];
-  while(count--) {
+  void* addr[count];
+  while (count--) {
     int a[f()];
 
     addr[count] = a;
@@ -55,17 +51,16 @@ void test3()
     continue;
   }
 
-  if(addr[9] == addr[0]) {
+  if (addr[9] == addr[0]) {
     printf("OK\n");
   } else {
     printf("NOT OK\n");
   }
 }
 
-void test4()
-{
+void test4() {
   int count = 10;
-  void *addr[count];
+  void* addr[count];
   do {
     int a[f()];
 
@@ -74,25 +69,24 @@ void test4()
     continue;
   } while (count);
 
-  if(addr[9] == addr[0]) {
+  if (addr[9] == addr[0]) {
     printf("OK\n");
   } else {
     printf("NOT OK\n");
   }
 }
 
-void test5()
-{
+void test5() {
   int count = 10;
   int a[f()];
   int c[f()];
 
   c[0] = 42;
 
-  for(;count--;) {
+  for (; count--;) {
     int b[f()];
     int i;
-    for (i=0; i<f(); i++) {
+    for (i = 0; i < f(); i++) {
       b[i] = count;
     }
   }
@@ -104,8 +98,7 @@ void test5()
   }
 }
 
-int main(void)
-{
+int main(void) {
   test1();
   test2();
   test3();

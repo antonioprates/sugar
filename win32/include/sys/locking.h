@@ -19,7 +19,7 @@
 #define _LK_RLCK 3
 #define _LK_NBRLCK 4
 
-#ifndef	NO_OLDNAMES
+#ifndef NO_OLDNAMES
 #define LK_UNLCK _LK_UNLCK
 #define LK_LOCK _LK_LOCK
 #define LK_NBLCK _LK_NBLCK
