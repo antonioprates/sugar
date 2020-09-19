@@ -1,4 +1,4 @@
-/* va_list.c - sucarc support for va_list on X86_64 */
+/* va_list.c - sugarc support for va_list on X86_64 */
 
 #if defined __x86_64__
 

@@ -66,7 +66,7 @@ generation (@pxref{Libsugar}).
 SUGAR mainly supports the i386 target on Linux and Windows. There are alpha
 ports for the ARM (@code{arm-sugar}) and the TMS320C67xx targets
 (@code{c67-sugar}). More information about the ARM port is available at
-@url{http://lists.gnu.org/archive/html/sucarc-devel/2003-10/msg00044.html}.
+@url{http://lists.gnu.org/archive/html/tinycc-devel/2003-10/msg00044.html}.
 
 For usage on Windows, see also @url{sugar-win32.txt}.
 

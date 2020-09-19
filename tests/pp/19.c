@@ -95,7 +95,7 @@
 
    The other lines here are variations on this scheme, with X1 to
    X6 coming from the bug report at
-   http://lists.nongnu.org/archive/html/sucarc-devel/2017-07/msg00017.html */
+   http://lists.nongnu.org/archive/html/tinycc-devel/2017-07/msg00017.html */
 X92 M_IF(KO) X93 M_GET_METHOD(INIT, 0, INIT(KO)) X94
     M_GET_METHOD(INIT, 0, M_FLAT(INIT(KO))) X95
     M_IF(M_GET_METHOD(INIT, 0, INIT(KO)))(a, b) X96

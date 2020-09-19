@@ -370,21 +370,6 @@ tags : ; ctags $(TAGFILES)
 # cannot have both tags and TAGS on windows
 ETAGS : ; etags $(TAGFILES)
 
-# create release tarball from *current* git branch (including sugar-doc.html
-# and converting two files to CRLF)
-SUGAR-VERSION = sugar-$(VERSION)
-SUGAR-VERSION = sucarc-mob-$(shell git rev-parse --short=7 HEAD)
-tar:    sugar-doc.html
-	mkdir -p $(SUGAR-VERSION)
-	( cd $(SUGAR-VERSION) && git --git-dir ../.git checkout -f )
-	cp sugar-doc.html $(SUGAR-VERSION)
-	for f in sugar-win32.txt build-sugar.bat ; do \
-	    cat win32/$$f | sed 's,\(.*\),\1\r,g' > $(SUGAR-VERSION)/win32/$$f ; \
-	done
-	tar cjf $(SUGAR-VERSION).tar.bz2 $(SUGAR-VERSION)
-	rm -rf $(SUGAR-VERSION)
-	git reset
-
 config.mak:
 	$(if $(wildcard $@),,@echo "Please run ./configure." && exit 1)
 
