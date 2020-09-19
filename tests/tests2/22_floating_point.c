@@ -12,11 +12,6 @@ int test() {
   }
 }
 
-double coerce(double x) {
-  x++;
-  return x;
-}
-
 int main() {
   // variables
   float a = 12.34 + 56.78;
@@ -60,30 +55,7 @@ int main() {
   // type coercion
   a = 2;
   printf("%f\n", a);
-  printf("%f\n", coerce(2));
-
-  // type conversion to unsigned long int
-  float f = 3421.439;
-  double d = 7855.332231;
-  long double ld = 2469.346786989643234;
-
-  unsigned long int i;
-  i = f;
-  printf("%lu\n", i);
-  i = d;
-  printf("%lu\n", i);
-  i = ld;
-  printf("%lu\n", i);
-
-  f = -3421.439;
-  d = -7855.332231;
-  ld = -2469.346786989643234;
-  i = f;
-  printf("%lu\n", i);
-  i = d;
-  printf("%lu\n", i);
-  i = ld;
-  printf("%lu\n", i);
+  printf("%f\n", sin(2));
 
   return 0;
 }

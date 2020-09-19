@@ -1326,10 +1326,10 @@ static void add_init_array_defines(SUGARState* s1, const char* section_name) {
 }
 
 #ifndef SUGAR_TARGET_PE
-static int sugar_add_support(SUGARState* s1, const char* filename) {
+static void sugar_add_support(SUGARState* s1, const char* filename) {
   char buf[1024];
   snprintf(buf, sizeof(buf), "%s/%s", s1->sugar_lib_path, filename);
-  return sugar_add_file(s1, buf);
+  sugar_add_file(s1, buf);
 }
 #endif
 
@@ -1461,7 +1461,8 @@ ST_FUNC void sugar_add_runtime(SUGARState* s1) {
         sugar_add_btstub(s1);
     }
 #endif
-    sugar_add_support(s1, SUGAR_LIBSUGAR1);
+    if (strlen(SUGAR_LIBSUGAR1) > 0)
+      sugar_add_support(s1, SUGAR_LIBSUGAR1);
 #ifndef SUGAR_TARGET_MACHO
     /* add crt end if not memory output */
     if (s1->output_type != SUGAR_OUTPUT_MEMORY)

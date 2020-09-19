@@ -1,30 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-typedef struct {
-  double x, y;
-} p;
-
-void tst2(int n, ...) {
-  /* va_arg for struct double does not work on some targets */
-  int i;
-  va_list args;
-  va_start(args, n);
-  for (i = 0; i < n; i++) {
-    p v = va_arg(args, p);
-    if (v.x != 1 || v.y != 2)
-      printf("%g %g\n", v.x, v.y);
-  }
-  va_end(args);
-}
-
-void tst3(void) {
-  /* Should VT_SYM be checked for TOK_builtin_constant_p */
-  int r = __builtin_constant_p("c");
-  if (r == 0)
-    printf("%d\n", r);
-}
-
 int compile_errors(void) {
 #if TEST == 1
   {
@@ -62,8 +38,4 @@ int compile_errors(void) {
   return 0;
 }
 
-int main(void) {
-  p v = {1, 2};
-  tst2(1, v);
-  tst3();
-}
+int main(void) {}

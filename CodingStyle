@@ -16,7 +16,7 @@ have large indentation) while most are indented with 4 spaces.
 
     Language
 
-TCC is mostly implemented in C90. Do not use any non-C90 features
+SUGAR is mostly implemented in C90. Do not use any non-C90 features
 that are not already in use.
 
 Non-C90 features currently in use, as revealed by
@@ -41,8 +41,8 @@ additional tests:
 - Build with ./configure --enable-cross.
 
 - If the generation of relocations has been changed, try compiling
-  with TCC and linking with GCC/Clang. If the linker has been
-  modified, try compiling with GCC/Clang and linking with TCC.
+  with SUGAR and linking with GCC/Clang. If the linker has been
+  modified, try compiling with GCC/Clang and linking with SUGAR.
 
 - Test with ASan/UBSan to detect memory corruption and undefined behaviour:
 
@@ -50,12 +50,12 @@ make clean
 ./configure
 make
 make test
-cp libtcc.a libtcc.a.hide
+cp libsugar.a libsugar.a.hide
 
 make clean
 ./configure --extra-cflags="-fsanitize=address,undefined -g"
 make
-cp libtcc.a.hide libtcc.a
+cp libsugar.a.hide libsugar.a
 make test
 
 - Test with Valgrind to detect some uses of uninitialised values:
@@ -64,8 +64,8 @@ make clean
 ./configure
 make
 # On Intel, because Valgrind does floating-point arithmetic differently:
-( cd tests && gcc -I.. tcctest.c && valgrind -q ./a.out > test.ref )
-make test TCC="valgrind -q --leak-check=full `pwd`/tcc -B`pwd` -I`pwd`"
+( cd tests && gcc -I.. sugartest.c && valgrind -q ./a.out > test.ref )
+make test SUGAR="valgrind -q --leak-check=full `pwd`/sugar -B`pwd` -I`pwd`"
 
   (Because of how VLAs are implemented, invalid reads are expected
   with 79_vla_continue.)

@@ -2502,18 +2502,33 @@ the_end:
 struct myspace {
   short int profile;
 };
+struct myspace2 {
+  char a[0];
+};
+struct myspace3 {
+  char a[1];
+};
+struct myspace4 {
+  char a[2];
+};
 
 void stdarg_for_struct(struct myspace bob, ...) {
   struct myspace george, bill;
+  struct myspace2 alex1;
+  struct myspace3 alex2;
+  struct myspace4 alex3;
   va_list ap;
   short int validate;
 
   va_start(ap, bob);
+  alex1 = va_arg(ap, struct myspace2);
+  alex2 = va_arg(ap, struct myspace3);
+  alex3 = va_arg(ap, struct myspace4);
   bill = va_arg(ap, struct myspace);
   george = va_arg(ap, struct myspace);
   validate = va_arg(ap, int);
-  printf("stdarg_for_struct: %d %d %d %d\n", bob.profile, bill.profile,
-         george.profile, validate);
+  printf("stdarg_for_struct: %d %d %d %d %d %d %d\n", alex2.a[0], alex3.a[0],
+         alex3.a[1], bob.profile, bill.profile, george.profile, validate);
   va_end(ap);
 }
 
@@ -2536,9 +2551,38 @@ void stdarg_syntax(int n, ...) {
   (va_end(ap));
 }
 
+typedef struct {
+  double x, y;
+} point;
+point pts[] = {{1.0, 2.0}, {3.0, 4.0},  {5.0, 6.0},
+               {7.0, 8.0}, {9.0, 10.0}, {11.0, 12.0}};
+
+static void stdarg_double_struct(int nargs, int posd, ...) {
+  int i;
+  double d;
+  point pi;
+  va_list args;
+
+  printf("stdarg_double_struct: %d\n", posd);
+  va_start(args, posd);
+  for (i = 0; i < nargs; i++) {
+    if (i == posd) {
+      d = va_arg(args, double);
+      printf("d %d = %g\n", i, d);
+    } else {
+      pi = va_arg(args, point);
+      printf("pts[%d] = %g %g\n", i, pi.x, pi.y);
+    }
+  }
+  va_end(args);
+}
+
 void stdarg_test(void) {
   LONG_DOUBLE ld = 1234567891234LL;
   struct myspace bob;
+  struct myspace2 bob2;
+  struct myspace3 bob3;
+  struct myspace4 bob4;
 
   vprintf1("%d %d %d\n", 1, 2, 3);
   vprintf1("%f %d %f\n", 1.0, 2, 3.0);
@@ -2574,9 +2618,25 @@ void stdarg_test(void) {
       ld, 1234567891234LL, 987654321986LL, 42.0, 43.0, ld);
 
   bob.profile = 42;
-  stdarg_for_struct(bob, bob, bob, bob.profile);
+  bob3.a[0] = 1;
+  bob4.a[0] = 2;
+  bob4.a[1] = 3;
+  stdarg_for_struct(bob, bob2, bob3, bob4, bob, bob, bob.profile);
   stdarg_for_libc("stdarg_for_libc: %s %.2f %d\n", "string", 1.23, 456);
   stdarg_syntax(1, 17);
+#ifndef __riscv
+  stdarg_double_struct(6, -1, pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]);
+  stdarg_double_struct(7, 1, pts[0], -1.0, pts[1], pts[2], pts[3], pts[4],
+                       pts[5]);
+  stdarg_double_struct(7, 2, pts[0], pts[1], -1.0, pts[2], pts[3], pts[4],
+                       pts[5]);
+  stdarg_double_struct(7, 3, pts[0], pts[1], pts[2], -1.0, pts[3], pts[4],
+                       pts[5]);
+  stdarg_double_struct(7, 4, pts[0], pts[1], pts[2], pts[3], -1.0, pts[4],
+                       pts[5]);
+  stdarg_double_struct(7, 5, pts[0], pts[1], pts[2], pts[3], pts[4], -1.0,
+                       pts[5]);
+#endif
 }
 
 int reltab[3] = {1, 2, 3};
@@ -3475,6 +3535,8 @@ void asm_test(void) {}
 
 int constant_p_var;
 
+int func(void);
+
 void builtin_test(void) {
   short s;
   int i;
@@ -3513,6 +3575,8 @@ void builtin_test(void) {
 #else
   printf("res8 = %d\n", __builtin_constant_p(i && 0 ? i : 34));
 #endif
+  printf("res9 = %d\n", __builtin_constant_p("hi"));
+  printf("res10 = %d\n", __builtin_constant_p(func()));
   s = 1;
   ll = 2;
   i = __builtin_choose_expr(1 != 0, ll, s);

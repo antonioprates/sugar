@@ -3652,8 +3652,8 @@ static void sugar_predefs(CString* cstr) {
       "#define __builtin_va_arg(ap,type) "
       "(*(sizeof(type)>(2*__va_reg_size)?*(type**)((ap+=__va_reg_size)-__va_"
       "reg_size):(ap=(va_list)(_sugar_align(ap,type)+(sizeof(type)+__va_reg_"
-      "size-1)&-__va_reg_size),(type*)(ap-((sizeof(type)+__va_reg_size-1)&-__"
-      "va_reg_size)))))\n"
+      "size-1)&-__va_reg_size),(type*)(ap-((sizeof(type)+__va_reg_size-1)&-_"
+      "_va_reg_size)))))\n"
 #else /* SUGAR_TARGET_I386 */
       "typedef char*__builtin_va_list;\n"
       "#define __builtin_va_start(ap,last) "
