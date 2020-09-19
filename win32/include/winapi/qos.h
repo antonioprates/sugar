@@ -38,7 +38,7 @@ typedef struct _flowspec {
   SERVICETYPE ServiceType;
   ULONG MaxSduSize;
   ULONG MinimumPolicedSize;
-} FLOWSPEC, *PFLOWSPEC, *LPFLOWSPEC;
+} FLOWSPEC,*PFLOWSPEC,*LPFLOWSPEC;
 
 #define QOS_NOT_SPECIFIED 0xFFFFFFFF
 #define POSITIVE_INFINITY_RATE 0xFFFFFFFE
@@ -46,7 +46,7 @@ typedef struct _flowspec {
 typedef struct {
   ULONG ObjectType;
   ULONG ObjectLength;
-} QOS_OBJECT_HDR, *LPQOS_OBJECT_HDR;
+} QOS_OBJECT_HDR,*LPQOS_OBJECT_HDR;
 
 #define QOS_GENERAL_ID_BASE 2000
 #define QOS_OBJECT_END_OF_LIST (0x00000001 + QOS_GENERAL_ID_BASE)
@@ -57,7 +57,7 @@ typedef struct {
 typedef struct _QOS_SD_MODE {
   QOS_OBJECT_HDR ObjectHdr;
   ULONG ShapeDiscardMode;
-} QOS_SD_MODE, *LPQOS_SD_MODE;
+} QOS_SD_MODE,*LPQOS_SD_MODE;
 
 #define TC_NONCONF_BORROW 0
 #define TC_NONCONF_SHAPE 1
@@ -67,6 +67,6 @@ typedef struct _QOS_SD_MODE {
 typedef struct _QOS_SHAPING_RATE {
   QOS_OBJECT_HDR ObjectHdr;
   ULONG ShapingRate;
-} QOS_SHAPING_RATE, *LPQOS_SHAPING_RATE;
+} QOS_SHAPING_RATE,*LPQOS_SHAPING_RATE;
 
 #endif

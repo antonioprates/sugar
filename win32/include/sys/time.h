@@ -9,7 +9,7 @@
 
 #include <time.h>
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -20,11 +20,12 @@ struct timeval {
   long tv_sec;
   long tv_usec;
 };
-#define timerisset(tvp) ((tvp)->tv_sec || (tvp)->tv_usec)
-#define timercmp(tvp, uvp, cmp)                                        \
-  (((tvp)->tv_sec != (uvp)->tv_sec) ? ((tvp)->tv_sec cmp(uvp)->tv_sec) \
-                                    : ((tvp)->tv_usec cmp(uvp)->tv_usec))
-#define timerclear(tvp) (tvp)->tv_sec = (tvp)->tv_usec = 0
+#define timerisset(tvp)	 ((tvp)->tv_sec || (tvp)->tv_usec)
+#define timercmp(tvp, uvp, cmp) \
+  (((tvp)->tv_sec != (uvp)->tv_sec) ? \
+  ((tvp)->tv_sec cmp (uvp)->tv_sec) : \
+  ((tvp)->tv_usec cmp (uvp)->tv_usec))
+#define timerclear(tvp)	 (tvp)->tv_sec = (tvp)->tv_usec = 0
 #endif /* _TIMEVAL_DEFINED */
 
 #ifndef _TIMEZONE_DEFINED /* also in sys/time.h */
@@ -32,12 +33,13 @@ struct timeval {
 /* Provided for compatibility with code that assumes that
    the presence of gettimeofday function implies a definition
    of struct timezone. */
-struct timezone {
+struct timezone
+{
   int tz_minuteswest; /* of Greenwich */
   int tz_dsttime;     /* type of dst correction to apply */
 };
 
-extern int __cdecl mingw_gettimeofday(struct timeval* p, struct timezone* z);
+  extern int __cdecl mingw_gettimeofday (struct timeval *p, struct timezone *z);
 
 #endif
 
@@ -50,17 +52,18 @@ extern int __cdecl mingw_gettimeofday(struct timeval* p, struct timezone* z);
 */
 #ifndef _GETTIMEOFDAY_DEFINED
 #define _GETTIMEOFDAY_DEFINED
-int __cdecl gettimeofday(struct timeval* __restrict__,
-                         void* __restrict__ /* tzp (unused) */);
+int __cdecl gettimeofday(struct timeval *__restrict__,
+                         void *__restrict__  /* tzp (unused) */);
 #endif
 
 #endif /* __STRICT_ANSI__ */
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 
 /* Adding timespec definition.  */
 #include <sys/timeb.h>
+
 
 #endif /* _SYS_TIME_H_ */

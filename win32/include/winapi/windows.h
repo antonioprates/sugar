@@ -44,18 +44,15 @@
 #define NOMCX
 #endif
 
-#if !defined(I_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    (defined(_X86_) && !defined(__x86_64))
+#if !defined(I_X86_) && !defined(_IA64_) && !defined(_AMD64_) && (defined(_X86_) && !defined(__x86_64))
 #define I_X86_
 #endif
 
-#if !defined(I_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    defined(__x86_64)
+#if !defined(I_X86_) && !defined(_IA64_) && !defined(_AMD64_) && defined(__x86_64)
 #define _AMD64_
 #endif
 
-#if !defined(I_X86_) && !(defined(_X86_) && !defined(__x86_64)) && \
-    !defined(_AMD64_) && defined(__ia64__)
+#if !defined(I_X86_) && !(defined(_X86_) && !defined(__x86_64)) && !defined(_AMD64_) && defined(__ia64__)
 #if !defined(_IA64_)
 #define _IA64_
 #endif
@@ -66,15 +63,15 @@
 #include <stdarg.h>
 #endif
 
-#include <winbase.h>
-#include <wincon.h>
 #include <windef.h>
+#include <winbase.h>
 #include <wingdi.h>
-#include <winnls.h>
-#include <winreg.h>
 #include <winuser.h>
+#include <winnls.h>
+#include <wincon.h>
 #include <winver.h>
-// gr #include <winnetwk.h>
+#include <winreg.h>
+//gr #include <winnetwk.h>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #include <cderr.h>
@@ -107,7 +104,7 @@
 #endif
 #endif
 
-// gr #include <stralign.h>
+//gr #include <stralign.h>
 
 #ifdef INC_OLE2
 #include <ole2.h>

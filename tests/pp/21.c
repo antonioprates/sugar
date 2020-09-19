@@ -1,36 +1,36 @@
 /* accept 'defined' as result of substitution */
 
------1 ------
+----- 1 ------
 #define AAA 2
 #define BBB
-#define CCC (defined(AAA) && AAA > 1 && !defined BBB)
+#define CCC (defined ( AAA ) && AAA > 1 && !defined BBB)
 #if !CCC
-    OK
+OK
 #else
-    NOT OK
+NOT OK
 #endif
 
-    -- ---2 ------
+----- 2 ------
 #undef BBB
 #if CCC
-    OK
+OK
 #else
-    NOT OK
+NOT OK
 #endif
 
-    -- ---3 ------
+----- 3 ------
 #define DEFINED defined
-#define DDD (DEFINED(AAA) && AAA > 1 && !DEFINED BBB)
+#define DDD (DEFINED ( AAA ) && AAA > 1 && !DEFINED BBB)
 #if (DDD)
-    OK
+OK
 #else
-    NOT OK
+NOT OK
 #endif
 
-    -- ---4 ------
+----- 4 ------
 #undef AAA
 #if !(DDD)
-    OK
+OK
 #else
-    NOT OK
+NOT OK
 #endif

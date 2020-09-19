@@ -1,7 +1,7 @@
 #ifndef _WS2IPDEF_H
 #define _WS2IPDEF_H
 
-#if __GNUC__ >= 3
+#if __GNUC__ >=3
 #pragma GCC system_header
 #endif
 

@@ -1,6 +1,6 @@
 _Alignas(16) int i1;
 int _Alignas(16) i2;
-void _Alignas(16) * p2;
+void _Alignas(16) *p2;
 _Alignas(16) i3;
 int _Alignas(double) i4;
 int _Alignas(int) i5;
@@ -20,8 +20,10 @@ extern int printf(const char*, ...);
 #else
 #define alignof(x) (int)__alignof__(x)
 #endif
-int main() {
-  printf("%d %d %d %d\n", alignof(i1) == 16, alignof(i4) == alignof(double),
-         alignof(i5) == alignof(int), alignof(i8) == 16);
+int main()
+{
+  printf("%d %d %d %d\n",
+         alignof(i1) == 16, alignof(i4) == alignof(double),
+         alignof(i5) == alignof(int) , alignof(i8) == 16);
   return 0;
 }

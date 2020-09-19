@@ -24,8 +24,8 @@
 #undef WIN32
 /* <-- */
 
-#include <stdarg.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 #define __int8 char
 #define __int16 short
@@ -65,14 +65,14 @@
 
 #define __CRT_STRINGIZE(_Value) #_Value
 #define _CRT_STRINGIZE(_Value) __CRT_STRINGIZE(_Value)
-#define __CRT_WIDE(_String) L##_String
+#define __CRT_WIDE(_String) L ## _String
 #define _CRT_WIDE(_String) __CRT_WIDE(_String)
 
 #ifdef _WIN64
 #define __stdcall
 #define _AMD64_ 1
 #define __x86_64 1
-#define _M_X64 100   /* Visual Studio */
+#define _M_X64 100 /* Visual Studio */
 #define _M_AMD64 100 /* Visual Studio */
 #define USE_MINGW_SETJMP_TWO_ARGS
 #define mingw_getsp tinyc_getbp
@@ -125,9 +125,9 @@ typedef __WINT_TYPE__ wint_t;
 typedef int errno_t;
 #define _ERRCODE_DEFINED
 
-typedef struct threadlocaleinfostruct* pthreadlocinfo;
-typedef struct threadmbcinfostruct* pthreadmbcinfo;
-typedef struct localeinfo_struct _locale_tstruct, *_locale_t;
+typedef struct threadlocaleinfostruct *pthreadlocinfo;
+typedef struct threadmbcinfostruct *pthreadmbcinfo;
+typedef struct localeinfo_struct _locale_tstruct,*_locale_t;
 
 /* for winapi */
 #define _ANONYMOUS_UNION
@@ -139,21 +139,21 @@ typedef struct localeinfo_struct _locale_tstruct, *_locale_t;
 #define NOIME 1
 #define __INTRIN_H_
 #ifndef DUMMYUNIONNAME
-#define DUMMYUNIONNAME
-#define DUMMYUNIONNAME1
-#define DUMMYUNIONNAME2
-#define DUMMYUNIONNAME3
-#define DUMMYUNIONNAME4
-#define DUMMYUNIONNAME5
+#  define DUMMYUNIONNAME
+#  define DUMMYUNIONNAME1
+#  define DUMMYUNIONNAME2
+#  define DUMMYUNIONNAME3
+#  define DUMMYUNIONNAME4
+#  define DUMMYUNIONNAME5
 #endif
 #ifndef DUMMYSTRUCTNAME
-#define DUMMYSTRUCTNAME
+#  define DUMMYSTRUCTNAME
 #endif
 #ifndef WINVER
-#define WINVER 0x0502
+# define WINVER 0x0502
 #endif
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x502
+# define _WIN32_WINNT 0x502
 #endif
 
 #define __C89_NAMELESS

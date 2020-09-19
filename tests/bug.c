@@ -1,7 +1,8 @@
-#include <stdarg.h>
 #include <stdio.h>
+#include <stdarg.h>
 
-int compile_errors(void) {
+int compile_errors(void)
+{
 #if TEST == 1
   {
     /* Not constant */
@@ -11,31 +12,30 @@ int compile_errors(void) {
 #if TEST == 2
   {
     /* Not constant */
-    struct {
-      int c;
-    } v;
-    static long i = ((char*)&(v.c) - (char*)&v);
+    struct{int c;}v;
+    static long i=((char*)&(v.c)-(char*)&v);
   }
 #endif
 #if TEST == 3
   {
     /* Not constant */
-    static const short ar[] = {&&l1 - &&l1, &&l2 - &&l1};
-    void* p = &&l1 + ar[0];
-    goto* p;
-  l1:
-    return 1;
-  l2:
-    return 2;
+    static const short ar[] = { &&l1 - &&l1, &&l2 - &&l1 };
+    void *p = &&l1 + ar[0];
+    goto *p;
+   l1: return 1;
+   l2: return 2;
   }
 #endif
 #if TEST == 4
   {
     /* Only integer allowed */
-    __builtin_return_address(0 + 1) != NULL;
+     __builtin_return_address(0 + 1) != NULL;
   }
 #endif
   return 0;
 }
 
-int main(void) {}
+int
+main(void)
+{
+}

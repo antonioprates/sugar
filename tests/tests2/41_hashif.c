@@ -1,19 +1,20 @@
 #include <stdio.h>
 
-int main() {
-  printf("#include test\n");
+int main()
+{
+   printf("#include test\n");
 
 #if 1
 #if 0
    printf("a\n");
 #else
-  printf("b\n");
+   printf("b\n");
 #endif
 #else
 #if 0
    printf("c\n");
 #else
-  printf("d\n");
+   printf("d\n");
 #endif
 #endif
 
@@ -25,9 +26,9 @@ int main() {
 #endif
 #else
 #if 1
-  printf("g\n");
+   printf("g\n");
 #else
-  printf("h\n");
+   printf("h\n");
 #endif
 #endif
 
@@ -35,29 +36,29 @@ int main() {
 
 #ifdef DEF
 #ifdef DEF
-  printf("i\n");
+   printf("i\n");
 #else
-  printf("j\n");
+   printf("j\n");
 #endif
 #else
 #ifdef DEF
-  printf("k\n");
+   printf("k\n");
 #else
-  printf("l\n");
+   printf("l\n");
 #endif
 #endif
 
 #ifndef DEF
 #ifndef DEF
-  printf("m\n");
+   printf("m\n");
 #else
-  printf("n\n");
+   printf("n\n");
 #endif
 #else
 #ifndef DEF
-  printf("o\n");
+   printf("o\n");
 #else
-  printf("p\n");
+   printf("p\n");
 #endif
 #endif
 
@@ -66,19 +67,19 @@ int main() {
 
 #if ONE
 #if ZERO
-  printf("q\n");
+   printf("q\n");
 #else
-  printf("r\n");
+   printf("r\n");
 #endif
 #else
 #if ZERO
-  printf("s\n");
+   printf("s\n");
 #else
-  printf("t\n");
+   printf("t\n");
 #endif
 #endif
 
-  return 0;
+   return 0;
 }
 
 /* vim: set expandtab ts=4 sw=3 sts=3 tw=80 :*/
