@@ -269,6 +269,9 @@ redo:
     opt = sugar_parse_args(s, &argc, &argv, 1);
 
     if (n == 0) {
+        if(!opt && !(s->outfile)) {
+            sugar_set_output_type(s, SUGAR_OUTPUT_MEMORY);
+        }
         if (opt == OPT_HELP) {
             fputs(help, stdout);
             if (!s->verbose)
