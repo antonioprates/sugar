@@ -66,7 +66,6 @@
 /********************************************************/
 /* global variables */
 
-/* XXX: get rid of this ASAP (or maybe not) */
 ST_DATA struct SUGARState *sugar_state;
 
 #ifdef MEM_DEBUG
@@ -2069,6 +2068,7 @@ reparse:
         case SUGAR_OPTION_s:
         case SUGAR_OPTION_C:
             /* ignored */
+            sugar_warning("option ignored '%s'", r);
             break;
         default:
 unsupported_option:
