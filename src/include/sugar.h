@@ -17,7 +17,8 @@ const char _strend = '\0';
 const number _nmax = INT_MAX;
 const number _nmin = INT_MIN;
 
-#define app(x) int main(int argc, char* argv[]) { x return 0; }
+#define app(x) \
+  int main(int argc, char* argv[]) { x return 0; }
 
 // println -> prints a string and adds a new line
 void println(string);
@@ -31,20 +32,23 @@ string ofNumber(number);
 // ofLong -> converts a long to a new string [USE FREE]
 string ofLong(long);
 
-// ofString -> converts a string to a number
+// ofString -> atoi shorthand, converts a string to a number
 number ofString(string);
 
 // round -> gets the approximation of float to number
 number round(float);
 
-// join2s -> joins 2 strings in a new string [USE FREE]
+// join2s -> mkString shorthand, joins 2 strings in a new string [USE FREE]
 string join2s(string, string);
 
-// join3s -> joins 3 strings in a new string [USE FREE]
+// join3s -> mkString shorthand, joins 3 strings in a new string [USE FREE]
 string join3s(string, string, string);
 
-// join4s -> joins 4 strings in a new string [USE FREE]
+// join4s -> mkString shorthand, joins 4 strings in a new string [USE FREE]
 string join4s(string, string, string, string);
+
+// join5s -> mkString shorthand, joins 5 strings in a new string [USE FREE]
+string join5s(string, string, string, string, string);
 
 // mkString -> join as many strings you like with a list of strings [USE FREE]
 string mkString(number count, stringList strs);
@@ -104,36 +108,19 @@ number round(float f) {
 }
 
 string join2s(string s1, string s2) {
-  number size1 = strlen(s1);
-  number size2 = strlen(s2);
-  string result = malloc(size1 + size2 + 1);
-  strcat(result, s1);
-  strcat(result, s2);
-  return result;
+  return mkString(2, {s1, s2});
 }
 
 string join3s(string s1, string s2, string s3) {
-  number size1 = strlen(s1);
-  number size2 = strlen(s2);
-  number size3 = strlen(s3);
-  string result = malloc(size1 + size2 + size3 + 1);
-  strcat(result, s1);
-  strcat(result, s2);
-  strcat(result, s3);
-  return result;
+  return mkString(3, {s1, s2, s3});
 }
 
 string join4s(string s1, string s2, string s3, string s4) {
-  number size1 = strlen(s1);
-  number size2 = strlen(s2);
-  number size3 = strlen(s3);
-  number size4 = strlen(s4);
-  string result = malloc(size1 + size2 + size3 + size4 + 1);
-  strcat(result, s1);
-  strcat(result, s2);
-  strcat(result, s3);
-  strcat(result, s4);
-  return result;
+  return mkString(4, {s1, s2, s3, s4});
+}
+
+string join5s(string s1, string s2, string s3, string s4, string s5) {
+  return mkString(5, {s1, s2, s3, s4, s5});
 }
 
 string mkString(number count, stringList strs) {
