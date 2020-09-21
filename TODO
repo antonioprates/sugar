@@ -1,13 +1,15 @@
-TODO list:
-
-Wishlist:
+SugarC Wishlist:
 
 - potential memory leak tracker, do some alloc/free bookkeeping,
   to be able to run program in debug mode, and let compiler tell
   at the end of run, which pointers were allocated but
   never freed...
 
-Bugs:
+SugarC Bugs:
+
+- implicit '-run' argument still does not catch argc argv
+
+TinyC Bugs:
 
 - i386 fastcall is mostly wrong
 - FPU st(0) is left unclean (kwisatz haderach). Incompatible with
