@@ -1,3 +1,4 @@
+#!///usr/local/bin/sugar -run
 #include <sugarlib.h>
 
 int fib(n)
