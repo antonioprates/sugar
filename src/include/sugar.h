@@ -38,6 +38,9 @@ number ofString(string);
 // round -> gets the approximation of float to number
 number round(float);
 
+// mkString -> join as many strings you like with a list of strings [USE FREE]
+string mkString(number count, stringList strs);
+
 // join2s -> mkString shorthand, joins 2 strings in a new string [USE FREE]
 string join2s(string, string);
 
@@ -49,9 +52,6 @@ string join4s(string, string, string, string);
 
 // join5s -> mkString shorthand, joins 5 strings in a new string [USE FREE]
 string join5s(string, string, string, string, string);
-
-// mkString -> join as many strings you like with a list of strings [USE FREE]
-string mkString(number count, stringList strs);
 
 // mapVS -> maps over a list of strings with a (void => string) function
 void mapVS(number count, stringList s, void (*fn)(string));
@@ -65,11 +65,14 @@ number countWord(string s, string word);
 // replaceWord -> replaces a word with a new word inside a string [USE FREE]
 string replaceWord(string text, string oldWord, string newWord);
 
-// readKeys -> reads from keyboard and returns a string of size of
-string getKeys(void);
+// readKeys -> reads from keyboard until enter and returns a string [USE FREE]
+string readKeys(void);
 
 // readFile -> reads all text content of a filepath to a string
 string readFile(string filepath);
+
+// writeFile -> writes a string as text to a filepath
+void writeFile(string s, string filepath);
 
 // include "sugar.c"  // TODO: make sugar as a dynamic lib
 
@@ -107,22 +110,6 @@ number round(float f) {
   return (number)(f + 0.5);
 }
 
-string join2s(string s1, string s2) {
-  return mkString(2, {s1, s2});
-}
-
-string join3s(string s1, string s2, string s3) {
-  return mkString(3, {s1, s2, s3});
-}
-
-string join4s(string s1, string s2, string s3, string s4) {
-  return mkString(4, {s1, s2, s3, s4});
-}
-
-string join5s(string s1, string s2, string s3, string s4, string s5) {
-  return mkString(5, {s1, s2, s3, s4, s5});
-}
-
 string mkString(number count, stringList strs) {
   number size = 0;
   for (number i = 0; i < count; i++)
@@ -131,6 +118,26 @@ string mkString(number count, stringList strs) {
   for (number i = 0; i < count; i++)
     strcat(result, strs[i]);
   return result;
+}
+
+string join2s(string s1, string s2) {
+  string list[2] = {s1, s2};
+  return mkString(2, list);
+}
+
+string join3s(string s1, string s2, string s3) {
+  string list[3] = {s1, s2, s3};
+  return mkString(3, list);
+}
+
+string join4s(string s1, string s2, string s3, string s4) {
+  string list[4] = {s1, s2, s3, s4};
+  return mkString(4, list);
+}
+
+string join5s(string s1, string s2, string s3, string s4, string s5) {
+  string list[5] = {s1, s2, s3, s4, s5};
+  return mkString(5, list);
 }
 
 void mapVS(number count, stringList s, void (*fn)(string)) {
@@ -186,7 +193,7 @@ string replaceWord(string text, string oldWord, string newWord) {
   return result;
 }
 
-string getKeys(void) {
+string readKeys(void) {
   const number bufsize = 4096;
   char buffer[bufsize];
   fgets(buffer, bufsize, stdin);
@@ -226,6 +233,15 @@ string readFile(string filepath) {
   }
   println(join2s("file not found: ", filepath));
   return null;
+}
+
+void writeFile(string s, string filepath) {
+  FILE* f = fopen(filepath, "w");
+  if (f)
+    fputs(s, f);
+  else
+    println(join2s("could not write: ", filepath));
+  fclose(f);
 }
 
 #endif
