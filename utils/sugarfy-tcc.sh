@@ -58,7 +58,6 @@ echo "Doing some more renames..."
 (cd $tccpath && mkdir ../src && mv * ../src/ && mv ../src/ "$tccpath/src")
 
 # copy out to root some files
-mv "$tccpath/src/examples/" "$tccpath/examples"
 mv "$tccpath/src/Changelog" "$tccpath/ChangeLog"
 mv "$tccpath/src/COPYING" "$tccpath/COPYING"
 mv "$tccpath/src/TODO" "$tccpath/TODO"

@@ -1,4 +1,3 @@
-#!///usr/local/bin/sugar -run
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -70,7 +69,7 @@ int main(int argc, char **argv)
     int i, res, p;
 
     if (argc < 3) {
-        printf("usage: %s: result numbers, like: 21 3 7 => 3 * 7 = 21\n"
+        printf("usage: %s: result numbers...\n"
                "Try to find result from numbers with the 4 basic operations.\n", argv[0]);
         exit(1);
     }

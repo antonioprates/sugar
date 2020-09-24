@@ -1,3 +1,12 @@
+Sugar 0.0.3-alpha:
+
+- implicit '-run' directive with arguments working, makes
+  c-scripting easier
+- added syntactic sugar library at include/sugar.h
+- fork of tcc with some project structure changes
+
+--
+
 Version 0.9.27:
 
 User interface:

@@ -1,5 +1,5 @@
-#!///usr/local/bin/sugar
-#include <sugarlib.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 int main()
 {

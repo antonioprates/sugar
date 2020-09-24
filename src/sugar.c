@@ -25,9 +25,12 @@
 #include "sugartools.c"
 
 static const char help[] =
-    "Sugar C Compiler "SUGAR_VERSION" - Copyright (C) 2001-2006 Fabrice Bellard\n"
-    "Usage: sugar [options...] [-o outfile] [-c] infile(s)...\n"
-    "       sugar [options...] -run infile [arguments...]\n"
+    "Sugar C Compiler "SUGAR_VERSION"\n"
+    "\n"
+    "Run usage: sugar infile [arguments...]\n"
+    "           sugar [options...] -run infile [arguments...]\n"
+    "Compiling: sugar [options...] [-o outfile] [-c] infile(s)...\n"
+    "\n"
     "General options:\n"
     "  -c           compile only - generate an object file\n"
     "  -o outfile   set output filename\n"
@@ -148,7 +151,7 @@ static const char help2[] =
     ;
 
 static const char version[] =
-    "Sugar C Compiler version " SUGAR_VERSION "\n(tcc-" TINYC_VERSION
+    "Sugar C version " SUGAR_VERSION "\n(tcc-" TINYC_VERSION
     "-"
 #ifdef SUGAR_TARGET_I386
     "i386"
@@ -269,14 +272,19 @@ redo:
     opt = sugar_parse_args(s, &argc, &argv, 1);
 
     if (n == 0) {
-        if(!opt && !(s->outfile)) {
+#ifdef SUGAR_IS_NATIVE
+        if(!opt && !(s->outfile) && argc > 1 && argv[1][0] != '-' && s->output_type != SUGAR_OUTPUT_MEMORY) {
+            set_environment(s);
             sugar_set_output_type(s, SUGAR_OUTPUT_MEMORY);
+            if (argc < 2 || sugar_add_file(s, argv[1]) < 0)
+                return 1;
+            else
+                return sugar_run(s, argc-1, argv+1);     
         }
+#endif
         if (opt == OPT_HELP) {
             fputs(help, stdout);
-            if (!s->verbose)
-                return 0;
-            ++opt;
+            return 0;
         }
         if (opt == OPT_HELP2) {
             fputs(help2, stdout);

@@ -1,13 +1,20 @@
 SugarC Wishlist:
 
-- potential memory leak tracker, do some alloc/free bookkeeping,
+- PRIORITY: extract impl. of include/sugar.h to aa dyn library
+- Improve on the user interface adding a -dev directive which equals
+  to starting in run mode, with bound checking, debug and bt.
+- Less options to be shown first help page, move more complex options
+  to advanced section.
+- Potential memory leak tracker, do some alloc/free bookkeeping,
   to be able to run program in debug mode, and let compiler tell
   at the end of run, which pointers were allocated but
   never freed...
 
 SugarC Bugs:
 
-- implicit '-run' argument still does not catch argc argv
+- Can't use arguments for run without '-run' directive. Some build
+  configs use this bug as a feature, unless make is updated this is
+  a won't fix, to be honest.
 
 TinyC Bugs:
 
