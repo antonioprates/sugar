@@ -1622,7 +1622,8 @@ enum {
     SUGAR_OPTION_x,
     SUGAR_OPTION_ar,
     SUGAR_OPTION_impdef,
-    SUGAR_OPTION_C
+    SUGAR_OPTION_C,
+    SUGAR_OPTION_dev
 };
 
 #define SUGAR_OPTION_HAS_ARG 0x0001
@@ -1648,6 +1649,7 @@ static const SUGAROption sugar_options[] = {
 #endif
 #ifdef CONFIG_SUGAR_BCHECK
     { "b", SUGAR_OPTION_b, 0 },
+    { "dev", SUGAR_OPTION_dev, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
 #endif
     { "g", SUGAR_OPTION_g, SUGAR_OPTION_HAS_ARG | SUGAR_OPTION_NOSEP },
     { "c", SUGAR_OPTION_c, 0 },
@@ -1958,6 +1960,12 @@ reparse:
         case SUGAR_OPTION_nostdlib:
             s->nostdlib = 1;
             break;
+        case SUGAR_OPTION_dev:
+#ifdef CONFIG_SUGAR_BCHECK 
+            s->do_bounds_check = 1;
+            s->do_backtrace = 1;
+            s->do_debug = 1;
+#endif
         case SUGAR_OPTION_run:
 #ifndef SUGAR_IS_NATIVE
             sugar_error("-run is not available in a cross compiler");

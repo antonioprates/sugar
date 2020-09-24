@@ -25,68 +25,32 @@
 #include "sugartools.c"
 
 static const char help[] =
-    "Sugar C Compiler "SUGAR_VERSION"\n"
+    "SUGAR C " SUGAR_VERSION " - a different flavour of tinycc "  "\n"
     "\n"
-    "Run usage: sugar infile [arguments...]\n"
-    "           sugar [options...] -run infile [arguments...]\n"
-    "Compiling: sugar [options...] [-o outfile] [-c] infile(s)...\n"
+    "Usage: sugar [FILE.c [ARGUMENTS]]                   run source\n"
+    "   or: sugar [OPTIONS] -dev [FILE.c [ARGUMENTS]]    run with debug\n"
+    "   or: sugar [OPTIONS] [-o OUTFILE] [-c FILE(s).c]  compile to out\n"
     "\n"
-    "General options:\n"
-    "  -c           compile only - generate an object file\n"
-    "  -o outfile   set output filename\n"
-    "  -run         run compiled source\n"
-    "  -fflag       set or reset (with 'no-' prefix) 'flag' (see sugar -hh)\n"
-    "  -std=c99     Conform to the ISO 1999 C standard (default).\n"
-    "  -std=c11     Conform to the ISO 2011 C standard.\n"
-    "  -Wwarning    set or reset (with 'no-' prefix) 'warning' (see sugar -hh)\n"
-    "  -w           disable all warnings\n"
-    "  --version -v show version\n"
-    "  -vv          show search paths or loaded files\n"
-    "  -h -hh       show this, show more help\n"
-    "  -bench       show compilation statistics\n"
-    "  -            use stdin pipe as infile\n"
-    "  @listfile    read arguments from listfile\n"
-    "Preprocessor options:\n"
-    "  -Idir        add include path 'dir'\n"
-    "  -Dsym[=val]  define 'sym' with value 'val'\n"
-    "  -Usym        undefine 'sym'\n"
-    "  -E           preprocess only\n"
-    "  -C           keep comments (not yet implemented)\n"
-    "Linker options:\n"
-    "  -Ldir        add library path 'dir'\n"
-    "  -llib        link with dynamic or static library 'lib'\n"
-    "  -r           generate (relocatable) object file\n"
-    "  -shared      generate a shared library/dll\n"
-    "  -rdynamic    export all global symbols to dynamic linker\n"
-    "  -soname      set name for shared library to be used at runtime\n"
-    "  -Wl,-opt[=val]  set linker option (see sugar -hh)\n"
-    "Debugger options:\n"
-    "  -g           generate runtime debug info\n"
+    "Option   Long option   Meaning\n"
+    "  -o                   set output filename\n"
+    "  -c                   compile infile(s) filename(s)\n"
+    "  -run                 run in memory with other options\n"
+    "  -w                   disable all warnings\n"
+    "  -v     --version     show version\n"
+    "  -vv                  show search paths or loaded files\n"
+    "  -h -hh --help        show this, show more help\n"
+    "  -bench               show compilation statistics\n"
+    "  -g                   generate runtime debug info\n"
 #ifdef CONFIG_SUGAR_BCHECK
-    "  -b           compile with built-in memory and bounds checker (implies -g)\n"
+    "  -b                   add memory & bounds checker (implies -g)\n"
+    "  -dev                 run with bounds checker (implies -b -run)\n"
 #endif
 #ifdef CONFIG_SUGAR_BACKTRACE
-    "  -bt[N]       link with backtrace (stack dump) support [show max N callers]\n"
+    "  -bt[N]               configure backtrace [show max N callers]\n"
 #endif
-    "Misc. options:\n"
-    "  -x[c|a|b|n]  specify type of the next infile (C,ASM,BIN,NONE)\n"
-    "  -nostdinc    do not use standard system include paths\n"
-    "  -nostdlib    do not link with standard crt and libraries\n"
-    "  -Bdir        set sugar's private include/library dir\n"
-    "  -MD          generate dependency file for make\n"
-    "  -MF file     specify dependency file name\n"
-#if defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_X86_64)
-    "  -m32/64      defer to i386/x86_64 cross compiler\n"
-#endif
-    "Tools:\n"
-    "  create library  : sugar -ar [rcsv] lib.a files\n"
-#ifdef SUGAR_TARGET_PE
-    "  create def file : sugar -impdef lib.dll [-v] [-o lib.def]\n"
-#endif
-    ;
+    "  -E                   preprocess only\n";
 
 static const char help2[] =
-    "Sugar C Compiler "SUGAR_VERSION" - More Options\n"
     "Special options:\n"
     "  -P -P1                        with -E: no/alternative #line output\n"
     "  -dD -dM                       with -E: output #define directives\n"
@@ -101,7 +65,7 @@ static const char help2[] =
     "  -dt                           with -run/-E: auto-define 'test_...' macros\n"
     "Ignored options:\n"
     "  --param  -pedantic  -pipe  -s  -traditional\n"
-    "-W... warnings:\n"
+    "-W[no-]... warnings:\n"
     "  all                           turn on some (*) warnings\n"
     "  error                         stop after first warning\n"
     "  unsupported                   warn about ignored options, pragmas, etc.\n"
@@ -147,27 +111,62 @@ static const char help2[] =
     "Predefined macros:\n"
     "  sugar -E -dM - < /dev/null\n"
 #endif
-    "See also the manual for more details.\n"
-    ;
+    "Preprocessor options:\n"
+    "  -Idir        add include path 'dir'\n"
+    "  -Dsym[=val]  define 'sym' with value 'val'\n"
+    "  -Usym        undefine 'sym'\n"
+    "  -E           preprocess only\n"
+    "Linker options:\n"
+    "  -Ldir        add library path 'dir'\n"
+    "  -llib        link with dynamic or static library 'lib'\n"
+    "  -r           generate (relocatable) object file\n"
+    "  -shared      generate a shared library/dll\n"
+    "  -rdynamic    export all global symbols to dynamic linker\n"
+    "  -soname      set name for shared library to be used at runtime\n"
+    "  -Wl,-opt[=val]  set linker option (see sugar -hh)\n"
+    "Misc. options:\n"
+    "  -            use stdin pipe as infile\n"
+    "  @listfile    read arguments from listfile\n"
+    "  -std=c99     Conform to the ISO 1999 C standard (default).\n"
+    "  -std=c11     Conform to the ISO 2011 C standard.\n"
+    "  -x[c|a|b|n]  specify type of the next infile (C,ASM,BIN,NONE)\n"
+    "  -nostdinc    do not use standard system include paths\n"
+    "  -nostdlib    do not link with standard crt and libraries\n"
+    "  -Bdir        set sugar's private include/library dir\n"
+    "  -MD          generate dependency file for make\n"
+    "  -MF file     specify dependency file name\n"
+#if defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_X86_64)
+    "  -m32/64      defer to i386/x86_64 cross compiler\n"
+#endif
+    "Tools:\n"
+    "  create library  : sugar -ar [rcsv] lib.a files\n"
+#ifdef SUGAR_TARGET_PE
+    "  create def file : sugar -impdef lib.dll [-v] [-o lib.def]\n"
+#endif
+    "See also the manual for more details.\n";
 
 static const char version[] =
-    "Sugar C version " SUGAR_VERSION "\n(tcc-" TINYC_VERSION
-    "-"
+"    ___ _   _  __ _  __ _ _ __   ____\n"
+"   / __| | | |/ _` |/ _` | '_/  / __/\n"
+"   \\__ \\ |_| | (_| | (_| | |   | (__\n"
+"   |___/\\__,_|\\__, |\\__,_|_|    \\___\\\n"
+"              |___/       " SUGAR_VERSION "\n"
+"   [tcc-" TINYC_VERSION "-"
 #ifdef SUGAR_TARGET_I386
-    "i386"
+    "386"
 #elif defined SUGAR_TARGET_X86_64
-    "x86-64"
+    "x86"
 #elif defined SUGAR_TARGET_C67
     "c67"
 #elif defined SUGAR_TARGET_ARM
     "arm"
 #elif defined SUGAR_TARGET_ARM64
-    "arm64"
+    "a64"
 #elif defined SUGAR_TARGET_RISCV64
-    "riscv64"
+    "rsc"
 #endif
 #ifdef SUGAR_ARM_HARDFLOAT
-    "-hardfloat"
+    "-hdf"
 #endif
 #ifdef SUGAR_TARGET_PE
     "-win"
@@ -176,9 +175,9 @@ static const char version[] =
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
     "-bsd"
 #else
-    "-linux"
+    "-lnx"
 #endif
-    ")\n";
+    "]\n\n";
 
 static void print_dirs(const char *msg, char **paths, int nb_paths)
 {
@@ -276,7 +275,7 @@ redo:
         if(!opt && !(s->outfile) && argc > 1 && argv[1][0] != '-' && s->output_type != SUGAR_OUTPUT_MEMORY) {
             set_environment(s);
             sugar_set_output_type(s, SUGAR_OUTPUT_MEMORY);
-            if (argc < 2 || sugar_add_file(s, argv[1]) < 0)
+            if (sugar_add_file(s, argv[1]) < 0)
                 return 1;
             else
                 return sugar_run(s, argc-1, argv+1);     

@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-(cd src && make clean && echo "Gimme some sugar" && ./configure -s && echo "Baking ingredients..." && make -s && echo "Let's see what we got:" && make install && echo "" && sugar -v && cat sugarc.art && make clean)
+(cd src && make clean && echo $'\n   Gimme some sugar baby!' && ./configure -s && echo "   It's time to kick ass and chew bubblegum..." && make -s && echo "   Damn! What do we've got here?" && make install && sugar -v && echo $'   Ha! Fluff you, you fluffin\' fluff\n' && make clean)
