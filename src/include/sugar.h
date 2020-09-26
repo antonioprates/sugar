@@ -1,30 +1,40 @@
 // just some syntactic sugar to make live easier and code look better :D
 // 2020, Antonio Prates, <antonioprates@gmail.com>
 
-#ifndef _SUGAR_h
-#define _SUGAR_h
+#ifndef _SUGAR_H
+#define _SUGAR_H
 
 #include <limits.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
 
-#define null NULL
-typedef char* string;
+typedef char* string;  // declare one string per line or use char *s, *t, *u;
 typedef string* stringList;
 typedef int number;  // use float for float, duh!
 typedef number* numberList;
-typedef enum { false, true } boolean;
-typedef enum { _success, _failure } excode;  // exit code
-const char _strend = '\0';
-const number _nmax = INT_MAX;
-const number _nmin = INT_MIN;
 
+#define STR_END '\0'
+#define NUM_MAX INT_MAX
+#define NUM_MIN INT_MIN
+
+// app -> macro expansion for main function with return 0
+// known issue: "error: macro 'app' used with too many args"
 #define app(x) \
   int main(int argc, char* argv[]) { x return 0; }
 
 // println -> prints a string and adds a new line
 void println(string);
 
-// ofBoolean -> converts a boolean to a string
-string ofBoolean(boolean);
+// areSame -> strcmp shorthand, if you just want to know it is equal
+bool areSame(string, string);
+
+// ofBool -> converts a boolean to string
+string ofBool(bool);
+
+// ofChar -> converts a character to string
+string ofChar(char);
 
 // ofNumber -> converts a number to a new string [USE FREE]
 string ofNumber(number);
@@ -35,10 +45,7 @@ string ofLong(long);
 // ofString -> atoi shorthand, converts a string to a number
 number ofString(string);
 
-// round -> gets the approximation of float to number
-number round(float);
-
-// mkString -> join as many strings you like with a list of strings [USE FREE]
+// mkString -> join as many strings you like, with no separator [USE FREE]
 string mkString(number count, stringList strs);
 
 // join2s -> mkString shorthand, joins 2 strings in a new string [USE FREE]
@@ -53,14 +60,20 @@ string join4s(string, string, string, string);
 // join5s -> mkString shorthand, joins 5 strings in a new string [USE FREE]
 string join5s(string, string, string, string, string);
 
-// mapVS -> maps over a list of strings with a (void => string) function
-void mapVS(number count, stringList s, void (*fn)(string));
+// joinSep -> join as many strings you like, with a separator [USE FREE]
+string joinSep(number count, stringList strs, char separator);
 
-// startsWith -> checks if word is substring from start of s
-boolean startsWith(string s, string word);
+// splitSep -> split by separator into a list of strings [USE FREE]
+stringList splitSep(string str, char separator);
+
+// forEach -> map over a list of strings and apply string => void function
+void forEach(number count, stringList strs, void (*fn)(string));
+
+// startsWith -> checks if word is substring from start of text
+bool startsWith(string text, string word);
 
 // countWord -> count occurrences of old word in the string
-number countWord(string s, string word);
+number countWord(string text, string word);
 
 // replaceWord -> replaces a word with a new word inside a string [USE FREE]
 string replaceWord(string text, string oldWord, string newWord);
@@ -74,40 +87,52 @@ string readFile(string filepath);
 // writeFile -> writes a string as text to a filepath
 void writeFile(string s, string filepath);
 
-// include "sugar.c"  // TODO: make sugar as a dynamic lib
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
+// TODO: bellow implementations should be "sugar.c", make this a dynamic lib
 
 void println(string s) {
   printf("%s\n", s);
 }
 
-string ofBoolean(boolean b) {
+bool areSame(string s1, string s2) {
+  return strcmp(s1, s2) == 0 ? true : false;
+}
+
+string ofBool(bool b) {
   return b ? "true" : "false";
+}
+
+string ofChar(char c) {
+  string str = malloc(2);
+  if (str) {  // memory gard
+    str[0] = c;
+    str[1] = STR_END;
+    return str;
+  }
+  return NULL;
 }
 
 string ofNumber(number n) {
   number length = snprintf(NULL, 0, "%d", n);
   string result = malloc(length + 1);
-  snprintf(result, length + 1, "%d", n);
-  return result;
+  if (result) {  // memory gard
+    snprintf(result, length + 1, "%d", n);
+    return result;
+  }
+  return NULL;
 }
 
 string ofLong(long l) {
   number length = snprintf(NULL, 0, "%ld", l);
   string result = malloc(length + 1);
-  snprintf(result, length + 1, "%ld", l);
-  return result;
+  if (result) {  // memory gard
+    snprintf(result, length + 1, "%ld", l);
+    return result;
+  }
+  return NULL;
 }
 
 number ofString(string s) {
   return atoi(s);
-}
-
-number round(float f) {
-  return (number)(f + 0.5);
 }
 
 string mkString(number count, stringList strs) {
@@ -115,9 +140,12 @@ string mkString(number count, stringList strs) {
   for (number i = 0; i < count; i++)
     size += strlen(strs[i]);
   string result = malloc(size + 1);
-  for (number i = 0; i < count; i++)
-    strcat(result, strs[i]);
-  return result;
+  if (result) {  // memory gard
+    for (number i = 0; i < count; i++)
+      strcat(result, strs[i]);
+    return result;
+  }
+  return NULL;
 }
 
 string join2s(string s1, string s2) {
@@ -140,33 +168,73 @@ string join5s(string s1, string s2, string s3, string s4, string s5) {
   return mkString(5, list);
 }
 
-void mapVS(number count, stringList s, void (*fn)(string)) {
+string joinSep(number count, stringList strs, char separator) {
+  number totalSize = 0;
+  number lastIndex = count - 1;
+  char strsep[2] = {separator, STR_END};
+
   for (number i = 0; i < count; i++)
-    fn(s[i]);
+    totalSize += strlen(strs[i]);
+
+  string result = malloc(totalSize + count);
+
+  if (result) {  // memory gard
+    for (number i = 0; i < count; i++) {
+      strcat(result, strs[i]);
+      if (i != lastIndex)
+        strcat(result, strsep);
+    }
+    return result;
+  }
+  return NULL;
 }
 
-boolean startsWith(string s, string word) {
-  number i;
-  for (i = 0; s[i] != _strend; i++) {
-    if (word[i] == _strend)
+stringList splitSep(string str, char separator) {
+  char strsep[2] = {separator, STR_END};
+  number occur = countWord(str, strsep);
+  stringList list = malloc((occur + 1) * sizeof(string));
+  number size = strlen(str);
+  string copy = malloc(size + 1);
+  strcpy(copy, str);  // 'cause strtok modifies original string
+  number i = 0;
+  string word = strtok(str, strsep);
+
+  while (word != NULL) {
+    list[i++] = word;
+    word = strtok(NULL, strsep);
+  }
+
+  return list;
+}
+
+void forEach(number count, stringList strs, void (*fn)(string)) {
+  for (number i = 0; i < count; i++)
+    fn(strs[i]);
+}
+
+bool startsWith(string text, string word) {
+  if (text && word) {
+    string occurrence = strstr(text, word);
+    if (occurrence && occurrence == text)
       return true;
-    if (word[i] != s[i])
-      return false;
   }
   return false;
 }
 
-number countWord(string s, string word) {
+number countWord(string text, string word) {
   number occur = 0;
-  number size = strlen(word);
-
-  for (number i = 0; s[i] != '\0'; i++) {
-    if (startsWith(&s[i], word)) {
-      occur++;
-      i += size - 1;
+  if (word) {
+    number size = strlen(word);
+    if (size) {
+      number skipsize = size - 1;
+      for (number i = 0; text[i] != STR_END; i++) {
+        if (startsWith(&text[i], word)) {
+          occur++;
+          i += skipsize;
+        }
+      }
     }
   }
-
   return occur;
 }
 
@@ -180,7 +248,7 @@ string replaceWord(string text, string oldWord, string newWord) {
 
   result = malloc(textSize + occur * (newWordSize - oldWordSize) + 1);
 
-  while (*text != _strend) {
+  while (*text != STR_END) {
     if (startsWith(text, oldWord)) {
       strcpy(&result[i], newWord);
       i += newWordSize;
@@ -189,7 +257,7 @@ string replaceWord(string text, string oldWord, string newWord) {
       result[i++] = *text++;
   }
 
-  result[i] = _strend;
+  result[i] = STR_END;
   return result;
 }
 
@@ -200,9 +268,9 @@ string readKeys(void) {
   string result = malloc(strlen(buffer) + 1);
   strcpy(result, buffer);
   string head = result;
-  while (*head != _strend) {
+  while (*head != STR_END) {
     if (head[0] == '\n' || head[0] == '\r') {
-      head[0] = _strend;
+      head[0] = STR_END;
       break;
     }
     *head++;
@@ -211,28 +279,28 @@ string readKeys(void) {
 }
 
 string readFile(string filepath) {
-  number length;
-  number maxbuffer = _nmax - 1;
-  string buffer = null;
+  long length;
+  number maxbuffer = NUM_MAX - 1;
+  string buffer = NULL;
   FILE* f = fopen(filepath, "r");
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
     if (length > maxbuffer) {
-      println("error: file too big!");
-      return null;
+      printf("error: file too big -> %s\n", filepath);
+      return NULL;
     }
     fseek(f, 0, SEEK_SET);
     buffer = malloc(length + 1);
     if (buffer) {
       fread(buffer, 1, length, f);
-      buffer[length] = _strend;
+      buffer[length] = STR_END;
     }
     fclose(f);
     return buffer;
   }
-  println(join2s("file not found: ", filepath));
-  return null;
+  printf("error: file not found -> %s\n", filepath);
+  return NULL;
 }
 
 void writeFile(string s, string filepath) {
@@ -240,8 +308,8 @@ void writeFile(string s, string filepath) {
   if (f)
     fputs(s, f);
   else
-    println(join2s("could not write: ", filepath));
+    printf("error: could not write file -> %s\n", filepath);
   fclose(f);
 }
 
-#endif
+#endif /* SUGAR_H */

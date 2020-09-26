@@ -449,7 +449,6 @@ EXESUF=$EXESUF
 DLLSUF=$DLLSUF
 EOF
 
-
 print_inc() {
   if test -n "$2"; then
     echo "#ifndef $1" >> $TMPH
