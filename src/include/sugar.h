@@ -4,17 +4,15 @@
 #ifndef _SUGAR_H
 #define _SUGAR_H
 
-#include <limits.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
+#include <sugarlib.h>
 
 typedef char* string;  // declare one string per line or use char *s, *t, *u;
 typedef string* stringList;
 typedef int number;  // use float for float, duh!
 typedef number* numberList;
 
+//#define STD_IN 0
 #define STR_END '\0'
 #define NUM_MAX INT_MAX
 #define NUM_MIN INT_MIN
@@ -79,7 +77,7 @@ number countWord(string text, string word);
 string replaceWord(string text, string oldWord, string newWord);
 
 // readKeys -> reads from keyboard until enter and returns a string [USE FREE]
-string readKeys(void);
+//string readKeys(void);
 
 // writeFile -> writes a string buffer to a filepath
 bool writeFile(string buffer, string filepath);
@@ -262,22 +260,6 @@ string replaceWord(string text, string oldWord, string newWord) {
   return result;
 }
 
-string readKeys(void) {
-  const number bufsize = 4096;
-  char buffer[bufsize];
-  fgets(buffer, bufsize, stdin);
-  string result = malloc(strlen(buffer) + 1);
-  strcpy(result, buffer);
-  string head = result;
-  while (*head != STR_END) {
-    if (head[0] == '\n' || head[0] == '\r') {
-      head[0] = STR_END;
-      break;
-    }
-    *head++;
-  }
-  return result;
-}
 
 bool writeFile(string buffer, string filepath) {
   FILE* f = fopen(filepath, "w");

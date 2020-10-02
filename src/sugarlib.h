@@ -1,16 +1,19 @@
-/* Simple libc header for SUGAR 
- * 
+/* Simple libc header for SUGAR
+ *
  * Add any function you want from the libc there. This file is here
  * only for your convenience so that you do not need to put the whole
- * glibc include files on your floppy disk 
+ * glibc include files on your floppy disk
  */
 #ifndef _SUGARLIB_H
 #define _SUGARLIB_H
 
-#include <stddef.h>
+#include <limits.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 /* stdlib.h */
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
 void *calloc(size_t nmemb, size_t size);
 void *malloc(size_t size);
 void free(void *ptr);
@@ -19,10 +22,14 @@ int atoi(const char *nptr);
 long int strtol(const char *nptr, char **endptr, int base);
 unsigned long int strtoul(const char *nptr, char **endptr, int base);
 void exit(int);
+int system(const char* command);
 
 /* stdio.h */
 typedef struct __FILE FILE;
 #define EOF (-1)
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
@@ -40,6 +47,9 @@ char *gets(char *s);
 int ungetc(int c, FILE *stream);
 int fflush(FILE *stream);
 int putchar (int c);
+int fputs(const char *str, FILE *stream);
+int fseek(FILE *stream, long int offset, int whence);
+long int ftell(FILE *stream);
 
 int printf(const char *format, ...);
 int fprintf(FILE *stream, const char *format, ...);
@@ -57,6 +67,9 @@ int vdprintf(int fd, const char *format, va_list ap);
 void perror(const char *s);
 
 /* string.h */
+int strcmp(const char *str1, const char *str2);
+char *strtok(char *str, const char *delim);
+char *strstr(const char *haystack, const char *needle);
 char *strcat(char *dest, const char *src);
 char *strchr(const char *s, int c);
 char *strrchr(const char *s, int c);
