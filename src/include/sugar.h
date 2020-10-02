@@ -33,7 +33,7 @@ bool areSame(string, string);
 // ofBool -> converts a boolean to string
 string ofBool(bool);
 
-// ofChar -> converts a character to string
+// ofChar -> converts a character to string [USE FREE]
 string ofChar(char);
 
 // ofNumber -> converts a number to a new string [USE FREE]
@@ -81,11 +81,12 @@ string replaceWord(string text, string oldWord, string newWord);
 // readKeys -> reads from keyboard until enter and returns a string [USE FREE]
 string readKeys(void);
 
-// readFile -> reads all text content of a filepath to a string
-string readFile(string filepath);
+// writeFile -> writes a string buffer to a filepath
+bool writeFile(string buffer, string filepath);
 
-// writeFile -> writes a string as text to a filepath
-void writeFile(string s, string filepath);
+// readFile -> reads all text content of a filepath to a string buffer [USE
+// FREE]
+string readFile(string filepath);
 
 // TODO: bellow implementations should be "sugar.c", make this a dynamic lib
 
@@ -278,6 +279,17 @@ string readKeys(void) {
   return result;
 }
 
+bool writeFile(string buffer, string filepath) {
+  FILE* f = fopen(filepath, "w");
+  if (!f) {
+    printf("error: could not write file -> %s\n", filepath);
+    return false;
+  }
+  fputs(buffer, f);
+  fclose(f);
+  return true;
+}
+
 string readFile(string filepath) {
   long length;
   number maxbuffer = NUM_MAX - 1;
@@ -301,15 +313,6 @@ string readFile(string filepath) {
   }
   printf("error: file not found -> %s\n", filepath);
   return NULL;
-}
-
-void writeFile(string s, string filepath) {
-  FILE* f = fopen(filepath, "w");
-  if (f)
-    fputs(s, f);
-  else
-    printf("error: could not write file -> %s\n", filepath);
-  fclose(f);
 }
 
 #endif /* SUGAR_H */

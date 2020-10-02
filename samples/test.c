@@ -94,17 +94,26 @@ void doTests() {
        // yes, I know it works, but I should think on how to test this
        true);
 
-  skip("readFile",
-       // yes, I know it works, but I should think on how to test this
-       true);
+  string filename = "test.txt";
+  bool didSave = writeFile(phrase, filename);
 
-  skip("writeFile",
-       // yes, I know it works, but I should think on how to test this
-       true);
+  check("writeFile", writeFile(phrase, filename));
+
+  check("readFile", areSame(readFile(filename), phrase));
+
+  // try to remove the file create during test in mac/linux env
+  if (system(join2s("rm ", filename)) != EXIT_SUCCESS) {
+    println("[ Info.. ]  -> rm didn't work, try clean up with del (windows?)");
+    if (system(join2s("del ", filename)) != EXIT_SUCCESS)
+      // else... warn user :/
+      println(
+          join2s("[ Warn.. ]  -> could not remove file generated during test: ",
+                 filename));
+  }
 }
 
 app({
-  println("[   GO   ]  -> Running test cases for <sugar.h>...");
+  println("[   GO   ]  -> running test cases for <sugar.h>...");
 
   doTests();
 
