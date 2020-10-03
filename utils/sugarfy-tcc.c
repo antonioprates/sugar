@@ -23,5 +23,5 @@ app({
 
   writeFile(s, argv[1]);
 
-  printf("■");
+  printf(" ■");
 })

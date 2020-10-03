@@ -413,7 +413,8 @@ ST_FUNC void sugar_debug_start(SUGARState *s1)
         pstrcat(buf, sizeof(buf), "/");
         put_stabs_r(s1, buf, N_SO, 0, 0,
                     text_section->data_offset, text_section, section_sym);
-        put_stabs_r(s1, file->prev->filename, N_SO, 0, 0,
+        put_stabs_r(s1, file->prev ? file->prev->filename : file->filename,
+                    N_SO, 0, 0,
                     text_section->data_offset, text_section, section_sym);
         for (i = 0; i < sizeof (default_debug) / sizeof (default_debug[0]); i++)
             put_stabs(s1, default_debug[i].name, N_LSYM, 0, 0, 0);
@@ -496,7 +497,7 @@ static void sugar_get_debug_info(SUGARState *s1, Sym *s, CString *result)
     CString str;
 
     for (;;) {
-        type = t->type.t & ~(VT_EXTERN | VT_STATIC | VT_CONSTANT | VT_VOLATILE);
+        type = t->type.t & ~(VT_STORAGE | VT_CONSTANT | VT_VOLATILE);
         if ((type & VT_BTYPE) != VT_BYTE)
             type &= ~VT_DEFSIGN;
         if (type == VT_PTR || type == (VT_PTR | VT_ARRAY))
@@ -586,7 +587,7 @@ static void sugar_get_debug_info(SUGARState *s1, Sym *s, CString *result)
         cstr_printf (result, "%d=", ++debug_next_type);
     t = s;
     for (;;) {
-        type = t->type.t & ~(VT_EXTERN | VT_STATIC | VT_CONSTANT | VT_VOLATILE);
+        type = t->type.t & ~(VT_STORAGE | VT_CONSTANT | VT_VOLATILE);
         if ((type & VT_BTYPE) != VT_BYTE)
             type &= ~VT_DEFSIGN;
         if (type == VT_PTR)
@@ -663,6 +664,19 @@ static void sugar_debug_extern_sym(SUGARState *s1, Sym *sym, int sh_num, int sym
         sugar_debug_stabs(s1, str.data,
             (sym->type.t & VT_STATIC) && data_section == s
             ? N_STSYM : N_LCSYM, 0, s, sym->c);
+    cstr_free (&str);
+}
+
+static void sugar_debug_typedef(SUGARState *s1, Sym *sym)
+{
+    CString str;
+
+    cstr_new (&str);
+    cstr_printf (&str, "%s:t",
+                 (sym->v & ~SYM_FIELD) >= SYM_FIRST_ANOM
+                 ? "" : get_tok_str(sym->v & ~SYM_FIELD, NULL));
+    sugar_get_debug_info(s1, sym, &str);
+    sugar_debug_stabs(s1, str.data, N_LSYM, 0, NULL, 0);
     cstr_free (&str);
 }
 
@@ -926,10 +940,8 @@ ST_FUNC void put_extern_sym2(Sym *sym, int sh_num,
 #endif
 
         if (sym->asm_label) {
-            name = get_tok_str(sym->asm_label & ~SYM_FIELD, NULL);
-            /* with SYM_FIELD it was __attribute__((alias("..."))) actually */
-            if (!(sym->asm_label & SYM_FIELD))
-                can_add_underscore = 0;
+            name = get_tok_str(sym->asm_label, NULL);
+            can_add_underscore = 0;
         }
 
         if (sugar_state->leading_underscore && can_add_underscore) {
@@ -1511,6 +1523,8 @@ static void merge_attr(AttributeDef *ad, AttributeDef *ad1)
 
     if (ad1->section)
       ad->section = ad1->section;
+    if (ad1->alias_target)
+      ad->alias_target = ad1->alias_target;
     if (ad1->asm_label)
       ad->asm_label = ad1->asm_label;
     if (ad1->attr_mode)
@@ -4134,8 +4148,8 @@ redo:
         case TOK_ALIAS2:
             skip('(');
 	    parse_mult_str(&astr, "alias(\"target\")");
-            ad->asm_label = /* save string as token, for later */
-                tok_alloc((char*)astr.data, astr.size-1)->tok | SYM_FIELD;
+            ad->alias_target = /* save string as token, for later */
+                tok_alloc((char*)astr.data, astr.size-1)->tok;
             skip(')');
 	    cstr_free(&astr);
             break;
@@ -6087,6 +6101,9 @@ special_math_val:
                     /* pass it as 'int' to avoid structure arg passing
                        problems */
                     vseti(VT_LOCAL, loc);
+#ifdef CONFIG_SUGAR_BCHECK
+                    loc -= sugar_state->do_bounds_check != 0;
+#endif
                     ret.c = vtop->c;
                     if (ret_nregs < 0)
                       vtop--;
@@ -7279,6 +7296,23 @@ static void skip_or_save_block(TokenString **str)
     }
 }
 
+static void get_init_string(TokenString **str, int has_init)
+{
+    if (has_init == 2) {
+        *str = tok_str_alloc();
+        /* only get strings */
+        while (tok == TOK_STR || tok == TOK_LSTR) {
+            tok_str_add_tok(*str);
+            next();
+        }
+        tok_str_add(*str, -1);
+        tok_str_add(*str, 0);
+    }
+    else
+        skip_or_save_block(str);
+    unget_tok(0);
+}
+
 #define EXPR_CONST 1
 #define EXPR_ANY   2
 
@@ -7339,11 +7373,12 @@ static void init_putz(Section *sec, unsigned long c, int size)
    'al' contains the already initialized length of the
    current container (starting at c).  This returns the new length of that.  */
 static int decl_designator(CType *type, Section *sec, unsigned long c,
-                           Sym **cur_field, int flags, int al)
+                           Sym **cur_field, int flags, int al, int size)
 {
     Sym *s, *f;
     int index, index_last, align, l, nb_elems, elem_size;
     unsigned long corig = c;
+    TokenString *init_str = NULL;
 
     elem_size = 0;
     nb_elems = 1;
@@ -7423,38 +7458,40 @@ static int decl_designator(CType *type, Section *sec, unsigned long c,
             c += f->c;
         }
     }
+
     /* must put zero in holes (note that doing it that way
        ensures that it even works with designators) */
-    if (!(flags & DIF_SIZE_ONLY) && c - corig > al)
-	init_putz(sec, corig + al, c - corig - al);
+    if (!(flags & DIF_SIZE_ONLY)) {
+        int zlen = c - (corig + al);
+        if (type->t & VT_BITFIELD) { /* must include current field too */
+            zlen += type_size(type, &align);
+            if (al + zlen > size)
+                zlen = size - al;
+        }
+        if (zlen > 0)
+	    init_putz(sec, corig + al, zlen);
+    }
+
+    if (!(flags & DIF_SIZE_ONLY) && nb_elems > 1) {
+        get_init_string(&init_str, tok == TOK_STR || tok == TOK_LSTR ? 2 : 0);
+        begin_macro(init_str, 1);
+        next();
+    }
+
     decl_initializer(type, sec, c, flags & ~DIF_FIRST);
 
-    /* XXX: make it more general */
     if (!(flags & DIF_SIZE_ONLY) && nb_elems > 1) {
-        unsigned long c_end;
-        uint8_t *src, *dst;
         int i;
 
-        if (!sec) {
-	    vset(type, VT_LOCAL|VT_LVAL, c);
-	    for (i = 1; i < nb_elems; i++) {
-		vset(type, VT_LOCAL|VT_LVAL, c + elem_size * i);
-		vswap();
-		vstore();
-	    }
-	    vpop();
-        } else if (!NODATA_WANTED) {
-	    c_end = c + nb_elems * elem_size;
-	    if (c_end > sec->data_allocated)
-	        section_realloc(sec, c_end);
-	    src = sec->data + c;
-	    dst = src;
-	    for(i = 1; i < nb_elems; i++) {
-		dst += elem_size;
-		memcpy(dst, src, elem_size);
-	    }
-	}
+        for(i = 1; i < nb_elems; i++) {
+            macro_ptr = init_str->str;
+            next();
+            decl_initializer(type, sec, c + i * elem_size, flags & ~DIF_FIRST);
+        }
+        end_macro();
+        next();
     }
+
     c += nb_elems * type_size(type, &align);
     if (c - corig > al)
       al = c - corig;
@@ -7776,7 +7813,7 @@ static void decl_initializer(CType *type, Section *sec, unsigned long c,
           do_init_list:
 	    len = 0;
 	    while (tok != '}' || (flags & DIF_HAVE_ELEM)) {
-		len = decl_designator(type, sec, c, &f, flags, len);
+		len = decl_designator(type, sec, c, &f, flags, len, n*size1);
 		flags &= ~DIF_HAVE_ELEM;
 		if (type->t & VT_ARRAY) {
 		    ++indexsym.c;
@@ -7892,20 +7929,7 @@ static void decl_initializer_alloc(CType *type, AttributeDef *ad, int r,
     if (size < 0 || (flexible_array && has_init)) {
         if (!has_init) 
             sugar_error("unknown type size");
-        /* get all init string */
-        if (has_init == 2) {
-	    init_str = tok_str_alloc();
-            /* only get strings */
-            while (tok == TOK_STR || tok == TOK_LSTR) {
-                tok_str_add_tok(init_str);
-                next();
-            }
-	    tok_str_add(init_str, -1);
-	    tok_str_add(init_str, 0);
-        } else {
-	    skip_or_save_block(&init_str);
-        }
-        unget_tok(0);
+        get_init_string(&init_str, has_init);
 
         /* compute size */
         begin_macro(init_str, 1);
@@ -8408,6 +8432,8 @@ found:
                     }
                     sym->a = ad.a;
                     sym->f = ad.f;
+                    if (sugar_state->do_debug)
+                        sugar_debug_typedef (sugar_state, sym);
 		} else if ((type.t & VT_BTYPE) == VT_VOID
 			   && !(type.t & VT_EXTERN)) {
 		    sugar_error("declaration of void object");
@@ -8434,6 +8460,20 @@ found:
                         /* external variable or function */
                         type.t |= VT_EXTERN;
                         sym = external_sym(v, &type, r, &ad);
+                        if (ad.alias_target) {
+                            /* Aliases need to be emitted when their target
+                               symbol is emitted, even if perhaps unreferenced.
+                               We only support the case where the base is
+                               already defined, otherwise we would need
+                               deferring to emit the aliases until the end of
+                               the compile unit.  */
+                            Sym *alias_target = sym_find(ad.alias_target);
+                            ElfSym *esym = elfsym(alias_target);
+                            if (!esym)
+                                sugar_error("unsupported forward __alias__ attribute");
+                            put_extern_sym2(sym, esym->st_shndx,
+                                            esym->st_value, esym->st_size, 1);
+                        }
                     } else {
                         if (type.t & VT_STATIC)
                             r |= VT_CONST;

@@ -774,13 +774,13 @@ ST_FUNC void squeeze_multi_relocs(Section *s, size_t oldrelocoffset)
        a simple insertion sort.  */
     for (a = oldrelocoffset + sizeof(*r); a < sr->data_offset; a += sizeof(*r)) {
 	ssize_t i = a - sizeof(*r);
-	addr = ((ElfW_Rel*)(sr->data + a))->r_offset;
+        ElfW_Rel tmp = *(ElfW_Rel*)(sr->data + a);
+	addr = tmp.r_offset;
 	for (; i >= (ssize_t)oldrelocoffset &&
 	       ((ElfW_Rel*)(sr->data + i))->r_offset > addr; i -= sizeof(*r)) {
-	    ElfW_Rel tmp = *(ElfW_Rel*)(sr->data + a);
-	    *(ElfW_Rel*)(sr->data + a) = *(ElfW_Rel*)(sr->data + i);
-	    *(ElfW_Rel*)(sr->data + i) = tmp;
+	    *(ElfW_Rel*)(sr->data + i + sizeof(*r)) = *(ElfW_Rel*)(sr->data + i);
 	}
+        *(ElfW_Rel*)(sr->data + i + sizeof(*r)) = tmp;
     }
 
     r = (ElfW_Rel*)(sr->data + oldrelocoffset);
@@ -996,12 +996,25 @@ ST_FUNC void relocate_section(SUGARState *s1, Section *s)
         tgt += rel->r_addend;
 #endif
         addr = s->sh_addr + rel->r_offset;
-        relocate(s1, rel, type, ptr, addr, tgt);
+        {
+#if !(defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_ARM) || \
+      defined(SUGAR_TARGET_MACHO))
+            int dynindex;
+            if (s == data_section && sym->st_shndx == SHN_UNDEF &&
+                s1->dynsym &&
+                (dynindex = get_sym_attr(s1, sym_index, 0)->dyn_index)) {
+                rel->r_info = ELFW(R_INFO)(dynindex, type);
+	        *qrel++ = *rel;
+	    }
+            else
+#endif
+                relocate(s1, rel, type, ptr, addr, tgt);
+        }
     }
     /* if the relocation is allocated, we change its symbol table */
     if (sr->sh_flags & SHF_ALLOC) {
         sr->link = s1->dynsym;
-        if (s1->output_type == SUGAR_OUTPUT_DLL) {
+        if (qrel != (ElfW_Rel *)sr->data) {
             size_t r = (uint8_t*)qrel - sr->data;
             if (sizeof ((Stab_Sym*)0)->n_value < PTR_SIZE
                 && 0 == strcmp(s->name, ".stab"))
@@ -1242,6 +1255,12 @@ ST_FUNC void build_got_entries(SUGARState *s1)
 			/* dynsym isn't set for -run :-/  */
 			dynindex = get_sym_attr(s1, sym_index, 0)->dyn_index;
 			esym = (ElfW(Sym) *)s1->dynsym->data + dynindex;
+#if !(defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_ARM) || \
+      defined(SUGAR_TARGET_MACHO))
+			if (dynindex && s == data_section->reloc)
+			    s->sh_flags |= SHF_ALLOC;
+			else
+#endif
 			if (dynindex
 			    && (ELFW(ST_TYPE)(esym->st_info) == STT_FUNC
 				|| (ELFW(ST_TYPE)(esym->st_info) == STT_NOTYPE
