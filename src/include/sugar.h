@@ -77,13 +77,12 @@ number countWord(string text, string word);
 string replaceWord(string text, string oldWord, string newWord);
 
 // readKeys -> reads from keyboard until enter and returns a string [USE FREE]
-// string readKeys(void);
+string readKeys(void);
 
 // writeFile -> writes a string buffer to a filepath
 bool writeFile(string buffer, string filepath);
 
-// readFile -> reads all text content of a filepath to a string buffer [USE
-// FREE]
+// readFile -> reads text file to a string buffer [USE FREE]
 string readFile(string filepath);
 
 // TODO: bellow implementations should be "sugar.c", make this a dynamic lib
@@ -260,6 +259,28 @@ string replaceWord(string text, string oldWord, string newWord) {
 
   result[i] = STR_END;
   return result;
+}
+
+string readKeys(void) {
+  const number bufsize = 4096;
+  char buffer[bufsize];
+  number i;
+  for (i = 0; i < bufsize; i++) {
+    buffer[i] = getchar();
+    if (buffer[i] == '\n' || buffer[i] == '\r') {
+      buffer[i] = STR_END;
+      break;
+    }
+  }
+  buffer[bufsize - 1] = STR_END;  // just in case we used it all
+
+  string result = malloc(i+1);
+  if (result) {  // memory gard
+    result[0] = STR_END;
+    strcat(result, buffer);
+    return result;
+  }
+  return NULL;
 }
 
 bool writeFile(string buffer, string filepath) {
