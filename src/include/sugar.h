@@ -77,7 +77,7 @@ number countWord(string text, string word);
 string replaceWord(string text, string oldWord, string newWord);
 
 // readKeys -> reads from keyboard until enter and returns a string [USE FREE]
-//string readKeys(void);
+// string readKeys(void);
 
 // writeFile -> writes a string buffer to a filepath
 bool writeFile(string buffer, string filepath);
@@ -139,6 +139,7 @@ string mkString(number count, stringList strs) {
   for (number i = 0; i < count; i++)
     size += strlen(strs[i]);
   string result = malloc(size + 1);
+  result[0] = STR_END;
   if (result) {  // memory gard
     for (number i = 0; i < count; i++)
       strcat(result, strs[i]);
@@ -176,6 +177,7 @@ string joinSep(number count, stringList strs, char separator) {
     totalSize += strlen(strs[i]);
 
   string result = malloc(totalSize + count);
+  result[0] = STR_END;
 
   if (result) {  // memory gard
     for (number i = 0; i < count; i++) {
@@ -259,7 +261,6 @@ string replaceWord(string text, string oldWord, string newWord) {
   result[i] = STR_END;
   return result;
 }
-
 
 bool writeFile(string buffer, string filepath) {
   FILE* f = fopen(filepath, "w");
