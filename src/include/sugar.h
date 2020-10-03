@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <sugarlib.h>
+#include <limits.h>
 
 typedef char* string;  // declare one string per line or use char *s, *t, *u;
 typedef string* stringList;

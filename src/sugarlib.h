@@ -7,9 +7,8 @@
 #ifndef _SUGARLIB_H
 #define _SUGARLIB_H
 
-#include <limits.h>
-#include <stdarg.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 /* stdlib.h */
 #define EXIT_SUCCESS 0
