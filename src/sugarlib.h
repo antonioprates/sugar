@@ -24,6 +24,8 @@ void exit(int);
 int system(const char* command);
 
 /* stdio.h */
+#ifndef _STDIO_H_
+#define _STDIO_H_
 typedef struct __FILE FILE;
 #define EOF (-1)
 #define SEEK_SET 0
@@ -64,6 +66,7 @@ int vasprintf(char  **strp,  const  char *format, va_list ap);
 int vdprintf(int fd, const char *format, va_list ap);
 
 void perror(const char *s);
+#endif /* _STDIO_H_ */
 
 /* string.h */
 int strcmp(const char *str1, const char *str2);
