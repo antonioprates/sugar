@@ -2,13 +2,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// stupid script to make use of all CPUs
+// stupid script to make use of all CPU cores
 
 app({
+  println("how many cores has your machine?  (max = 64)");
+  string response = readKeys();
+  number corecount = 0;
+  if (response && (corecount = ofString(response)) > 64)
+    corecount = 64;  // limit!
+
   println("hit CTRL+C to end this madness");
-
-  number corecount = 8;
-
   number i = 1;
   while (i < corecount) {
     i = i * 2;
