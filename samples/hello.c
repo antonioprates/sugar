@@ -1,6 +1,4 @@
-#!///usr/local/bin/sugar
+#!//usr/local/bin/sugar
 #include <sugar.h>
 
-app({
-  println("Hello World");
-})
+app({ println("Hello World"); })

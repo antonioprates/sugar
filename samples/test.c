@@ -1,4 +1,4 @@
-#!///usr/local/bin/sugar -dev
+#!//usr/local/bin/sugar -dev
 #include <sugar.h>
 
 // some basic tests on the sugar script library
@@ -13,14 +13,12 @@ void check(string testName, bool pass) {
   printf("[ passed ]  -> %s\n", testName);
 }
 
-void skip(string testName, bool pass) {
+void skip(string testName) {
   printf("[ skip.. ]  -> %s\n", testName);
 }
 
 void doTests() {
-  skip("println",
-       // yes, I know it works, but I should think on how to test this
-       true);
+  skip("println");  // yes it works, but I should think on how to test this
 
   check("areSame",
         areSame("yes", "yes") == true && areSame("yes", "no") == false);
@@ -72,9 +70,7 @@ void doTests() {
                         areSame(listFromSplit[1], "green") &&
                         areSame(listFromSplit[2], "blue"));
 
-  skip("forEach",
-       // yes, I know it works, but I should think on how to test this
-       true);
+  skip("forEach");  // yes it works, but I should think on how to test this
 
   check("startsWith",
         startsWith("abc", "a") == true && startsWith("abc", "c") == false);
@@ -90,26 +86,25 @@ void doTests() {
 
   check("replaceWord", areSame(phrase, "there you have 5 'e' and 3 'a'"));
 
-  skip("readKeys",
-       // yes, I know it works, but I should think on how to test this
-       true);
+  skip("readKeys");  // yes it works, but I should think on how to test this
 
   string filename = "test.txt";
   bool didSave = writeFile(phrase, filename);
 
-  check("writeFile", writeFile(phrase, filename));
+  check("writeFile", didSave);
 
-  check("readFile", areSame(readFile(filename), phrase));
+  if (didSave)
+    check("readFile", areSame(readFile(filename), phrase));
+  else
+    skip("readFile");
 
   // try to remove the file create during test in mac/linux env
-  if (system(join2s("rm ", filename)) != EXIT_SUCCESS) {
-    println("[ Info.. ]  -> rm didn't work, try clean up with del (windows?)");
+  if (system(join2s("rm ", filename)) != EXIT_SUCCESS)
+    // rm didn't work, try clean up with del (windows env?)
     if (system(join2s("del ", filename)) != EXIT_SUCCESS)
-      // else... warn user :/
-      println(
-          join2s("[ Warn.. ]  -> could not remove file generated during test: ",
+      println(  // still didn't work... warn user :/
+          join2s("[ warn.. ]  -> could not remove file generated during test: ",
                  filename));
-  }
 }
 
 app({
@@ -120,7 +115,7 @@ app({
   // by using app we are already testing the macro expansion for main function..
   // AND error found with more code: "macro 'app' used with too many args"
   println(
-      "[ issue? ]  -> app macro with big body causes: 'app' used with "
+      "[ warn.. ]  -> app macro with big body causes: 'app' used with "
       "too many args");
 
   // still, it's worth the convenience...

@@ -1,5 +1,6 @@
-#!///usr/local/bin/sugar
 #include <sugar.h>
+
+// from original tcc examples (sweetened)
 
 number fib(n) {
   if (n <= 2)
@@ -12,7 +13,7 @@ app({
   if (argc < 2) {
     println("usage: fib n");
     println("Compute nth Fibonacci number");
-    return _failure;
+    return EXIT_FAILURE;
   }
 
   number n = ofString(argv[1]);

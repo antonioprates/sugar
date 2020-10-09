@@ -1,4 +1,3 @@
-#!///usr/local/bin/sugar
 #include <sugar.h>
 
 app({
