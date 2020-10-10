@@ -22,6 +22,8 @@ long int strtol(const char *nptr, char **endptr, int base);
 unsigned long int strtoul(const char *nptr, char **endptr, int base);
 void exit(int);
 int system(const char* command);
+int rand(void);
+void srand(unsigned seed);
 
 /* stdio.h */
 #ifndef _STDIO_H_
