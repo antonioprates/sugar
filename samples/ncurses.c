@@ -1,12 +1,11 @@
-#!//usr/local/bin/sugar -lncurses -dev
-
+#!//usr/local/bin/sugar -lncurses -run
 #include <curses.h>
 #include <sugar.h>
 
 app({
-  initscr();              // Start curses mode
-  printw("Hello World");  // Print Hello World
-  refresh();              // Print it on to the real screen
-  getch();                // Wait for user input
-  endwin();               // End curses mode
+  initscr();              // start curses mode
+  printw("Hello World");  // print Hello World to screen buffer
+  refresh();              // render buffer to the real screen
+  getch();                // wait for user input
+  endwin();               // end curses mode
 })
