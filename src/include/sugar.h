@@ -8,6 +8,11 @@
 #include <sugarlib.h>
 #include <limits.h>
 
+// you can remove <sugarlib.h> and use standard C libs if you prefer
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <string.h>
+
 typedef char* string;  // declare one string per line or use char *s, *t, *u;
 typedef string* stringList;
 typedef int number;  // use float for float, duh!
