@@ -202,6 +202,12 @@ ST_FUNC void sugarelf_end_file(SUGARState *s1)
         }
     }
     sugar_free(tr);
+
+    /* record text/data/bss output for -bench info */
+    for (i = 0; i < 3; ++i) {
+        s = s1->sections[i + 1];
+        s1->total_output[i] += s->data_offset - s->sh_offset;
+    }
 }
 
 ST_FUNC Section *new_section(SUGARState *s1, const char *name, int sh_type, int sh_flags)
@@ -315,14 +321,16 @@ ST_FUNC void *section_ptr_add(Section *sec, addr_t size)
     return sec->data + offset;
 }
 
+#ifndef ELF_OBJ_ONLY
 /* reserve at least 'size' bytes from section start */
-ST_FUNC void section_reserve(Section *sec, unsigned long size)
+static void section_reserve(Section *sec, unsigned long size)
 {
     if (size > sec->data_allocated)
         section_realloc(sec, size);
     if (size > sec->data_offset)
         sec->data_offset = size;
 }
+#endif
 
 static Section *find_section_create (SUGARState *s1, const char *name, int create)
 {
@@ -756,45 +764,7 @@ ST_FUNC void put_elf_reloc(Section *symtab, Section *s, unsigned long offset,
     put_elf_reloca(symtab, s, offset, type, symbol, 0);
 }
 
-/* Remove relocations for section S->reloc starting at oldrelocoffset
-   that are to the same place, retaining the last of them.  As side effect
-   the relocations are sorted.  Possibly reduces the number of relocs.  */
-ST_FUNC void squeeze_multi_relocs(Section *s, size_t oldrelocoffset)
-{
-    Section *sr = s->reloc;
-    ElfW_Rel *r, *dest;
-    ssize_t a;
-    ElfW(Addr) addr;
-
-    if (oldrelocoffset + sizeof(*r) >= sr->data_offset)
-      return;
-    /* The relocs we're dealing with are the result of initializer parsing.
-       So they will be mostly in order and there aren't many of them.
-       Secondly we need a stable sort (which qsort isn't).  We use
-       a simple insertion sort.  */
-    for (a = oldrelocoffset + sizeof(*r); a < sr->data_offset; a += sizeof(*r)) {
-	ssize_t i = a - sizeof(*r);
-        ElfW_Rel tmp = *(ElfW_Rel*)(sr->data + a);
-	addr = tmp.r_offset;
-	for (; i >= (ssize_t)oldrelocoffset &&
-	       ((ElfW_Rel*)(sr->data + i))->r_offset > addr; i -= sizeof(*r)) {
-	    *(ElfW_Rel*)(sr->data + i + sizeof(*r)) = *(ElfW_Rel*)(sr->data + i);
-	}
-        *(ElfW_Rel*)(sr->data + i + sizeof(*r)) = tmp;
-    }
-
-    r = (ElfW_Rel*)(sr->data + oldrelocoffset);
-    dest = r;
-    for (; r < (ElfW_Rel*)(sr->data + sr->data_offset); r++) {
-	if (dest->r_offset != r->r_offset)
-	  dest++;
-	*dest = *r;
-    }
-    sr->data_offset = (unsigned char*)dest - sr->data + sizeof(*r);
-}
-
 /* put stab debug information */
-
 ST_FUNC void put_stabs(SUGARState *s1, const char *str, int type, int other, int desc,
                       unsigned long value)
 {
@@ -996,25 +966,12 @@ ST_FUNC void relocate_section(SUGARState *s1, Section *s)
         tgt += rel->r_addend;
 #endif
         addr = s->sh_addr + rel->r_offset;
-        {
-#if !(defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_ARM) || \
-      defined(SUGAR_TARGET_MACHO))
-            int dynindex;
-            if (s == data_section && sym->st_shndx == SHN_UNDEF &&
-                s1->dynsym &&
-                (dynindex = get_sym_attr(s1, sym_index, 0)->dyn_index)) {
-                rel->r_info = ELFW(R_INFO)(dynindex, type);
-	        *qrel++ = *rel;
-	    }
-            else
-#endif
-                relocate(s1, rel, type, ptr, addr, tgt);
-        }
+        relocate(s1, rel, type, ptr, addr, tgt);
     }
     /* if the relocation is allocated, we change its symbol table */
     if (sr->sh_flags & SHF_ALLOC) {
         sr->link = s1->dynsym;
-        if (qrel != (ElfW_Rel *)sr->data) {
+        if (s1->output_type == SUGAR_OUTPUT_DLL) {
             size_t r = (uint8_t*)qrel - sr->data;
             if (sizeof ((Stab_Sym*)0)->n_value < PTR_SIZE
                 && 0 == strcmp(s->name, ".stab"))
@@ -1255,12 +1212,6 @@ ST_FUNC void build_got_entries(SUGARState *s1)
 			/* dynsym isn't set for -run :-/  */
 			dynindex = get_sym_attr(s1, sym_index, 0)->dyn_index;
 			esym = (ElfW(Sym) *)s1->dynsym->data + dynindex;
-#if !(defined(SUGAR_TARGET_I386) || defined(SUGAR_TARGET_ARM) || \
-      defined(SUGAR_TARGET_MACHO))
-			if (dynindex && s == data_section->reloc)
-			    s->sh_flags |= SHF_ALLOC;
-			else
-#endif
 			if (dynindex
 			    && (ELFW(ST_TYPE)(esym->st_info) == STT_FUNC
 				|| (ELFW(ST_TYPE)(esym->st_info) == STT_NOTYPE

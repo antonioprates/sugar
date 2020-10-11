@@ -918,6 +918,7 @@ struct SUGARState {
     int total_idents;
     int total_lines;
     int total_bytes;
+    int total_output[3];
 
     /* option -dnum (for general development purposes) */
     int g_debug;
@@ -1236,6 +1237,8 @@ PUB_FUNC char *sugar_strdup_debug(const char *str, const char *file, int line);
 PUB_FUNC void _sugar_error_noabort(const char *fmt, ...) PRINTF_LIKE(1,2);
 PUB_FUNC NORETURN void _sugar_error(const char *fmt, ...) PRINTF_LIKE(1,2);
 PUB_FUNC void _sugar_warning(const char *fmt, ...) PRINTF_LIKE(1,2);
+#define sugar_internal_error(msg) sugar_error("internal compiler error\n"\
+        "%s:%d: in %s(): " msg, __FILE__,__LINE__,__FUNCTION__)
 
 /* other utilities */
 ST_FUNC void dynarray_add(void *ptab, int *nb_ptr, void *data);
@@ -1506,7 +1509,6 @@ ST_FUNC Section *new_section(SUGARState *s1, const char *name, int sh_type, int 
 ST_FUNC void section_realloc(Section *sec, unsigned long new_size);
 ST_FUNC size_t section_add(Section *sec, addr_t size, int align);
 ST_FUNC void *section_ptr_add(Section *sec, addr_t size);
-ST_FUNC void section_reserve(Section *sec, unsigned long size);
 ST_FUNC Section *find_section(SUGARState *s1, const char *name);
 ST_FUNC Section *new_symtab(SUGARState *s1, const char *symtab_name, int sh_type, int sh_flags, const char *strtab_name, const char *hash_name, int hash_sh_flags);
 
@@ -1543,8 +1545,6 @@ ST_FUNC void add_array(SUGARState *s1, const char *sec, int c);
 ST_FUNC void build_got_entries(SUGARState *s1);
 #endif
 ST_FUNC struct sym_attr *get_sym_attr(SUGARState *s1, int index, int alloc);
-ST_FUNC void squeeze_multi_relocs(Section *sec, size_t oldrelocoffset);
-
 ST_FUNC addr_t get_sym_addr(SUGARState *s, const char *name, int err, int forc);
 ST_FUNC void list_elf_symbols(SUGARState *s, void *ctx,
     void (*symbol_cb)(void *ctx, const char *name, const void *val));
