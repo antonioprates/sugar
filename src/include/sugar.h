@@ -4,9 +4,9 @@
 #ifndef _SUGAR_H
 #define _SUGAR_H
 
+#include <limits.h>
 #include <stdbool.h>
 #include <sugarlib.h>
-#include <limits.h>
 
 // you can remove <sugarlib.h> and use standard C libs if you prefer
 // #include <stdio.h>
@@ -18,10 +18,14 @@ typedef string* stringList;
 typedef int number;  // use float for float, duh!
 typedef number* numberList;
 
-//#define STD_IN 0
 #define STR_END '\0'
 #define NUM_MAX INT_MAX
 #define NUM_MIN INT_MIN
+
+// fix eventual problem with <stdbool.h>
+#ifndef _Bool
+#define _Bool int
+#endif
 
 // app -> macro expansion for main function with return 0
 // known issue: "error: macro 'app' used with too many args"
@@ -35,7 +39,7 @@ void println(string);
 bool areSame(string, string);
 
 // ofBool -> converts a boolean to string
-string ofBool(bool);
+string ofBool(bool b);
 
 // ofChar -> converts a character to string [USE FREE]
 string ofChar(char);
@@ -102,37 +106,39 @@ bool areSame(string s1, string s2) {
 }
 
 string ofBool(bool b) {
-  return b ? "true" : "false";
+  if (b)
+    return "true";
+  return "false";
 }
 
 string ofChar(char c) {
-  string str = malloc(2);
+  string str = (string)malloc(2);
   if (str) {  // memory gard
     str[0] = c;
     str[1] = STR_END;
     return str;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 string ofNumber(number n) {
-  number length = snprintf(NULL, 0, "%d", n);
-  string result = malloc(length + 1);
+  number length = snprintf((string)NULL, 0, "%d", n);
+  string result = (string)malloc(length + 1);
   if (result) {  // memory gard
     snprintf(result, length + 1, "%d", n);
     return result;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 string ofLong(long l) {
-  number length = snprintf(NULL, 0, "%ld", l);
-  string result = malloc(length + 1);
+  number length = snprintf((string)NULL, 0, "%ld", l);
+  string result = (string)malloc(length + 1);
   if (result) {  // memory gard
     snprintf(result, length + 1, "%ld", l);
     return result;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 number ofString(string s) {
@@ -143,14 +149,14 @@ string mkString(number count, stringList strs) {
   number size = 0;
   for (number i = 0; i < count; i++)
     size += strlen(strs[i]);
-  string result = malloc(size + 1);
+  string result = (string)malloc(size + 1);
   result[0] = STR_END;
   if (result) {  // memory gard
     for (number i = 0; i < count; i++)
       strcat(result, strs[i]);
     return result;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 string join2s(string s1, string s2) {
@@ -181,7 +187,7 @@ string joinSep(number count, stringList strs, char separator) {
   for (number i = 0; i < count; i++)
     totalSize += strlen(strs[i]);
 
-  string result = malloc(totalSize + count);
+  string result = (string)malloc(totalSize + count);
   result[0] = STR_END;
 
   if (result) {  // memory gard
@@ -192,22 +198,22 @@ string joinSep(number count, stringList strs, char separator) {
     }
     return result;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 stringList splitSep(string str, char separator) {
   char strsep[2] = {separator, STR_END};
   number occur = countWord(str, strsep);
-  stringList list = malloc((occur + 1) * sizeof(string));
+  stringList list = (stringList)malloc((occur + 1) * sizeof(string));
   number size = strlen(str);
-  string copy = malloc(size + 1);
+  string copy = (string)malloc(size + 1);
   strcpy(copy, str);  // 'cause strtok modifies original string
   number i = 0;
   string word = strtok(str, strsep);
 
   while (word != NULL) {
     list[i++] = word;
-    word = strtok(NULL, strsep);
+    word = strtok((string)NULL, strsep);
   }
 
   return list;
@@ -250,21 +256,23 @@ string replaceWord(string text, string oldWord, string newWord) {
   number oldWordSize = strlen(oldWord);
   number newWordSize = strlen(newWord);
   number occur = countWord(text, oldWord);
-  string result;
+  string result =
+      (string)malloc(textSize + occur * (newWordSize - oldWordSize) + 1);
 
-  result = malloc(textSize + occur * (newWordSize - oldWordSize) + 1);
+  if (result) {  // memory gard
+    while (*text != STR_END) {
+      if (startsWith(text, oldWord)) {
+        strcpy(&result[i], newWord);
+        i += newWordSize;
+        text += oldWordSize;
+      } else
+        result[i++] = *text++;
+    }
 
-  while (*text != STR_END) {
-    if (startsWith(text, oldWord)) {
-      strcpy(&result[i], newWord);
-      i += newWordSize;
-      text += oldWordSize;
-    } else
-      result[i++] = *text++;
+    result[i] = STR_END;
+    return result;
   }
-
-  result[i] = STR_END;
-  return result;
+  return (string)NULL;
 }
 
 string readKeys(void) {
@@ -280,13 +288,13 @@ string readKeys(void) {
   }
   buffer[bufsize - 1] = STR_END;  // just in case we used it all
 
-  string result = malloc(i+1);
+  string result = (string)malloc(i + 1);
   if (result) {  // memory gard
     result[0] = STR_END;
     strcat(result, buffer);
     return result;
   }
-  return NULL;
+  return (string)NULL;
 }
 
 bool writeFile(string buffer, string filepath) {
@@ -303,18 +311,18 @@ bool writeFile(string buffer, string filepath) {
 string readFile(string filepath) {
   long length;
   number maxbuffer = NUM_MAX - 1;
-  string buffer = NULL;
+  string buffer = (string)NULL;
   FILE* f = fopen(filepath, "r");
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
     if (length > maxbuffer) {
       printf("error: file too big -> %s\n", filepath);
-      return NULL;
+      return (string)NULL;
     }
     fseek(f, 0, SEEK_SET);
-    buffer = malloc(length + 1);
-    if (buffer) {
+    buffer = (string)malloc(length + 1);
+    if (buffer) {  // memory gard
       fread(buffer, 1, length, f);
       buffer[length] = STR_END;
     }
@@ -322,7 +330,7 @@ string readFile(string filepath) {
     return buffer;
   }
   printf("error: file not found -> %s\n", filepath);
-  return NULL;
+  return (string)NULL;
 }
 
 #endif /* SUGAR_H */
