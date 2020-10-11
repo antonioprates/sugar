@@ -28,6 +28,8 @@ void srand(unsigned seed);
 /* stdio.h */
 #ifndef _STDIO_H_
 #define _STDIO_H_
+#ifndef _STDIO_H
+#define _STDIO_H
 typedef struct __FILE FILE;
 #define EOF (-1)
 #define SEEK_SET 0
@@ -68,6 +70,7 @@ int vasprintf(char  **strp,  const  char *format, va_list ap);
 int vdprintf(int fd, const char *format, va_list ap);
 
 void perror(const char *s);
+#endif /* _STDIO_H */
 #endif /* _STDIO_H_ */
 
 /* string.h */

@@ -1,4 +1,4 @@
-#!//usr/local/bin/sugar -lncurses -run
+#!//usr/local/bin/sugar -run -lcurses
 #include <curses.h>
 #include <sugar.h>
 #include <time.h>
@@ -83,7 +83,7 @@ void showSplashScreen() {
        "                           i7a@MMM@W08ZaaZ2S7;  ",
        "          ...             ;2WMMMMMWW088aaaSXr7, ",
        "       .;7Sa2Sr:        .;2@MMMMMM@WB08aaSX7;X: ",
-       "      ;SWMMMB0ZSr.      ;2WMMMMMMMWWB00ZaaSX7;X:",
+       "      ;SWMMMB0ZSr.      ;2WMMMMMMMWWB00ZaaSX7;X.",
        "     r2@MMMB8Z2S7;     :X8@@@MMM@@WB08ZaaSXr;;7:",
        "    :SBMM@B0ZaSXr7,    r20WWWWWWWBB088Z2aaSXr;7:",
        "    ;aBWB08ZaSX7;X:    XZ0000BBBB008ZZa2aaSXr;7:",
@@ -182,7 +182,7 @@ BALL newBall(number mode) {
 
 void renderBall(BALL b) {
   move(offY + (b.scaledY / 10), offX + (b.scaledX / 10));
-  addch(ACS_DIAMOND);
+  addch(ACS_BULLET);
 }
 
 void eraseBall(BALL b) {
