@@ -1,4 +1,4 @@
-// just some syntactic sugar to make live easier and code look better :D
+// just some syntactic sugar to make life easier and code look better :D
 // 2020, Antonio Prates, <antonioprates@gmail.com>
 
 #ifndef _SUGAR_H
@@ -209,7 +209,7 @@ stringList splitSep(string str, char separator) {
   string copy = (string)malloc(size + 1);
   strcpy(copy, str);  // 'cause strtok modifies original string
   number i = 0;
-  string word = strtok(str, strsep);
+  string word = strtok(copy, strsep);
 
   while (word != NULL) {
     list[i++] = word;
