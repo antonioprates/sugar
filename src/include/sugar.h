@@ -187,7 +187,7 @@ string joinSep(number count, stringList strs, char separator) {
   for (number i = 0; i < count; i++)
     totalSize += strlen(strs[i]);
 
-  string result = (string)malloc(totalSize + count);
+  string result = (string)malloc(totalSize + count + 1);
   result[0] = STR_END;
 
   if (result) {  // memory gard

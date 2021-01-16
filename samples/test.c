@@ -52,17 +52,20 @@ void doTests() {
 
   string list[3] = {"a", "b", "c"};
 
-  check("mkString", areSame(mkString(3, list), "abc"));
+  check("mkString", areSame(mkString(0, list), "") &&
+                        areSame(mkString(1, list), "a") &&
+                        areSame(mkString(2, list), "ab") &&
+                        areSame(mkString(3, list), "abc"));
 
   check("join2s", areSame(join2s("a", "b"), "ab"));
-
   check("join3s", areSame(join3s("a", "b", "c"), "abc"));
-
   check("join4s", areSame(join4s("a", "b", "c", "d"), "abcd"));
-
   check("join5s", areSame(join5s("a", "b", "c", "d", "e"), "abcde"));
 
-  check("joinSep", areSame(joinSep(3, list, ','), "a,b,c"));
+  check("joinSep", areSame(joinSep(0, list, ','), "") &&
+                       areSame(joinSep(1, list, ','), "a") &&
+                       areSame(joinSep(2, list, ','), "a,b") &&
+                       areSame(joinSep(3, list, ','), "a,b,c"));
 
   stringList listFromSplit = splitSep("red-green-blue", '-');
 
