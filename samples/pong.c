@@ -1,4 +1,8 @@
-#!//usr/local/bin/sugar -run -lcurses
+#if 0
+  /usr/local/bin/sugar -lncurses -run `basename $0` $@ && exit;
+  // above is a shebang hack, so you can run with: ./pong.c
+#endif
+
 #include <curses.h>
 #include <sugar.h>
 #include <time.h>
@@ -30,7 +34,7 @@
 // misc.
 #define KEY_ESC 27
 #define MAX_POINTS 5
-#define REFRESH_INTERVAL 3000  // 3ms for hard mode
+#define REFRESH_INTERVAL 3000 // 3ms for hard mode
 
 typedef struct Player {
   number y;
@@ -39,41 +43,40 @@ typedef struct Player {
 } PLAYER;
 
 typedef struct Ball {
-  number scaledY;  // 10x position
-  number scaledX;  // 10x position
-  number speedY;   // 1 or -1
-  number speedX;   // 1 or -1
+  number scaledY; // 10x position
+  number scaledX; // 10x position
+  number speedY;  // 1 or -1
+  number speedX;  // 1 or -1
 } BALL;
 
 // globals
-number rows, cols;  // number of rows and cols of actual screen
-number offY, offX;  // rows and cols offset for actual screen
+number rows, cols; // number of rows and cols of actual screen
+number offY, offX; // rows and cols offset for actual screen
 number mode;
 
 void startCursesMode() {
-  WINDOW* console;               // reference for the terminal window
-  console = initscr();           // start the curses screen mode
-  getmaxyx(stdscr, rows, cols);  // how many available rows and columns?
+  WINDOW *console;              // reference for the terminal window
+  console = initscr();          // start the curses screen mode
+  getmaxyx(stdscr, rows, cols); // how many available rows and columns?
   if (rows < MIN_ROWS || cols < MIN_COLS) {
-    endwin();  // end curses mode
-    println(
-        "error: screen is to small, "
-        "try enlarging your console to at least 80x24");
-    exit(EXIT_FAILURE);  // crash!
+    endwin(); // end curses mode
+    println("error: screen is to small, "
+            "try enlarging your console to at least 80x24");
+    exit(EXIT_FAILURE); // crash!
   }
   offY = (rows - MIN_ROWS) / 2;
   offX = (cols - MIN_COLS) / 2;
-  cbreak();                // allow ending game via CTRL+C
-  nodelay(console, true);  // make getch non-blocking
-  keypad(console, true);   // allow getch to capture arrow keys
-  curs_set(0);             // hide cursor
-  srand(time(0));          // use current time as seed for random generator
+  cbreak();               // allow ending game via CTRL+C
+  nodelay(console, true); // make getch non-blocking
+  keypad(console, true);  // allow getch to capture arrow keys
+  curs_set(0);            // hide cursor
+  srand(time(0));         // use current time as seed for random generator
 }
 
 void showSplashScreen() {
-  const number splashRows = 23;  // should not exceed MIN_ROWS
-  const number splashCols = 48;  // should not exceed MIN_COLS
-  string splashArt[23] =         // must equal lines count and splashRows
+  const number splashRows = 23; // should not exceed MIN_ROWS
+  const number splashCols = 48; // should not exceed MIN_COLS
+  string splashArt[23] =        // must equal lines count and splashRows
       {"  ,i:.                                          ",
        ".70@W87                                         ",
        "r8MM@0Z,                                        ",
@@ -115,13 +118,13 @@ PLAYER newPlayer(number posX) {
 
 void renderPlayer(PLAYER p) {
   move(offY + p.y + 0, offX + p.x);
-  addch(ACS_VLINE);  // vertical line pos 0
+  addch(ACS_VLINE); // vertical line pos 0
   move(offY + p.y + 1, offX + p.x);
-  addch(ACS_VLINE);  // vertical line pos 1
+  addch(ACS_VLINE); // vertical line pos 1
   move(offY + p.y + 2, offX + p.x);
-  addch(ACS_VLINE);  // vertical line pos 2
+  addch(ACS_VLINE); // vertical line pos 2
   move(offY + p.y + 3, offX + p.x);
-  addch(ACS_VLINE);  // vertical line pos 4
+  addch(ACS_VLINE); // vertical line pos 4
 }
 
 void erasePlayer(PLAYER p) {
@@ -137,7 +140,7 @@ PLAYER movePlayer(PLAYER p, number movement) {
   // limit movement as per walls
   if (p.y < TOP_WALL + 1)
     p.y = TOP_WALL + 1;
-  if (p.y > BOT_WALL - 4)  // note: player has height of 4
+  if (p.y > BOT_WALL - 4) // note: player has height of 4
     p.y = BOT_WALL - 4;
   return p;
 }
@@ -166,16 +169,16 @@ BALL newBall(number mode) {
   // this sets the ball from middle of screen with random direction if NEUTRAL
   // mode OR at the player A side moving towards player B if PLAYER_A_BALL
   // OR at the player B side moving towards player A if PLAYER_B_BALL
-  number direction = mode == PLAYER_A_BALL
-                         ? 1
-                         : mode == PLAYER_B_BALL ? -1 : rand() % 2 ? 1 : -1;
+  number direction = mode == PLAYER_A_BALL   ? 1
+                     : mode == PLAYER_B_BALL ? -1
+                     : rand() % 2            ? 1
+                                             : -1;
   // note: row of ball is always random within 1/3 of MIN_ROWS (valid positions)
   number ballInitialY =
       ((rand() % (MIN_ROWS / 3)) * 10) + ((MIN_ROWS / 3) * 10);
-  number ballInitialX =
-      mode == PLAYER_A_BALL
-          ? (MIN_COLS / 5) * 10
-          : mode == PLAYER_B_BALL ? (MIN_COLS / 5) * 40 : (MIN_COLS / 2) * 10;
+  number ballInitialX = mode == PLAYER_A_BALL   ? (MIN_COLS / 5) * 10
+                        : mode == PLAYER_B_BALL ? (MIN_COLS / 5) * 40
+                                                : (MIN_COLS / 2) * 10;
   BALL b = {ballInitialY, ballInitialX, direction, direction};
   return b;
 }
@@ -200,29 +203,29 @@ BALL moveBall(BALL ball, PLAYER playerA, PLAYER playerB) {
 
   // colide with walls
   if (posBallY <= TOP_WALL || posBallY >= BOT_WALL) {
-    ball.speedY = -ball.speedY;   // invert movement
-    ball.scaledY += ball.speedY;  // bounce back
+    ball.speedY = -ball.speedY;  // invert movement
+    ball.scaledY += ball.speedY; // bounce back
   }
 
   // colide with player A
   if ((posBallX == playerA.x || posBallX == playerA.x - 1) &&
       posBallY >= playerA.y && posBallY <= (playerA.y + 3)) {
-    ball.speedX = -ball.speedX;           // invert movement
-    ball.scaledX = (playerA.x + 1) * 10;  // bounce back
+    ball.speedX = -ball.speedX;          // invert movement
+    ball.scaledX = (playerA.x + 1) * 10; // bounce back
   }
 
   // colide with player B
   if ((posBallX == playerB.x || posBallX == playerB.x + 1) &&
       posBallY >= playerB.y && posBallY <= (playerB.y + 3)) {
-    ball.speedX = -ball.speedX;           // invert movement
-    ball.scaledX = (playerB.x - 1) * 10;  // bounce back
+    ball.speedX = -ball.speedX;          // invert movement
+    ball.scaledX = (playerB.x - 1) * 10; // bounce back
   }
 
   return ball;
 }
 
 void renderScores(PLAYER playerA, PLAYER playerB) {
-  string pBpoints = ofNumber(playerB.points);  // need as string to get length
+  string pBpoints = ofNumber(playerB.points); // need as string to get length
   mvprintw(offY / 2, offX + playerA.x, "%d", playerA.points);
   mvprintw(offY / 2, (cols - 4) / 2, "PONG");
   mvprintw(offY / 2, offX + playerB.x - strlen(pBpoints) + 1, pBpoints);
@@ -232,34 +235,34 @@ void renderScores(PLAYER playerA, PLAYER playerB) {
 void renderControls(PLAYER playerA, PLAYER playerB) {
   number emptyRow = rows - (offY / 2) - 1;
   switch (mode) {
-    case EASY_MODE:
-      mvprintw(emptyRow, offX + playerA.x - 1, "^|v - human");
-      mvprintw(emptyRow, (cols - 16) / 2, "P - [easy] > hard");
-      mvprintw(emptyRow, offX + playerB.x - 6, "computer");
-      break;
+  case EASY_MODE:
+    mvprintw(emptyRow, offX + playerA.x - 1, "^|v - human");
+    mvprintw(emptyRow, (cols - 16) / 2, "P - [easy] > hard");
+    mvprintw(emptyRow, offX + playerB.x - 6, "computer");
+    break;
 
-    case HARD_MODE:
-      mvprintw(emptyRow, offX + playerA.x - 1, "^|v - human");
-      mvprintw(emptyRow, (cols - 16) / 2, "P - [hard] > pvp");
-      mvprintw(emptyRow, offX + playerB.x - 6, "computer");
-      break;
+  case HARD_MODE:
+    mvprintw(emptyRow, offX + playerA.x - 1, "^|v - human");
+    mvprintw(emptyRow, (cols - 16) / 2, "P - [hard] > pvp");
+    mvprintw(emptyRow, offX + playerB.x - 6, "computer");
+    break;
 
-    case PVP_MODE:
-      mvprintw(emptyRow, offX + playerA.x - 1, "A|Z - player 1");
-      mvprintw(emptyRow, (cols - 16) / 2, "P - [pvp] > demo");
-      mvprintw(emptyRow, offX + playerB.x - 12, "^|v - player 2");
-      break;
+  case PVP_MODE:
+    mvprintw(emptyRow, offX + playerA.x - 1, "A|Z - player 1");
+    mvprintw(emptyRow, (cols - 16) / 2, "P - [pvp] > demo");
+    mvprintw(emptyRow, offX + playerB.x - 12, "^|v - player 2");
+    break;
 
-    case DEMO_MODE:
-      mvprintw(emptyRow, (cols - 32) / 2, "hit 'P' to play or 'ESC' to quit");
-      break;
+  case DEMO_MODE:
+    mvprintw(emptyRow, (cols - 32) / 2, "hit 'P' to play or 'ESC' to quit");
+    break;
   }
 }
 
 void renderHorizontalWall(number posY) {
   for (number i = 0; i < cols; i++) {
     move(offY + posY, i);
-    addch(ACS_HLINE);  // horizontal line
+    addch(ACS_HLINE); // horizontal line
   }
 }
 
@@ -280,52 +283,51 @@ void runGame() {
 
   while (run) {
     switch (getch()) {
-      case KEY_ESC:
-        run = false;
-        break;
+    case KEY_ESC:
+      run = false;
+      break;
 
-      case 'a':
-      case 'A':
-        if (mode != DEMO_MODE)
+    case 'a':
+    case 'A':
+      if (mode != DEMO_MODE)
+        playerA = movePlayer(playerA, -1);
+      break;
+
+    case 'z':
+    case 'Z':
+      if (mode != DEMO_MODE)
+        playerA = movePlayer(playerA, 1);
+      break;
+
+    case KEY_UP:
+      if (mode != DEMO_MODE)
+        if (mode == PVP_MODE)
+          playerB = movePlayer(playerB, -1);
+        else
           playerA = movePlayer(playerA, -1);
-        break;
+      break;
 
-      case 'z':
-      case 'Z':
-        if (mode != DEMO_MODE)
+    case KEY_DOWN:
+      if (mode != DEMO_MODE)
+        if (mode == PVP_MODE)
+          playerB = movePlayer(playerB, 1);
+        else
           playerA = movePlayer(playerA, 1);
-        break;
+      break;
 
-      case KEY_UP:
-        if (mode != DEMO_MODE)
-          if (mode == PVP_MODE)
-            playerB = movePlayer(playerB, -1);
-          else
-            playerA = movePlayer(playerA, -1);
-        break;
-
-      case KEY_DOWN:
-        if (mode != DEMO_MODE)
-          if (mode == PVP_MODE)
-            playerB = movePlayer(playerB, 1);
-          else
-            playerA = movePlayer(playerA, 1);
-        break;
-
-      case 'p':
-      case 'P':
-        mode++;  // easy / hard / player VS player / demo modes
-        if (mode > DEMO_MODE)
-          mode = EASY_MODE;
-        renderMessage(mode == PVP_MODE ? "PLAYER VS PLAYER MODE"
-                                       : mode == EASY_MODE
-                                             ? "EASY MODE"
-                                             : mode == HARD_MODE ? "HARD MODE"
-                                                                 : "DEMO MODE");
-        playerA = newPlayer(PLAYER_A_POS);
-        playerB = newPlayer(PLAYER_B_POS);
-        ball = newBall(NEUTRAL_BALL);
-        break;
+    case 'p':
+    case 'P':
+      mode++; // easy / hard / player VS player / demo modes
+      if (mode > DEMO_MODE)
+        mode = EASY_MODE;
+      renderMessage(mode == PVP_MODE    ? "PLAYER VS PLAYER MODE"
+                    : mode == EASY_MODE ? "EASY MODE"
+                    : mode == HARD_MODE ? "HARD MODE"
+                                        : "DEMO MODE");
+      playerA = newPlayer(PLAYER_A_POS);
+      playerB = newPlayer(PLAYER_B_POS);
+      ball = newBall(NEUTRAL_BALL);
+      break;
     }
 
     if (mode == DEMO_MODE)
@@ -372,13 +374,13 @@ void runGame() {
     renderBall(ball);
     renderHorizontalWall(BOT_WALL);
     renderControls(playerA, playerB);
-    mvprintw(rows - 1, cols - 1, " ");  // place cursor out of sight
+    mvprintw(rows - 1, cols - 1, " "); // place cursor out of sight
 
     // we control animation speed here (for demo, double speed)
     refresh();
-    usleep(mode == DEMO_MODE
-               ? REFRESH_INTERVAL / 2
-               : mode == EASY_MODE ? REFRESH_INTERVAL * 2 : REFRESH_INTERVAL);
+    usleep(mode == DEMO_MODE   ? REFRESH_INTERVAL / 2
+           : mode == EASY_MODE ? REFRESH_INTERVAL * 2
+                               : REFRESH_INTERVAL);
   }
 }
 
@@ -386,5 +388,5 @@ app({
   startCursesMode();
   showSplashScreen();
   runGame();
-  endwin();  // end curses mode
+  endwin(); // end curses mode
 })

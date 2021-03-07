@@ -1,4 +1,8 @@
-#!//usr/local/bin/sugar
+#if 0
+  /usr/local/bin/sugar `basename $0` $@ && exit;
+  // above is a shebang hack, so you can run: ./html2txt.c <file.html>
+#endif
+
 #include <sugar.h>
 
 // HTML 2 TXT
@@ -15,12 +19,12 @@
 string readHtmlFile(number argc, stringList argv) {
   if (argc != 2) {
     println("bad arguments! should be: ./html2txt.c [FILE]");
-    exit(EXIT_FAILURE);  // crash!
+    exit(EXIT_FAILURE); // crash!
   }
 
   string html = readFile(argv[1]);
-  if (html == NULL)      // error would be printed by readFile method...
-    exit(EXIT_FAILURE);  // so just crash!
+  if (html == NULL)     // error would be printed by readFile method...
+    exit(EXIT_FAILURE); // so just crash!
 
   return html;
 }
@@ -33,12 +37,12 @@ bool startsWithText(string html) {
   number i = 0;
   while (html[i] != STR_END) {
     if (html[i] == '<')
-      return true;  // found open tag first
+      return true; // found open tag first
     if (html[i] == '>')
-      return false;  // found close tag first (start is in the middle of a tag)
+      return false; // found close tag first (start is in the middle of a tag)
     i++;
   }
-  return true;  // only contains text (no html)
+  return true; // only contains text (no html)
 }
 
 string extractText(string html) {
@@ -50,7 +54,7 @@ string extractText(string html) {
   bool isText = startsWithText(html);
 
   if (isText && !isBlank(html[0]) && html[0] != '<' && html[0] != STR_END) {
-    textChunks[chunksCount] = &html[0];  // point next string
+    textChunks[chunksCount] = &html[0]; // point next string
     chunksCount++;
   }
 
@@ -61,39 +65,39 @@ string extractText(string html) {
         html[i] = ' ';
 
       // if new tag found...
-      if (html[i] == '<') {  // html[i] == '<'
-        html[i] = STR_END;   // mark the end of the string
+      if (html[i] == '<') { // html[i] == '<'
+        html[i] = STR_END;  // mark the end of the string
         isText = false;
       } else {
         if (isTrimming) {
           if (!isBlank(html[i])) {
-            textChunks[chunksCount] = &html[i];  // point next string
+            textChunks[chunksCount] = &html[i]; // point next string
             chunksCount++;
             isTrimming = false;
           }
         } else if (isBlank(html[i]) &&
                    (isBlank(html[i + 1]) || html[i + 1] == '<')) {
-          html[i] = STR_END;  // mark the end of the string
+          html[i] = STR_END; // mark the end of the string
           isTrimming = true;
         }
       }
     } else {
-      if (html[i] == '>') {  // if end of tag...
+      if (html[i] == '>') { // if end of tag...
         isText = true;
         if (isBlank(html[i + 1])) {
           isTrimming = true;
         } else if (html[i + 1] != STR_END) {
           if (html[i + 1] != '<') {
-            textChunks[chunksCount] = &html[i + 1];  // point next string
+            textChunks[chunksCount] = &html[i + 1]; // point next string
             chunksCount++;
-            i++;  // move index forward as nothing left to check here
+            i++; // move index forward as nothing left to check here
             isTrimming = false;
           } else
-            isText = false;  // found tag opening right after last closed
+            isText = false; // found tag opening right after last closed
         }
       }
     }
-    i++;  // move index forward
+    i++; // move index forward
   }
   return joinSep(chunksCount, textChunks, ' ');
 }

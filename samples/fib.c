@@ -1,3 +1,8 @@
+#if 0
+  /usr/local/bin/sugar `basename $0` $@ && exit;
+  // above is a shebang hack, so you can run: ./fib.c <number>
+#endif
+
 #include <sugar.h>
 
 // from original tcc examples (sweetened)

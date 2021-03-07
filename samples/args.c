@@ -1,3 +1,8 @@
+#if 0
+  /usr/local/bin/sugar `basename $0` $@ && exit;
+  // above is a shebang hack, so you can run: ./args.c <arg 1> <arg 2> <arg N>
+#endif
+
 #include <sugar.h>
 
 // playing around with arguments as a list of strings

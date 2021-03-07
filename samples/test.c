@@ -1,4 +1,8 @@
-#!//usr/local/bin/sugar -dev
+#if 0
+  /usr/local/bin/sugar `basename $0` $@ && exit;
+  // above is a shebang hack, so you can run: ./test.c
+#endif
+
 #include <sugar.h>
 
 // some basic tests on the sugar script library
@@ -13,12 +17,10 @@ void check(string testName, bool pass) {
   printf("[ passed ]  -> %s\n", testName);
 }
 
-void skip(string testName) {
-  printf("[ skip.. ]  -> %s\n", testName);
-}
+void skip(string testName) { printf("[ skip.. ]  -> %s\n", testName); }
 
 void doTests() {
-  skip("println");  // yes it works, but I should think on how to test this
+  skip("println"); // yes it works, but I should think on how to test this
 
   check("areSame",
         areSame("yes", "yes") == true && areSame("yes", "no") == false);
@@ -73,7 +75,7 @@ void doTests() {
                         areSame(listFromSplit[1], "green") &&
                         areSame(listFromSplit[2], "blue"));
 
-  skip("forEach");  // yes it works, but I should think on how to test this
+  skip("forEach"); // yes it works, but I should think on how to test this
 
   check("startsWith",
         startsWith("abc", "a") == true && startsWith("abc", "c") == false);
@@ -89,7 +91,7 @@ void doTests() {
 
   check("replaceWord", areSame(phrase, "there you have 5 'e' and 3 'a'"));
 
-  skip("readKeys");  // yes it works, but I should think on how to test this
+  skip("readKeys"); // yes it works, but I should think on how to test this
 
   string filename = "test.txt";
   bool didSave = writeFile(phrase, filename);
@@ -105,7 +107,7 @@ void doTests() {
   if (system(join2s("rm ", filename)) != EXIT_SUCCESS)
     // rm didn't work, try clean up with del (windows env?)
     if (system(join2s("del ", filename)) != EXIT_SUCCESS)
-      println(  // still didn't work... warn user :/
+      println( // still didn't work... warn user :/
           join2s("[ warn.. ]  -> could not remove file generated during test: ",
                  filename));
 }
@@ -117,9 +119,8 @@ app({
 
   // by using app we are already testing the macro expansion for main function..
   // AND error found with more code: "macro 'app' used with too many args"
-  println(
-      "[ warn.. ]  -> app macro with big body causes: 'app' used with "
-      "too many args");
+  println("[ warn.. ]  -> app macro with big body causes: 'app' used with "
+          "too many args");
 
   // still, it's worth the convenience...
   // ...and main functions should not be big anyway!
