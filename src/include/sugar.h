@@ -6,17 +6,14 @@
 
 #include <limits.h>
 #include <stdbool.h>
-#include <sugarlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-// you can remove <sugarlib.h> and use standard C libs if you prefer
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-
-typedef char* string;  // declare one string per line or use char *s, *t, *u;
-typedef string* stringList;
-typedef int number;  // use float for float, duh!
-typedef number* numberList;
+typedef char *string; // declare one string per line or use char *s, *t, *u;
+typedef string *stringList;
+typedef int number; // use float for float, duh!
+typedef number *numberList;
 
 #define STR_END '\0'
 #define NUM_MAX INT_MAX
@@ -29,8 +26,8 @@ typedef number* numberList;
 
 // app -> macro expansion for main function with return 0
 // known issue: "error: macro 'app' used with too many args"
-#define app(x) \
-  int main(int argc, char* argv[]) { x return 0; }
+#define app(x)                                                                 \
+  int main(int argc, char *argv[]) { x return 0; }
 
 // println -> prints a string and adds a new line
 void println(string);
@@ -97,9 +94,7 @@ string readFile(string filepath);
 
 // TODO: bellow implementations should be "sugar.c", make this a dynamic lib
 
-void println(string s) {
-  printf("%s\n", s);
-}
+void println(string s) { printf("%s\n", s); }
 
 bool areSame(string s1, string s2) {
   return strcmp(s1, s2) == 0 ? true : false;
@@ -113,7 +108,7 @@ string ofBool(bool b) {
 
 string ofChar(char c) {
   string str = (string)malloc(2);
-  if (str) {  // memory gard
+  if (str) { // memory gard
     str[0] = c;
     str[1] = STR_END;
     return str;
@@ -124,7 +119,7 @@ string ofChar(char c) {
 string ofNumber(number n) {
   number length = snprintf((string)NULL, 0, "%d", n);
   string result = (string)malloc(length + 1);
-  if (result) {  // memory gard
+  if (result) { // memory gard
     snprintf(result, length + 1, "%d", n);
     return result;
   }
@@ -134,16 +129,14 @@ string ofNumber(number n) {
 string ofLong(long l) {
   number length = snprintf((string)NULL, 0, "%ld", l);
   string result = (string)malloc(length + 1);
-  if (result) {  // memory gard
+  if (result) { // memory gard
     snprintf(result, length + 1, "%ld", l);
     return result;
   }
   return (string)NULL;
 }
 
-number ofString(string s) {
-  return atoi(s);
-}
+number ofString(string s) { return atoi(s); }
 
 string mkString(number count, stringList strs) {
   number size = 0;
@@ -151,7 +144,7 @@ string mkString(number count, stringList strs) {
     size += strlen(strs[i]);
   string result = (string)malloc(size + 1);
   result[0] = STR_END;
-  if (result) {  // memory gard
+  if (result) { // memory gard
     for (number i = 0; i < count; i++)
       strcat(result, strs[i]);
     return result;
@@ -190,7 +183,7 @@ string joinSep(number count, stringList strs, char separator) {
   string result = (string)malloc(totalSize + count + 1);
   result[0] = STR_END;
 
-  if (result) {  // memory gard
+  if (result) { // memory gard
     for (number i = 0; i < count; i++) {
       strcat(result, strs[i]);
       if (i != lastIndex)
@@ -207,7 +200,7 @@ stringList splitSep(string str, char separator) {
   stringList list = (stringList)malloc((occur + 1) * sizeof(string));
   number size = strlen(str);
   string copy = (string)malloc(size + 1);
-  strcpy(copy, str);  // 'cause strtok modifies original string
+  strcpy(copy, str); // 'cause strtok modifies original string
   number i = 0;
   string word = strtok(copy, strsep);
 
@@ -259,7 +252,7 @@ string replaceWord(string text, string oldWord, string newWord) {
   string result =
       (string)malloc(textSize + occur * (newWordSize - oldWordSize) + 1);
 
-  if (result) {  // memory gard
+  if (result) { // memory gard
     while (*text != STR_END) {
       if (startsWith(text, oldWord)) {
         strcpy(&result[i], newWord);
@@ -286,10 +279,10 @@ string readKeys(void) {
       break;
     }
   }
-  buffer[bufsize - 1] = STR_END;  // just in case we used it all
+  buffer[bufsize - 1] = STR_END; // just in case we used it all
 
   string result = (string)malloc(i + 1);
-  if (result) {  // memory gard
+  if (result) { // memory gard
     result[0] = STR_END;
     strcat(result, buffer);
     return result;
@@ -298,7 +291,7 @@ string readKeys(void) {
 }
 
 bool writeFile(string buffer, string filepath) {
-  FILE* f = fopen(filepath, "w");
+  FILE *f = fopen(filepath, "w");
   if (!f) {
     printf("error: could not write file -> %s\n", filepath);
     return false;
@@ -312,7 +305,7 @@ string readFile(string filepath) {
   long length;
   number maxbuffer = NUM_MAX - 1;
   string buffer = (string)NULL;
-  FILE* f = fopen(filepath, "r");
+  FILE *f = fopen(filepath, "r");
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
@@ -322,7 +315,7 @@ string readFile(string filepath) {
     }
     fseek(f, 0, SEEK_SET);
     buffer = (string)malloc(length + 1);
-    if (buffer) {  // memory gard
+    if (buffer) { // memory gard
       fread(buffer, 1, length, f);
       buffer[length] = STR_END;
     }

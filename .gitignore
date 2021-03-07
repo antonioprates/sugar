@@ -107,3 +107,6 @@ src/libsugar.dylib
 
 # OSX crap
 .DS_Store
+
+# VS Code
+.vscode/*
