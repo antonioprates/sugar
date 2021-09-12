@@ -75,6 +75,8 @@ void doTests() {
                         areSame(listFromSplit[1], "green") &&
                         areSame(listFromSplit[2], "blue"));
 
+  check("listCount", listCount(listFromSplit) == 3);                        
+
   skip("forEach"); // yes it works, but I should think on how to test this
 
   check("startsWith",

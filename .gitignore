@@ -110,3 +110,6 @@ src/libsugar.dylib
 
 # VS Code
 .vscode/*
+
+# non-public files
+non-public/*

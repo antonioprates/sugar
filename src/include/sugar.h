@@ -71,13 +71,16 @@ string joinSep(number count, stringList strs, char separator);
 // splitSep -> split by separator into a list of strings [USE FREE]
 stringList splitSep(string str, char separator);
 
+// listCount -> counts valid pointers in stringList provided end is NULL pointer
+number listCount(stringList strs);
+
 // forEach -> map over a list of strings and apply string => void function
 void forEach(number count, stringList strs, void (*fn)(string));
 
 // startsWith -> checks if word is substring from start of text
 bool startsWith(string text, string word);
 
-// countWord -> count occurrences of old word in the string
+// countWord -> count occurrences of word in provided text
 number countWord(string text, string word);
 
 // replaceWord -> replaces a word with a new word inside a string [USE FREE]
@@ -197,19 +200,32 @@ string joinSep(number count, stringList strs, char separator) {
 stringList splitSep(string str, char separator) {
   char strsep[2] = {separator, STR_END};
   number occur = countWord(str, strsep);
-  stringList list = (stringList)malloc((occur + 1) * sizeof(string));
-  number size = strlen(str);
-  string copy = (string)malloc(size + 1);
-  strcpy(copy, str); // 'cause strtok modifies original string
-  number i = 0;
-  string word = strtok(copy, strsep);
+  stringList list = (stringList)malloc((occur + 2) * sizeof(string));
+  if (list) { // memory gard
+    number size = strlen(str);
+    string copy = (string)malloc(size + 1);
+    if (copy) {          // memory gard
+      strcpy(copy, str); // 'cause strtok modifies original string
+      number i = 0;
+      string word = strtok(copy, strsep);
 
-  while (word != NULL) {
-    list[i++] = word;
-    word = strtok((string)NULL, strsep);
+      while (word != NULL) {
+        list[i] = word;
+        word = strtok((string)NULL, strsep);
+        i++;
+      }
+      list[i] = NULL;
+      return list;
+    }
   }
+  return (stringList)NULL;
+}
 
-  return list;
+number listCount(stringList strs) {
+  number i = 0;
+  while (strs[i] != NULL)
+    i++;
+  return i;
 }
 
 void forEach(number count, stringList strs, void (*fn)(string)) {
@@ -303,16 +319,11 @@ bool writeFile(string buffer, string filepath) {
 
 string readFile(string filepath) {
   long length;
-  number maxbuffer = NUM_MAX - 1;
   string buffer = (string)NULL;
   FILE *f = fopen(filepath, "r");
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
-    if (length > maxbuffer) {
-      printf("error: file too big -> %s\n", filepath);
-      return (string)NULL;
-    }
     fseek(f, 0, SEEK_SET);
     buffer = (string)malloc(length + 1);
     if (buffer) { // memory gard
