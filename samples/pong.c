@@ -1,5 +1,5 @@
 #if 0
-  /usr/local/bin/sugar -lncurses -run `basename $0` $@ && exit;
+  /usr/bin/env sugar -lncurses -run `basename $0` $@ && exit;
   // above is a shebang hack, so you can run with: ./pong.c
 #endif
 

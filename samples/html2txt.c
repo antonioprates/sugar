@@ -1,5 +1,5 @@
 #if 0
-  /usr/local/bin/sugar `basename $0` $@ && exit;
+  /usr/bin/env sugar `basename $0` $@ && exit;
   // above is a shebang hack, so you can run: ./html2txt.c <file.html>
 #endif
 
