@@ -18,6 +18,7 @@ typedef number *numberList;
 #define STR_END '\0'
 #define NUM_MAX INT_MAX
 #define NUM_MIN INT_MIN
+#define BUF_LEN 4096
 
 // fix eventual problem with <stdbool.h>
 #ifndef _Bool
@@ -46,6 +47,9 @@ string ofNumber(number);
 
 // ofLong -> converts a long to a new string [USE FREE]
 string ofLong(long);
+
+// ofFloat -> converts a long to a new string [USE FREE]
+string ofFloat(double f);
 
 // ofString -> atoi shorthand, converts a string to a number
 number ofString(string);
@@ -134,6 +138,16 @@ string ofLong(long l) {
   string result = (string)malloc(length + 1);
   if (result) { // memory gard
     snprintf(result, length + 1, "%ld", l);
+    return result;
+  }
+  return (string)NULL;
+}
+
+string ofFloat(double f) {
+  number length = snprintf((string)NULL, 0, "%f", f);
+  string result = (string)malloc(length + 1);
+  if (result) { // memory gard
+    snprintf(result, length + 1, "%f", f);
     return result;
   }
   return (string)NULL;
@@ -285,17 +299,16 @@ string replaceWord(string text, string oldWord, string newWord) {
 }
 
 string readKeys(void) {
-  const number bufsize = 4096;
-  char buffer[bufsize];
+  char buffer[BUF_LEN];
   number i;
-  for (i = 0; i < bufsize; i++) {
+  for (i = 0; i < BUF_LEN; i++) {
     buffer[i] = getchar();
     if (buffer[i] == '\n' || buffer[i] == '\r') {
       buffer[i] = STR_END;
       break;
     }
   }
-  buffer[bufsize - 1] = STR_END; // just in case we used it all
+  buffer[BUF_LEN - 1] = STR_END; // just in case we used it all
 
   string result = (string)malloc(i + 1);
   if (result) { // memory gard

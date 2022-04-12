@@ -113,3 +113,5 @@ src/libsugar.dylib
 
 # non-public files
 non-public/*
+
+fat/*
