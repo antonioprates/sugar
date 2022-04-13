@@ -69,6 +69,9 @@ string join4s(string, string, string, string);
 // join5s -> mkString shorthand, joins 5 strings in a new string [USE FREE]
 string join5s(string, string, string, string, string);
 
+// join6s -> mkString shorthand, joins 6 strings in a new string [USE FREE]
+string join6s(string, string, string, string, string, string);
+
 // joinSep -> join as many strings you like, with a separator [USE FREE]
 string joinSep(number count, stringList strs, char separator);
 
@@ -187,6 +190,11 @@ string join4s(string s1, string s2, string s3, string s4) {
 string join5s(string s1, string s2, string s3, string s4, string s5) {
   string list[5] = {s1, s2, s3, s4, s5};
   return mkString(5, list);
+}
+
+string join6s(string s1, string s2, string s3, string s4, string s5, string s6) {
+  string list[6] = {s1, s2, s3, s4, s5, s6};
+  return mkString(6, list);
 }
 
 string joinSep(number count, stringList strs, char separator) {
