@@ -107,6 +107,10 @@ string readFile(string filepath);
 void println(string s) { printf("%s\n", s); }
 
 bool areSame(string s1, string s2) {
+  if (!s1 && !s2)
+    return true;
+  if (!s1 || !s2)
+    return false;
   return strcmp(s1, s2) == 0 ? true : false;
 }
 
