@@ -30,6 +30,9 @@ typedef number *numberList;
 #define app(x)                                                                 \
   int main(int argc, char *argv[]) { x return 0; }
 
+// noop -> idiomatic no-op
+void noop(){};
+
 // println -> prints a string and adds a new line
 void println(string);
 
